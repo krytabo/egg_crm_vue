@@ -1,0 +1,1 @@
+const c="登录",a="或者",n="还没有账号吗",o="请联系管理员",t="请输入账号",s="请输入密码",e="正在为您登录系统，请稍候...",l={login:"登录",or:"或者",noAccountYet:n,pleaseContactAdmin:o,pleaseEnterUsername:t,pleaseEnterPassword:s,loggingInPleaseWait:e};export{l as default,e as loggingInPleaseWait,c as login,n as noAccountYet,a as or,o as pleaseContactAdmin,s as pleaseEnterPassword,t as pleaseEnterUsername};

@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "es2020",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/components/*": ["src/components/*"],
+      "@/assets/*": ["src/assets/*"],
+      "@/pages/*": ["src/pages/*"],
+      "@/lib/*": ["src/lib/*"]
+    },
+    "allowJs": true,
+    "checkJs": false
+  },
+  "include": ["src/**/*", "vite.config.mjs"],
+  "exclude": ["node_modules", "build"]
+}

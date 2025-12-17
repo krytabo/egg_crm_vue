@@ -1,0 +1,9 @@
+{
+  "login": "登录",
+  "or": "或者",
+  "noAccountYet": "还没有账号吗",
+  "pleaseContactAdmin": "请联系管理员",
+  "pleaseEnterUsername": "请输入账号",
+  "pleaseEnterPassword": "请输入密码",
+  "loggingInPleaseWait": "正在为您登录系统，请稍候..."
+}

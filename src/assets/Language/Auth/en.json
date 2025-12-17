@@ -1,0 +1,9 @@
+{
+  "login": "Login",
+  "or": "Or",
+  "noAccountYet": "Don't have an account",
+  "pleaseContactAdmin": "Please contact the administrator",
+  "pleaseEnterUsername": "Please enter username",
+  "pleaseEnterPassword": "Please enter password",
+  "loggingInPleaseWait": "Logging you into the system, please wait..."
+}

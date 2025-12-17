@@ -1,0 +1,1 @@
+import{c as e,o as t,e as s,u as r,R as a}from"./index-D-Ouoi_h.js";const c={class:"min-h-screen bg-gray-100 flex items-center justify-center p-6"},i={__name:"AuthLayout",setup(o){return(n,u)=>(t(),e("div",c,[s(r(a))]))}};export{i as default};

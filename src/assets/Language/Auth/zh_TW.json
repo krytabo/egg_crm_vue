@@ -1,0 +1,9 @@
+{
+  "login": "登入",
+  "or": "或者",
+  "noAccountYet": "還沒有帳號嗎",
+  "pleaseContactAdmin": "請聯絡管理員",
+  "pleaseEnterUsername": "請輸入帳號",
+  "pleaseEnterPassword": "請輸入密碼",
+  "loggingInPleaseWait": "正在為您登入系統，請稍候..."
+}

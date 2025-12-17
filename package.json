@@ -1,0 +1,46 @@
+{
+  "name": "crm-admin-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "@kousum/semi-ui-vue": "^2.78.4",
+    "@opentiny/unplugin-tiny-vue": "^1.0.0",
+    "@opentiny/vue": "3",
+    "@opentiny/vue-icon": "^3.27.0",
+    "@opentiny/vue-notify": "^3.27.0",
+    "@tailwindcss/vite": "^4.1.17",
+    "axios": "^1.13.2",
+    "chinese-conv": "^4.0.0",
+    "crypto-js": "^4.2.0",
+    "date-fns": "*",
+    "lodash": "^4.17.21",
+    "lodash.merge": "^4.6.2",
+    "lucide": "^0.557.0",
+    "lucide-vue-next": "^0.556.0",
+    "pinia": "^3.0.4",
+    "prettier": "^3.7.4",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "sweetalert2": "^11.26.4",
+    "tailwindcss": "^4.1.17",
+    "unplugin-auto-import": "^20.3.0",
+    "unplugin-vue-components": "^30.0.0",
+    "vite-plugin-svg-icons": "^2.0.1",
+    "vue": "^3.5.0",
+    "vue-i18n": "^11.2.2",
+    "vue-router": "^4.6.3",
+    "vue3-json-viewer": "^2.4.1",
+    "vue3-lottie": "^3.3.1",
+    "vue3-perfect-scrollbar": "^2.0.0"
+  },
+  "devDependencies": {
+    "@arco-design/web-vue": "^2.57.0",
+    "@vitejs/plugin-vue": "^5.1.4",
+    "@vitejs/plugin-vue-jsx": "^4.0.0",
+    "fast-glob": "^3.3.3",
+    "vite": "6.3.5"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  }
+}
