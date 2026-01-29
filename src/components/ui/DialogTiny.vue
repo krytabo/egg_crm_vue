@@ -1,6 +1,6 @@
 <!-- src/components/ui/DialogTiny.vue -->
 <template>
-  <TinyDialogBox v-model:visible="visible" v-bind="contentAttrs" :title="title" :width="width" draggable :show-close="showClose" :close-on-click-modal="closeOnClickModal">
+  <TinyDialogBox v-model:visible="visible" v-bind="contentAttrs" :title="title" :width="width" draggable :destroy-on-close="true" :top="top" :show-close="showClose" :close-on-click-modal="closeOnClickModal">
     <template #default>
       <slot :close="handleClose" />
     </template>
@@ -40,6 +40,10 @@ const props = defineProps({
   closeOnClickModal: {
     type: Boolean,
     default: false
+  },
+  top: {
+    type: Number,
+    default: 50
   }
 });
 

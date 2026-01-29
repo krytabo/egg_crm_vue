@@ -1,604 +1,717 @@
 <!-- src/pages/inventory-reports/DeliveryReportEditPage.vue 送貨報表編輯 -->
-<script setup>
-import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { Button as TinyButton } from '@/components/ui/button'
-import { Input as TinyInput } from '@/components/ui/input'
-import { Select as TinySelect } from '@/components/ui/select'
-import { DialogBox as TinyDialogBox } from '@/components/ui/dialog-box'
-import { Checkbox as TinyCheckbox } from '@/components/ui/checkbox'
-import { Badge as TinyBadge } from '@/components/ui/badge'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { IconArrowLeft, IconSave, IconPrintPreview, IconAdd, IconDelete, IconChevronDown, IconChevronRight, IconBoxSolid } from '@opentiny/vue-icon'
-import Notify from '@opentiny/vue-notify'
-
-const props = defineProps({
-  uuid: { type: String, default: '' }
-})
-
-/** 常數設定 **/
-const mockProducts = [
-  { id: 1, name: '清泉 20L', category: '桶裝水', unitPrice: 140 },
-  { id: 2, name: '純淨 20L', category: '桶裝水', unitPrice: 140 },
-  { id: 3, name: '山泉 20L', category: '桶裝水', unitPrice: 138 },
-  { id: 4, name: '礦泉 20L', category: '桶裝水', unitPrice: 145 },
-  { id: 5, name: '紅殼蛋 10入/盒', category: '雞蛋', unitPrice: 85 },
-  { id: 6, name: '白殼蛋 10入/盒', category: '雞蛋', unitPrice: 80 },
-  { id: 7, name: '土雞蛋 10入/盒', category: '雞蛋', unitPrice: 95 },
-  { id: 8, name: 'WD-2000 冷熱', category: '飲水機', unitPrice: 8500 },
-  { id: 9, name: 'WD-3000 冰溫熱', category: '飲水機', unitPrice: 12000 },
-  { id: 10, name: 'WD-1000 常溫', category: '飲水機', unitPrice: 6000 }
-]
-const mockCustomers = [
-  { id: 1, name: '林氏企業', type: '客戶', paymentMethod: '月結', deliveryDays: ['星期一', '星期三'] },
-  { id: 2, name: '黃記商行', type: '客戶', paymentMethod: '現金', deliveryDays: ['星期二', '星期四'] },
-  { id: 3, name: '建國工廠', type: '客戶', paymentMethod: '現金', deliveryDays: ['星期三', '星期五'] },
-  { id: 4, name: '小芬商店', type: '客戶', paymentMethod: '票據', deliveryDays: ['星期一', '星期二', '星期三', '星期四', '星期五'] },
-  { id: 5, name: '清泉水業', type: '廠商', paymentMethod: '月結', deliveryDays: ['星期一', '星期三', '星期五'] },
-  { id: 6, name: '純淨水廠', type: '廠商', paymentMethod: '現金', deliveryDays: ['星期二', '星期四'] },
-  { id: 7, name: '大同商行', type: '客戶', paymentMethod: '月結', deliveryDays: ['星期一', '星期四'] },
-  { id: 8, name: '永豐企業', type: '客戶', paymentMethod: '現金', deliveryDays: ['星期二', '星期五'] },
-  { id: 9, name: '新鮮蛋行', type: '廠商', paymentMethod: '現金', deliveryDays: ['星期一', '星期三', '星期五'] },
-  { id: 10, name: '福氣商店', type: '客戶', paymentMethod: '票據', deliveryDays: ['星期三', '星期六'] },
-  { id: 11, name: '陳氏餐飲', type: '客戶', paymentMethod: '現金', deliveryDays: ['星期一', '星期三', '星期五'] },
-  { id: 12, name: '張氏工程', type: '客戶', paymentMethod: '月結', deliveryDays: ['星期一', '星期三'] }
-]
-const paymentOptions = ['現金', '月結', '轉帳', '票據']
-const weekDayOptions = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
-
-/** 狀態管理 **/
-const router = useRouter()
-const loading = ref(true)
-const reportData = ref(null)
-const editedProducts = ref([])
-const fuelExpense = ref(0)
-const otherExpense = ref(0)
-const expandedItems = ref([])
-const showProductDialog = ref(false)
-const selectedProductIds = ref([])
-const selectedWeekDays = ref([])
-const originalWeekDays = ref([])
-
-/** 計算資料 **/
-const availableCustomers = computed(() => {
-  if (!selectedWeekDays.value.length) return mockCustomers
-  return mockCustomers.filter((customer) => customer.deliveryDays.some((day) => selectedWeekDays.value.includes(day)))
-})
-const availableCustomerOptions = computed(() =>
-  availableCustomers.value.map((customer) => ({ label: `${customer.name}（${customer.deliveryDays.join('、')}）`, value: String(customer.id) }))
-)
-const groupedProducts = computed(() =>
-  editedProducts.value.reduce((acc, product, index) => {
-    if (!acc[product.productName]) acc[product.productName] = []
-    acc[product.productName].push({ ...product, originalIndex: index })
-    return acc
-  }, {})
-)
-const groupedEntries = computed(() => Object.entries(groupedProducts.value))
-const productCategories = computed(() =>
-  mockProducts.reduce((acc, product) => {
-    if (!acc[product.category]) acc[product.category] = []
-    acc[product.category].push(product)
-    return acc
-  }, {})
-)
-const totalQuantity = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.quantity || 0), 0))
-const totalActualAmount = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.actualAmount || 0), 0))
-const totalAmount = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.amount || 0), 0))
-const allExpanded = computed(() => {
-  const groupCount = Object.keys(groupedProducts.value).length
-  return groupCount > 0 && expandedItems.value.length === groupCount
-})
-
-/** 工具函式 **/
-const currency = (val) => `NT$${Number(val || 0).toLocaleString()}`
-const sumProductsField = (items, field) => items.reduce((sum, item) => sum + Number(item[field] || 0), 0)
-const isGroupExpanded = (name) => expandedItems.value.includes(name)
-const toggleGroupExpand = (name) => {
-  if (isGroupExpanded(name)) {
-    expandedItems.value = expandedItems.value.filter((item) => item !== name)
-  } else {
-    expandedItems.value = [...expandedItems.value, name]
-  }
-}
-
-/** 事件處理 **/
-const loadReport = () => {
-  if (!props.uuid) {
-    reportData.value = null
-    editedProducts.value = []
-    loading.value = false
-    return
-  }
-  loading.value = true
-  setTimeout(() => {
-    const mockData = {
-      id: Number(props.uuid) || 1,
-      employeeId: 5,
-      employeeName: '劉司機',
-      reportDate: '2024-03-15',
-      weekDays: '星期一、星期三',
-      selectedWeekDays: ['星期一', '星期三'],
-      products: [
-        { productId: 1, productName: '清泉 20L', customerId: 1, customerName: '林氏企業', quantity: 10, unitPrice: 140, amount: 1400, actualAmount: 1400, paymentMethod: '月結', note: '' },
-        { productId: 1, productName: '清泉 20L', customerId: 4, customerName: '小芬商店', quantity: 5, unitPrice: 140, amount: 700, actualAmount: 700, paymentMethod: '票據', note: '' },
-        { productId: 5, productName: '紅殼蛋 10入/盒', customerId: 11, customerName: '陳氏餐飲', quantity: 20, unitPrice: 85, amount: 1700, actualAmount: 1700, paymentMethod: '現金', note: '' }
-      ],
-      fuelExpense: 0,
-      otherExpense: 0
-    }
-    reportData.value = mockData
-    editedProducts.value = mockData.products.map((product) => ({ ...product }))
-    fuelExpense.value = mockData.fuelExpense
-    otherExpense.value = mockData.otherExpense
-    selectedWeekDays.value = [...mockData.selectedWeekDays]
-    originalWeekDays.value = [...mockData.selectedWeekDays]
-    expandedItems.value = Array.from(new Set(mockData.products.map((product) => product.productName)))
-    selectedProductIds.value = []
-    loading.value = false
-  }, 400)
-}
-
-onMounted(loadReport)
-
-const handleQuantityChange = (index, value) => {
-  const next = [...editedProducts.value]
-  const quantity = Number(value) || 0
-  next[index].quantity = quantity
-  const amount = quantity * Number(next[index].unitPrice || 0)
-  next[index].amount = amount
-  next[index].actualAmount = amount
-  editedProducts.value = next
-}
-const handleUnitPriceChange = (index, value) => {
-  const next = [...editedProducts.value]
-  const unitPrice = Number(value) || 0
-  next[index].unitPrice = unitPrice
-  const amount = unitPrice * Number(next[index].quantity || 0)
-  next[index].amount = amount
-  next[index].actualAmount = amount
-  editedProducts.value = next
-}
-const handleActualAmountChange = (index, value) => {
-  const next = [...editedProducts.value]
-  next[index].actualAmount = Number(value) || 0
-  editedProducts.value = next
-}
-const handleCustomerChange = (index, customerId) => {
-  const customer = mockCustomers.find((item) => item.id === customerId)
-  if (!customer) return
-  const next = [...editedProducts.value]
-  next[index].customerId = customer.id
-  next[index].customerName = customer.name
-  next[index].paymentMethod = customer.paymentMethod
-  editedProducts.value = next
-}
-const handlePaymentMethodChange = (index, method) => {
-  const next = [...editedProducts.value]
-  next[index].paymentMethod = method
-  editedProducts.value = next
-}
-const handleNoteChange = (index, value) => {
-  const next = [...editedProducts.value]
-  next[index].note = value
-  editedProducts.value = next
-}
-const handleAddProductCategory = () => {
-  selectedProductIds.value = []
-  showProductDialog.value = true
-}
-const isProductInReport = (productId) => editedProducts.value.some((product) => product.productId === productId)
-const handleProductToggle = (productId) => {
-  if (isProductInReport(productId)) return
-  if (selectedProductIds.value.includes(productId)) {
-    selectedProductIds.value = selectedProductIds.value.filter((id) => id !== productId)
-  } else {
-    selectedProductIds.value = [...selectedProductIds.value, productId]
-  }
-}
-const handleWeekDayToggle = (weekDay) => {
-  if (originalWeekDays.value.includes(weekDay)) return
-  if (selectedWeekDays.value.includes(weekDay)) {
-    selectedWeekDays.value = selectedWeekDays.value.filter((day) => day !== weekDay)
-  } else {
-    selectedWeekDays.value = [...selectedWeekDays.value, weekDay]
-  }
-}
-const handleConfirmAddProducts = () => {
-  if (!selectedProductIds.value.length) {
-    Notify({ type: 'warning', title: '請至少選擇一個商品' })
-    return
-  }
-  const firstCustomer = availableCustomers.value[0]
-  if (!firstCustomer) {
-    Notify({ type: 'warning', title: '目前無符合條件的客戶' })
-    return
-  }
-  const newProducts = selectedProductIds.value
-    .map((productId) => {
-      const product = mockProducts.find((item) => item.id === productId)
-      if (!product) return null
-      return {
-        productId: product.id,
-        productName: product.name,
-        customerId: firstCustomer.id,
-        customerName: firstCustomer.name,
-        quantity: 0,
-        unitPrice: product.unitPrice,
-        amount: 0,
-        actualAmount: 0,
-        paymentMethod: firstCustomer.paymentMethod,
-        note: ''
-      }
-    })
-    .filter(Boolean)
-  editedProducts.value = [...editedProducts.value, ...newProducts]
-  expandedItems.value = Array.from(new Set([...expandedItems.value, ...newProducts.map((item) => item.productName)]))
-  showProductDialog.value = false
-  Notify({ type: 'success', title: `已新增 ${newProducts.length} 個商品` })
-}
-const handleDeleteProductCategory = (productName) => {
-  if (!window.confirm(`確定要刪除所有「${productName}」的記錄嗎？`)) return
-  editedProducts.value = editedProducts.value.filter((product) => product.productName !== productName)
-  expandedItems.value = expandedItems.value.filter((name) => name !== productName)
-  Notify({ type: 'success', title: `已刪除 ${productName}` })
-}
-const handleAddCustomer = (productName) => {
-  const firstCustomer = availableCustomers.value[0]
-  if (!firstCustomer) {
-    Notify({ type: 'warning', title: '目前無符合條件的客戶' })
-    return
-  }
-  const sampleProduct = editedProducts.value.find((product) => product.productName === productName)
-  const productId = sampleProduct?.productId || 0
-  const unitPrice = sampleProduct?.unitPrice || 0
-  const newProduct = {
-    productId,
-    productName,
-    customerId: firstCustomer.id,
-    customerName: firstCustomer.name,
-    quantity: 0,
-    unitPrice,
-    amount: 0,
-    actualAmount: 0,
-    paymentMethod: firstCustomer.paymentMethod,
-    note: ''
-  }
-  editedProducts.value = [...editedProducts.value, newProduct]
-  Notify({ type: 'success', title: '已新增客戶記錄' })
-}
-const handleDeleteCustomer = (index) => {
-  if (!window.confirm('確定要刪除此客戶記錄嗎？')) return
-  editedProducts.value = editedProducts.value.filter((_, i) => i !== index)
-  Notify({ type: 'success', title: '已刪除客戶記錄' })
-}
-const handleSave = () => {
-  Notify({ type: 'success', title: '報表已儲存' })
-}
-const handlePrint = () => {
-  window.print()
-}
-const handleBack = () => {
-  router.push({ name: 'delivery-report' })
-}
-const handleToggleAll = () => {
-  const groupNames = Object.keys(groupedProducts.value)
-  if (!groupNames.length) return
-  expandedItems.value = allExpanded.value ? [] : groupNames
-}
-</script>
-
 <template>
-  <div class="min-h-screen bg-gray-50 print:bg-white">
-    <div v-if="loading" class="min-h-screen flex items-center justify-center bg-gray-50">
-      <div class="text-center space-y-3">
-        <div class="h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600 mx-auto" />
-        <p class="text-gray-600">載入報表資料中...</p>
+  <Card class="min-h-screen bg-gray-50 print:bg-white">
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          表頭            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CardHeader>
+      <div class="flex flex-1 flex-col gap-1">
+        <CardTitle>{{ t('商品明細編輯') }}</CardTitle>
+        <p v-if="reportData" class="text-sm text-gray-500">{{ reportData.employeeName }} · {{ reportData.reportDate }}（{{ reportData.weekDays }}）</p>
       </div>
-    </div>
+      <div class="flex items-center gap-3">
+        <a-button @click="handleBack">返回</a-button>
+        <a-button @click="handlePrint">列印</a-button>
+        <a-button type="primary" @click="handleSave" :loading="saving">儲存</a-button>
+        <a-button type="primary" @click="handleAddProductCategory"> <i class="ri-add-line mr-1" /> 新增商品 </a-button>
+        <a-button @click="handleToggleAll">{{ allExpanded ? '全部收合' : '全部展開' }}</a-button>
+      </div>
+    </CardHeader>
 
-    <div v-else-if="!reportData" class="min-h-screen flex items-center justify-center bg-gray-50">
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--        找不到報表         -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <div v-if="!reportData" class="flex min-h-screen items-center justify-center bg-gray-50">
       <Card class="w-full max-w-md">
         <CardContent class="pt-8">
-          <div class="text-center space-y-4">
-            <p class="text-gray-600">找不到報表資料</p>
-            <TinyButton type="primary" @click="handleBack">
-              <IconArrowLeft class="tiny-svg-size mr-1" /> 返回
-            </TinyButton>
-          </div>
+          <a-empty description="找不到報表資料">
+            <a-button type="primary" @click="handleBack"> <i class="ri-arrow-left-line mr-1" /> 返回 </a-button>
+          </a-empty>
         </CardContent>
       </Card>
     </div>
 
-    <div v-else>
-      <div class="bg-white border-b sticky top-0 z-10 print:hidden">
-        <div class="max-w-7xl mx-auto flex items-center justify-between px-4 py-4">
-          <div class="flex items-center gap-4">
-            <TinyButton type="text" @click="handleBack">
-              <IconArrowLeft class="tiny-svg-size mr-1" /> 返回
-            </TinyButton>
-            <div>
-              <h1 class="text-lg font-semibold text-gray-900">編輯報表 #{{ reportData.id }}</h1>
-              <p class="text-sm text-gray-500">{{ reportData.employeeName }} · {{ reportData.reportDate }}（{{ reportData.weekDays }}）</p>
-            </div>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--         主要內容          -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <div v-else class="mx-auto max-w-7xl px-4 py-6 print:px-8">
+      <div class="mb-6 hidden print:block">
+        <h1 class="mb-2 text-center text-2xl">出貨日報表</h1>
+        <div class="mb-4 flex justify-between text-sm">
+          <div>
+            <p><strong>報表編號：</strong>#{{ reportData.id }}</p>
+            <p><strong>員工姓名：</strong>{{ reportData.employeeName }} (ID: {{ reportData.employeeId }})</p>
           </div>
-          <div class="flex items-center gap-2">
-            <TinyButton type="text" @click="handlePrint">
-              <IconPrintPreview class="tiny-svg-size mr-1" /> 列印
-            </TinyButton>
-            <TinyButton type="primary" @click="handleSave">
-              <IconSave class="tiny-svg-size mr-1" /> 儲存
-            </TinyButton>
+          <div class="text-right">
+            <p><strong>日期：</strong>{{ reportData.reportDate }}</p>
+            <p><strong>出貨星期：</strong>{{ reportData.weekDays }}</p>
           </div>
+        </div>
+        <hr class="border-gray-300" />
+      </div>
+
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--        商品明細表頭        -->
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <div class="print:pb-4">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <CardTitle class="text-lg">商品明細編輯</CardTitle>
+          <div class="flex gap-2 print:hidden">
+            <a-button type="primary" @click="handleAddProductCategory"> <i class="ri-add-line mr-1" /> 新增商品 </a-button>
+            <a-button @click="handleToggleAll">
+              {{ allExpanded ? '全部收合' : '全部展開' }}
+            </a-button>
+          </div>
+        </div>
+
+        <!-- 預計出貨星期設定 -->
+        <div class="mt-4 space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 print:hidden">
+          <div class="flex items-center gap-2 text-amber-900">
+            <i class="ri-calendar-check-line" />
+            <span class="font-medium">預計出貨星期設定</span>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <a-checkbox
+              v-for="weekDay in weekDayDisplayOptions"
+              :key="weekDay"
+              :model-value="selectedWeekDays.includes(weekDay)"
+              :disabled="originalWeekDays.includes(weekDay)"
+              @change="(checked) => handleWeekDayToggle(weekDay, checked)"
+            >
+              {{ weekDay }}
+              <a-tag v-if="originalWeekDays.includes(weekDay)" color="blue" size="small">原始</a-tag>
+            </a-checkbox>
+          </div>
+          <p class="text-xs text-amber-700">藍色標籤為原始設定（無法移除），其他為可調整的出貨星期。</p>
         </div>
       </div>
 
-      <div class="max-w-7xl mx-auto px-4 py-6 print:px-8">
-        <div class="hidden print:block mb-6">
-          <h1 class="text-center text-2xl mb-2">出貨日報表</h1>
-          <div class="flex justify-between text-sm mb-4">
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--        商品明細內容        -->
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <CardContent>
+        <!-- 統計資訊區 -->
+        <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 print:hidden">
+          <div class="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
             <div>
-              <p><strong>報表編號：</strong>#{{ reportData.id }}</p>
-              <p><strong>員工姓名：</strong>{{ reportData.employeeName }} (ID: {{ reportData.employeeId }})</p>
+              <p class="mb-1 text-xs text-gray-600">商品類別</p>
+              <p class="text-lg font-semibold text-blue-600">
+                {{ Object.keys(groupedProducts).length }}
+              </p>
             </div>
-            <div class="text-right">
-              <p><strong>日期：</strong>{{ reportData.reportDate }}</p>
-              <p><strong>出貨星期：</strong>{{ reportData.weekDays }}</p>
+            <div>
+              <p class="mb-1 text-xs text-gray-600">總筆數</p>
+              <p class="text-lg font-semibold text-blue-600">{{ editedProducts.length }}</p>
+            </div>
+            <div>
+              <p class="mb-1 text-xs text-gray-600">總數量</p>
+              <p class="text-lg font-semibold text-blue-600">{{ totalQuantity }}</p>
+            </div>
+            <div>
+              <p class="mb-1 text-xs text-gray-600">實際收付總額</p>
+              <p class="text-lg font-semibold text-blue-600">NT$ {{ formatNumber(totalActualAmount) }}</p>
             </div>
           </div>
-          <hr class="border-gray-300" />
         </div>
 
-        <Card>
-          <CardHeader class="print:pb-4">
-            <div class="flex flex-wrap items-center justify-between gap-3">
-              <CardTitle class="text-lg">商品明細編輯</CardTitle>
-              <div class="flex gap-2 print:hidden">
-                <TinyButton @click="handleAddProductCategory">
-                  <IconAdd class="tiny-svg-size mr-1" /> 新增商品
-                </TinyButton>
-                <TinyButton type="text" @click="handleToggleAll">
-                  {{ allExpanded ? '全部收合' : '全部展開' }}
-                </TinyButton>
-              </div>
-            </div>
-
-            <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-3 print:hidden">
-              <div class="flex items-center gap-2 text-amber-900">
-                <IconBoxSolid class="tiny-svg-size" />
-                <span class="font-medium">預計出貨星期設定</span>
-                <span class="text-sm text-amber-600">（可選擇 {{ availableCustomers.length }} 位符合客戶）</span>
-              </div>
-              <div class="flex flex-wrap gap-3">
-                <div
-                  v-for="weekDay in weekDayOptions"
-                  :key="weekDay"
-                  :class="[
-                    'flex items-center gap-2 rounded border px-3 py-2',
-                    selectedWeekDays.includes(weekDay)
-                      ? originalWeekDays.includes(weekDay)
-                        ? 'bg-blue-100 border-blue-300'
-                        : 'bg-green-100 border-green-300'
-                      : 'bg-white border-gray-300',
-                    originalWeekDays.includes(weekDay) ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'
-                  ]"
-                  @click="!originalWeekDays.includes(weekDay) && handleWeekDayToggle(weekDay)">
-                  <TinyCheckbox
-                    :model-value="selectedWeekDays.includes(weekDay)"
-                    :disabled="originalWeekDays.includes(weekDay)"
-                    @update:model-value="() => handleWeekDayToggle(weekDay)"
-                  />
-                  <span :class="['text-sm', originalWeekDays.includes(weekDay) ? 'cursor-not-allowed' : 'cursor-pointer']">
-                    {{ weekDay }}
-                    <span v-if="originalWeekDays.includes(weekDay)" class="ml-1 text-xs text-blue-600">（原始）</span>
-                  </span>
-                </div>
-              </div>
-              <p class="text-xs text-amber-700">💡 藍色為原始設定（無法移除），綠色為新增可調整的出貨星期。</p>
-            </div>
-          </CardHeader>
-
-          <CardContent>
-            <div class="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4 print:hidden">
-              <div class="grid grid-cols-2 gap-4 text-center md:grid-cols-4">
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">商品類別</p>
-                  <p class="text-lg font-semibold text-blue-600">{{ Object.keys(groupedProducts).length }}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">總筆數</p>
-                  <p class="text-lg font-semibold text-blue-600">{{ editedProducts.length }}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">總數量</p>
-                  <p class="text-lg font-semibold text-blue-600">{{ totalQuantity }}</p>
-                </div>
-                <div>
-                  <p class="text-xs text-gray-600 mb-1">實際收付總額</p>
-                  <p class="text-lg font-semibold text-blue-600">{{ currency(totalActualAmount) }}</p>
-                </div>
-              </div>
-            </div>
-
-            <div class="space-y-4 print:space-y-6">
-              <template v-for="([productName, products], index) in groupedEntries" :key="productName">
-                <div class="rounded-lg border bg-white px-4 py-3 print:border-0 print:px-0">
-                  <button type="button" class="flex w-full items-center justify-between print:hidden" @click="toggleGroupExpand(productName)">
-                    <div class="flex items-center gap-2 text-left">
-                      <IconChevronDown v-if="isGroupExpanded(productName)" class="tiny-svg-size" />
-                      <IconChevronRight v-else class="tiny-svg-size" />
-                      <span class="font-medium text-gray-900">{{ productName }}</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                      <TinyBadge type="info">{{ products.length }} 筆</TinyBadge>
-                      <TinyBadge type="warning">{{ currency(sumProductsField(products, 'actualAmount')) }}</TinyBadge>
-                    </div>
-                  </button>
-
-                  <div :class="[isGroupExpanded(productName) ? 'mt-4' : 'hidden print:block']">
-                    <div class="hidden print:block mb-3">
-                      <h3 class="text-base font-medium">{{ productName }}</h3>
-                      <hr class="my-2" />
-                    </div>
-                    <div class="flex justify-end gap-2 mb-3 print:hidden">
-                      <TinyButton type="text" @click="handleAddCustomer(productName)">
-                        <IconAdd class="tiny-svg-size mr-1" /> 新增客戶
-                      </TinyButton>
-                      <TinyButton type="text" class="text-red-500" @click="handleDeleteProductCategory(productName)">
-                        <IconDelete class="tiny-svg-size mr-1" /> 刪除商品
-                      </TinyButton>
-                    </div>
-
-                    <div class="overflow-x-auto">
-                      <table class="min-w-full divide-y text-sm">
-                        <thead class="bg-gray-50 text-left text-xs text-gray-500">
-                          <tr>
-                            <th class="px-3 py-2">客戶</th>
-                            <th class="px-3 py-2 w-24">數量</th>
-                            <th class="px-3 py-2 w-24">單價</th>
-                            <th class="px-3 py-2 w-28">金額</th>
-                            <th class="px-3 py-2 w-32">實際收付</th>
-                            <th class="px-3 py-2 w-28">收付方式</th>
-                            <th class="px-3 py-2 min-w-[150px]">備註</th>
-                            <th class="px-3 py-2 w-16 print:hidden">操作</th>
-                          </tr>
-                        </thead>
-                        <tbody class="divide-y bg-white">
-                          <tr v-for="product in products" :key="product.originalIndex">
-                            <td class="px-3 py-2">
-                              <div class="print:hidden">
-                                <TinySelect
-                                  :model-value="String(product.customerId)"
-                                  :options="availableCustomerOptions"
-                                  placeholder="選擇客戶"
-                                  @update:model-value="(val) => handleCustomerChange(product.originalIndex, Number(val))"
-                                />
-                              </div>
-                              <span class="hidden print:inline">{{ product.customerName }}</span>
-                            </td>
-                            <td class="px-3 py-2">
-                              <TinyInput type="number" min="0" class="w-24" :model-value="product.quantity" @update:model-value="(val) => handleQuantityChange(product.originalIndex, val)" />
-                            </td>
-                            <td class="px-3 py-2">
-                              <TinyInput type="number" min="0" class="w-24" :model-value="product.unitPrice" @update:model-value="(val) => handleUnitPriceChange(product.originalIndex, val)" />
-                            </td>
-                            <td class="px-3 py-2 font-medium">{{ currency(product.amount) }}</td>
-                            <td class="px-3 py-2">
-                              <TinyInput
-                                type="number"
-                                min="0"
-                                class="w-28"
-                                :model-value="product.actualAmount"
-                                placeholder="實際收付"
-                                @update:model-value="(val) => handleActualAmountChange(product.originalIndex, val)"
-                              />
-                            </td>
-                            <td class="px-3 py-2">
-                              <TinySelect
-                                :model-value="product.paymentMethod"
-                                :options="paymentOptions.map((option) => ({ label: option, value: option }))"
-                                @update:model-value="(val) => handlePaymentMethodChange(product.originalIndex, val)"
-                              />
-                            </td>
-                            <td class="px-3 py-2">
-                              <TinyInput :model-value="product.note" placeholder="輸入備註..." @update:model-value="(val) => handleNoteChange(product.originalIndex, val)" />
-                            </td>
-                            <td class="px-3 py-2 text-center print:hidden">
-                              <TinyButton type="text" class="text-red-500" @click="handleDeleteCustomer(product.originalIndex)">
-                                <IconDelete class="tiny-svg-size" />
-                              </TinyButton>
-                            </td>
-                          </tr>
-                          <tr class="bg-gray-50 font-medium">
-                            <td class="px-3 py-2">小計</td>
-                            <td class="px-3 py-2">{{ sumProductsField(products, 'quantity') }}</td>
-                            <td />
-                            <td class="px-3 py-2">{{ currency(sumProductsField(products, 'amount')) }}</td>
-                            <td class="px-3 py-2 text-blue-600">{{ currency(sumProductsField(products, 'actualAmount')) }}</td>
-                            <td colspan="3" />
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
+        <!-- 商品明細列表 -->
+        <div class="space-y-4 print:space-y-6">
+          <a-collapse v-model:active-key="expandedItems" :bordered="false">
+            <a-collapse-item v-for="([productName, products], index) in groupedEntries" :key="index" :name="productName" :header="productName">
+              <template #extra>
+                <div class="flex items-center gap-2" @click.stop>
+                  <a-tag color="blue">{{ products.length }} 筆</a-tag>
+                  <a-tag color="orange">NT$ {{ formatNumber(sumProductsField(products, 'actualAmount')) }}</a-tag>
                 </div>
               </template>
 
-              <div v-if="!groupedEntries.length" class="rounded-lg border border-dashed py-12 text-center text-sm text-gray-500">
-                尚未新增商品，請先點選「新增商品」。
-              </div>
-            </div>
+              <div class="space-y-3">
+                <div class="flex justify-end gap-2 print:hidden">
+                  <a-button size="small" @click="handleAddCustomer(productName)"> <i class="ri-add-line mr-1" /> 新增客戶 </a-button>
+                  <a-button size="small" status="danger" @click="handleDeleteProductCategory(productName)"> <i class="ri-delete-bin-line mr-1" /> 刪除商品 </a-button>
+                </div>
 
-            <div class="mt-6 border-t pt-6">
-              <div class="flex justify-end">
-                <div class="w-full max-w-md space-y-3">
-                  <div class="flex items-center justify-between text-sm text-gray-600">
-                    <span>商品總金額（參考）</span>
-                    <span>{{ currency(totalAmount) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between text-base">
-                    <span class="text-gray-700">實際收付總額</span>
-                    <span class="font-semibold text-blue-600">{{ currency(totalActualAmount) }}</span>
-                  </div>
-                  <div class="flex items-center justify-between gap-4">
-                    <span class="text-gray-700">加油支出金額</span>
-                    <TinyInput type="number" min="0" class="w-36 text-right" :model-value="fuelExpense" @update:model-value="(val) => (fuelExpense = Number(val) || 0)" />
-                  </div>
-                  <div class="flex items-center justify-between gap-4">
-                    <span class="text-gray-700">其他支出金額</span>
-                    <TinyInput type="number" min="0" class="w-36 text-right" :model-value="otherExpense" @update:model-value="(val) => (otherExpense = Number(val) || 0)" />
-                  </div>
-                  <hr />
-                  <div class="flex items-center justify-between text-base font-semibold">
-                    <span>預估結餘</span>
-                    <span>{{ currency(totalActualAmount - fuelExpense - otherExpense) }}</span>
+                <a-table :data="products" :bordered="false" :pagination="false" size="small">
+                  <template #columns>
+                    <a-table-column title="客戶" :width="180">
+                      <template #cell="{ record }">
+                        <InfiniteSelect
+                          v-model="record.customerId"
+                          dataSource="customers"
+                          :placeholder="record.customerName || '選擇客戶'"
+                          type="outline"
+                          allowClear
+                          @change="(val) => handleCustomerChange(record.originalIndex, val)"
+                        />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="數量" :width="100" align="right">
+                      <template #cell="{ record }">
+                        <TinyInput type="number" :model-value="record.quantity" min="0" @update:model-value="(val) => handleQuantityChange(record.originalIndex, val)" />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="單價" :width="100" align="right">
+                      <template #cell="{ record }">
+                        <TinyInput type="number" :model-value="record.unitPrice" min="0" @update:model-value="(val) => handleUnitPriceChange(record.originalIndex, val)" />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="金額" :width="120" align="right">
+                      <template #cell="{ record }">NT$ {{ formatNumber(record.amount) }}</template>
+                    </a-table-column>
+                    <a-table-column title="實際收付" :width="120" align="right">
+                      <template #cell="{ record }">
+                        <TinyInput type="number" :model-value="record.actualAmount" min="0" @update:model-value="(val) => handleActualAmountChange(record.originalIndex, val)" />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="收付方式" :width="100">
+                      <template #cell="{ record }">
+                        <TinySelect
+                          :model-value="record.paymentMethod || record.customerId?.customFields?.paymentMethod || '現金'"
+                          :options="paymentOptions"
+                          @update:model-value="(val) => handlePaymentMethodChange(record.originalIndex, val)"
+                        />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="備註" min-width="150">
+                      <template #cell="{ record }">
+                        <TinyInput :model-value="record.note" placeholder="輸入備註..." @update:model-value="(val) => handleNoteChange(record.originalIndex, val)" />
+                      </template>
+                    </a-table-column>
+                    <a-table-column title="操作" :width="60" align="center" class="print:hidden">
+                      <template #cell="{ record }">
+                        <a-button type="text" size="small" status="danger" @click="handleDeleteCustomer(record.originalIndex)">
+                          <i class="ri-delete-bin-line" />
+                        </a-button>
+                      </template>
+                    </a-table-column>
+                  </template>
+                </a-table>
+
+                <!-- 小計 -->
+                <div class="flex justify-end bg-gray-50 px-4 py-2 text-sm">
+                  <div class="flex gap-6">
+                    <span
+                      >小計數量: <strong>{{ sumProductsField(products, 'quantity') }}</strong></span
+                    >
+                    <span
+                      >小計金額: <strong>NT$ {{ formatNumber(sumProductsField(products, 'amount')) }}</strong></span
+                    >
+                    <span class="text-blue-600"
+                      >實際收付: <strong>NT$ {{ formatNumber(sumProductsField(products, 'actualAmount')) }}</strong></span
+                    >
                   </div>
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+            </a-collapse-item>
+          </a-collapse>
 
-    <TinyDialogBox v-model:visible="showProductDialog" title="選擇要新增的商品" width="640px">
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <TinyButton type="text" @click="showProductDialog = false">取消</TinyButton>
-          <TinyButton type="primary" @click="handleConfirmAddProducts">
-            確認新增 {{ selectedProductIds.length ? `(${selectedProductIds.length})` : '' }}
-          </TinyButton>
+          <a-empty v-if="!groupedEntries.length" description="尚未新增商品，請先點選「新增商品」。" />
         </div>
-      </template>
 
-      <div class="space-y-4">
-        <div v-for="(products, category) in productCategories" :key="category" class="space-y-2">
-          <h3 class="text-sm font-medium text-gray-700 border-b pb-1">{{ category }}</h3>
-          <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
-            <div
-              v-for="product in products"
-              :key="product.id"
-              :class="[
-                'flex items-center justify-between rounded border px-3 py-2',
-                isProductInReport(product.id) ? 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed' : 'hover:bg-gray-50 cursor-pointer'
-              ]"
-              @click="!isProductInReport(product.id) && handleProductToggle(product.id)">
-              <div class="flex items-center gap-2">
-                <TinyCheckbox
-                  :model-value="isProductInReport(product.id) || selectedProductIds.includes(product.id)"
-                  :disabled="isProductInReport(product.id)"
-                  @update:model-value="() => handleProductToggle(product.id)"
-                />
-                <span class="text-sm">
-                  {{ product.name }}
-                  <span v-if="isProductInReport(product.id)" class="ml-1 text-xs text-blue-600">（已在報表中）</span>
-                </span>
+        <!-- 總計區域 -->
+        <div class="mt-6 border-t pt-6">
+          <div class="flex justify-end">
+            <div class="w-full max-w-md space-y-3">
+              <div class="flex items-center justify-between text-sm text-gray-600">
+                <span>商品總金額（參考）</span>
+                <span>NT$ {{ formatNumber(totalAmount) }}</span>
               </div>
-              <TinyBadge type="primary">{{ currency(product.unitPrice) }}</TinyBadge>
+              <div class="flex items-center justify-between text-base">
+                <span class="text-gray-700">實際收付總額</span>
+                <span class="font-semibold text-blue-600">NT$ {{ formatNumber(totalActualAmount) }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-gray-700">加油支出金額</span>
+                <TinyInput type="number" class="w-36 text-right" min="0" v-model="fuelExpense" />
+              </div>
+              <div class="flex items-center justify-between gap-4">
+                <span class="text-gray-700">其他支出金額</span>
+                <TinyInput type="number" class="w-36 text-right" min="0" v-model="otherExpense" />
+              </div>
+              <a-divider />
+              <div class="flex items-center justify-between text-base font-semibold">
+                <span>預估結餘</span>
+                <span>NT$ {{ formatNumber(totalActualAmount - fuelExpense - otherExpense) }}</span>
+              </div>
             </div>
           </div>
         </div>
+      </CardContent>
+    </div>
+
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--       新增商品彈窗         -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <a-modal v-model:visible="showProductDialog" title="新增商品" width="520px">
+      <template #footer>
+        <a-button @click="closeAddProductDialog">取消</a-button>
+        <a-button type="primary" @click="handleConfirmAddProducts" :disabled="!newProduct || !newCustomer"> 確認新增 </a-button>
+      </template>
+
+      <AForm layout="vertical">
+        <div class="space-y-4">
+          <AFormItem label="選擇商品" required>
+            <InfiniteSelect v-model="newProduct" dataSource="products" placeholder="請選擇商品" type="outline" />
+          </AFormItem>
+          <AFormItem label="選擇客戶" required>
+            <InfiniteSelect v-model="newCustomer" dataSource="customers" placeholder="請選擇客戶" type="outline" />
+          </AFormItem>
+          <div class="grid grid-cols-2 gap-4">
+            <AFormItem label="數量">
+              <TinyInput type="number" v-model="newQuantity" min="0" />
+            </AFormItem>
+            <AFormItem label="單價">
+              <TinyInput type="number" v-model="newUnitPrice" min="0" />
+            </AFormItem>
+          </div>
+          <AFormItem label="付款方式">
+            <TinySelect v-model="newPaymentMethod" :options="paymentOptions" />
+          </AFormItem>
+          <AFormItem label="備註">
+            <TinyInput v-model="newNote" placeholder="選填" />
+          </AFormItem>
+        </div>
+      </AForm>
+
+      <!-- 顯示選擇的商品資訊 -->
+      <div v-if="newProduct" class="mt-4 rounded-md bg-blue-50 p-3 text-sm text-blue-700">
+        <p><strong>已選商品：</strong>{{ newProduct.name }}</p>
+        <p><strong>類別：</strong>{{ newProduct.categoryName || '—' }}</p>
+        <p><strong>基礎單價：</strong>NT$ {{ formatNumber(newProduct.basePriceAmount) }}</p>
       </div>
-    </TinyDialogBox>
-  </div>
+    </a-modal>
+  </Card>
 </template>
+
+<script setup>
+import { ref, computed, watch, onMounted, nextTick, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { TinyInput, TinySelect } from '@opentiny/vue';
+import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import { useSystemStore } from '@/stores/system';
+import { useMainStore } from '@/stores/LoadingStore';
+import { useTimezoneStore } from '@/stores/TimezoneStore';
+import { useSelectOptions } from '@/composables/useSelectOptions';
+import { DeliveryReportGetById, DeliveryReportUpdatePut } from '@/assets/API/DeliveryReports.js';
+import { Message } from '@arco-design/web-vue';
+import { useI18n } from 'vue-i18n';
+
+const props = defineProps({
+  uuid: { type: String, default: '' },
+});
+
+const router = useRouter();
+const systemStore = useSystemStore();
+const mainStore = useMainStore();
+const timezoneStore = useTimezoneStore();
+const { t } = useI18n();
+const { paymentOptions, weekDayOptions } = useSelectOptions();
+
+/** 常數相關 **/
+const EMPTY_PLACEHOLDER = '—';
+const weekDayDisplayOptions = computed(() => weekDayOptions.value.map((o) => o.text)); //出貨星期選項（顯示用）
+// 注意：商品和客戶資料現在由 API 回傳，不再使用 mock 資料
+// InfiniteSelect 元件會直接從 dataSource 載入資料
+
+/** 共用工具 **/
+const formatNumber = (value) => {
+  if (value === null || value === undefined) return EMPTY_PLACEHOLDER;
+  return Number(value).toLocaleString();
+}; //格式化數字
+const sumProductsField = (items, field) => items.reduce((sum, item) => sum + Number(item[field] || 0), 0); //計算欄位總和
+const getCustomPrice = (customer, productId) => {
+  // 從客戶的自定義價格中取得該商品的價格
+  const customPrices = customer?.customFields?.customPrices || [];
+  // 支援兩種格式：cp.productId 或 cp.product.id
+  const customPrice = customPrices.find((cp) => cp.productId === productId || cp.product?.id === productId);
+  return customPrice?.price ?? null;
+}; //取得客戶自定義價格
+const getProductName = (item) => item.product?.name || item.productName || ''; //取得商品名稱
+const getCustomerName = (item) => item.customer?.name || item.customerName || ''; //取得客戶名稱
+
+/** 狀態管理 **/
+const saving = ref(false);
+const reportData = ref(null);
+const editedProducts = ref([]);
+const fuelExpense = ref(0);
+const otherExpense = ref(0);
+const expandedItems = ref([]);
+const showProductDialog = ref(false);
+const selectedWeekDays = ref([]);
+const originalWeekDays = ref([]);
+
+/** 新增商品彈窗狀態 **/
+const newProduct = ref(null);
+const newCustomer = ref(null);
+const newQuantity = ref(1);
+const newUnitPrice = ref(0);
+const newPaymentMethod = ref('現金');
+const newNote = ref('');
+
+/** 客戶相關 **/
+watch(newCustomer, (customer) => {
+  if (!customer) return;
+  // 更新付款方式
+  const paymentMethod = customer.customFields?.paymentMethod;
+  if (paymentMethod) {
+    newPaymentMethod.value = paymentMethod;
+  }
+  // 檢查是否有該商品的自定義價格
+  if (newProduct.value) {
+    const customPrice = getCustomPrice(customer, newProduct.value.id);
+    if (customPrice !== null) {
+      newUnitPrice.value = customPrice;
+    }
+  }
+}); //監聯客戶變更
+const handleAddCustomer = (productName) => {
+  // 從現有記錄中取得該商品的資訊
+  const sampleProduct = editedProducts.value.find((product) => {
+    const name = product.productId?.name || product.productName;
+    return name === productName;
+  });
+
+  if (!sampleProduct) {
+    Message.warning('找不到該商品的資訊');
+    return;
+  }
+
+  // 取得商品物件和單價
+  const productObj = sampleProduct.productId || null;
+  const unitPrice = sampleProduct.unitPrice || productObj?.basePriceAmount || 0;
+
+  const newProductRecord = {
+    productId: productObj, // 保持完整商品物件
+    customerId: null, // 客戶待選擇
+    productName: productName,
+    productCategory: productObj?.categoryName || sampleProduct.productCategory || '',
+    customerName: '',
+    quantity: 0,
+    unitPrice,
+    amount: 0,
+    actualAmount: 0,
+    paymentMethod: '現金',
+    note: '',
+  };
+
+  editedProducts.value = [...editedProducts.value, newProductRecord];
+  Message.success('已新增客戶記錄，請選擇客戶');
+}; //新增客戶到商品
+const handleDeleteCustomer = async (index) => {
+  try {
+    await mainStore.SWAL_Confirm('確定要刪除此客戶記錄嗎？', '此操作無法復原');
+    editedProducts.value = editedProducts.value.filter((_, i) => i !== index);
+    Message.success('已刪除客戶記錄');
+  } catch (error) {
+    if (error !== 'cancel') console.error(error);
+  }
+}; //刪除客戶
+
+/** 計算屬性 **/
+const groupedProducts = computed(() =>
+  editedProducts.value.reduce((acc, product, index) => {
+    // 支援新格式（productId 為物件）和舊格式（productName 為字串）
+    const productName = product.productId?.name || product.productName || '未知商品';
+    if (!acc[productName]) acc[productName] = [];
+    acc[productName].push({ ...product, originalIndex: index });
+    return acc;
+  }, {}),
+); //依商品名稱分組
+const groupedEntries = computed(() => Object.entries(groupedProducts.value)); //分組項目
+const totalQuantity = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.quantity || 0), 0)); //總數量
+const totalActualAmount = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.actualAmount || 0), 0)); //實際收付總額
+const totalAmount = computed(() => editedProducts.value.reduce((sum, product) => sum + Number(product.amount || 0), 0)); //商品總金額
+const allExpanded = computed(() => {
+  const groupCount = Object.keys(groupedProducts.value).length;
+  return groupCount > 0 && expandedItems.value.length === groupCount;
+}); //是否全部展開
+const loadReport = async () => {
+  if (!props.uuid) {
+    reportData.value = null;
+    editedProducts.value = [];
+    mainStore.setLoading(false);
+    return;
+  }
+  mainStore.setLoading(true);
+  try {
+    const response = await DeliveryReportGetById(props.uuid);
+    const data = response?.data?.data;
+    if (!data) {
+      reportData.value = null;
+      editedProducts.value = [];
+      return;
+    }
+
+    // 解析出貨星期：優先使用 deliveryDaysLabels，其次從 note 欄位解析
+    let weekDaysArray = [];
+    if (Array.isArray(data.deliveryDaysLabels) && data.deliveryDaysLabels.length > 0) {
+      weekDaysArray = data.deliveryDaysLabels;
+    } else if (data.note) {
+      weekDaysArray = data.note.split('、').filter(Boolean);
+    }
+
+    reportData.value = {
+      id: data.reportNumber || data.id,
+      uuid: data.id,
+      employeeId: data.driverId,
+      employeeName: data.driverName,
+      reportDate: timezoneStore.formatDate(data.reportDate) || data.reportDate,
+      weekDays: weekDaysArray.join('、') || data.note || '',
+      selectedWeekDays: weekDaysArray,
+      products: data.items || [],
+      fuelExpense: data.fuelExpense || 0,
+      otherExpense: data.otherExpense || 0,
+      totalAmount: data.totalAmount || 0,
+      status: data.status,
+    };
+
+    editedProducts.value = (data.items || []).map((item) => {
+      // 取得商品和客戶物件（新格式為物件，舊格式可能為 ID）
+      const product = item.product || null;
+      const customer = item.customer || null;
+
+      // 載入時使用已儲存的單價，若無則使用商品基礎價格
+      // 注意：不要用客戶自定義價格覆蓋已儲存的價格，自定義價格只在新增或變更客戶時套用
+      const unitPrice = item.unitPrice || product?.basePriceAmount || 0;
+      const quantity = item.quantity || 0;
+      const amount = item.amount || quantity * unitPrice;
+
+      return {
+        id: item.id,
+        productId: product, // 完整商品物件（給 InfiniteSelect 使用）
+        customerId: customer, // 完整客戶物件（給 InfiniteSelect 使用）
+        productName: product?.name || item.productName || '', // 保留字串供顯示用
+        productCategory: product?.categoryName || item.productCategory || '',
+        customerName: customer?.name || item.customerName || '', // 保留字串供顯示用
+        quantity,
+        unitPrice,
+        amount,
+        actualAmount: item.actualPaymentAmount || amount || 0,
+        paymentMethod: item.paymentMethod || customer?.customFields?.paymentMethod || '現金',
+        note: item.note || '',
+        isConvertedToOrder: item.isConvertedToOrder || false,
+        orderId: item.orderId,
+      };
+    });
+
+    fuelExpense.value = data.fuelExpense || 0;
+    otherExpense.value = data.otherExpense || 0;
+    selectedWeekDays.value = [...weekDaysArray];
+    originalWeekDays.value = [...weekDaysArray];
+
+    // 展開所有商品分類（使用新格式取得商品名稱）
+    expandedItems.value = Array.from(new Set((data.items || []).map((item) => item.product?.name || item.productName || '未知商品')));
+  } catch (error) {
+    console.error('載入報表失敗:', error);
+    Message.error('載入報表失敗');
+    reportData.value = null;
+    editedProducts.value = [];
+  } finally {
+    mainStore.setLoading(false);
+  }
+}; //載入報表
+const handleSave = async () => {
+  if (!reportData.value) return;
+  saving.value = true;
+  try {
+    // 注意：後端期望的是 businessId (number)，不是 UUID
+    // 不送 driverId（除非需要更換司機）
+    // 不送 totalAmount（由後端計算）
+    const updateData = {
+      note: selectedWeekDays.value.join('、'),
+      fuelExpense: Number(fuelExpense.value) || 0, //加油支出
+      otherExpense: Number(otherExpense.value) || 0, //其他支出
+      items: editedProducts.value.map((item) => ({
+        productId: item.productId?.id, //商品ID
+        productName: item.productId?.name, //商品名稱
+        productCategory: item.productId?.categoryName, //商品類別
+        customerId: item.customerId?.id, //靠戶ID
+        customerName: item.customerId?.name, //客戶名稱
+        quantity: Number(item.quantity) || 0, //數量
+        unitPrice: Number(item.unitPrice) || 0, //單價
+        amount: Number(item.amount) || 0, //金額
+        actualPaymentAmount: Number(item.actualAmount) || 0, //實際收付
+        paymentMethod: item.paymentMethod || item.customerId?.customFields?.paymentMethod || item.customer?.customFields?.paymentMethod || '現金', //付款方式
+        note: item.note || '', //備註
+      })),
+    };
+    await DeliveryReportUpdatePut(reportData.value.uuid, updateData);
+    await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    saving.value = false;
+  }
+}; //儲存報表
+const handleToggleAll = () => {
+  const groupNames = Object.keys(groupedProducts.value);
+  if (!groupNames.length) return;
+  expandedItems.value = allExpanded.value ? [] : groupNames;
+}; //全部展開/收合
+
+/** 導航相關 **/
+const handleBack = () => {
+  router.push({ name: 'delivery-report-new' });
+}; //返回列表
+const handlePrint = () => {
+  window.print();
+}; //列印
+
+/** 選項相關 **/
+const handleWeekDayToggle = (weekDay, checked) => {
+  if (originalWeekDays.value.includes(weekDay)) return;
+  if (checked) {
+    selectedWeekDays.value = [...selectedWeekDays.value, weekDay];
+  } else {
+    selectedWeekDays.value = selectedWeekDays.value.filter((day) => day !== weekDay);
+  }
+}; //切換星期
+
+/** 商品明細相關 **/
+watch(newProduct, (product) => {
+  if (!product) {
+    newUnitPrice.value = 0;
+    return;
+  }
+  // 設定基礎單價
+  const basePrice = product.basePriceAmount || 0;
+  // 檢查客戶是否有自定義價格
+  if (newCustomer.value) {
+    const customPrice = getCustomPrice(newCustomer.value, product.id);
+    newUnitPrice.value = customPrice !== null ? customPrice : basePrice;
+  } else {
+    newUnitPrice.value = basePrice;
+  }
+}); //監聽商品變更
+const handleQuantityChange = (index, value) => {
+  const quantity = Number(value) || 0;
+  editedProducts.value[index].quantity = quantity;
+  const amount = quantity * Number(editedProducts.value[index].unitPrice || 0);
+  editedProducts.value[index].amount = amount;
+  editedProducts.value[index].actualAmount = amount;
+}; //變更數量
+const handleUnitPriceChange = (index, value) => {
+  const unitPrice = Number(value) || 0;
+  editedProducts.value[index].unitPrice = unitPrice;
+  const amount = unitPrice * Number(editedProducts.value[index].quantity || 0);
+  editedProducts.value[index].amount = amount;
+  editedProducts.value[index].actualAmount = amount;
+}; //變更單價
+const handleActualAmountChange = (index, value) => {
+  editedProducts.value[index].actualAmount = Number(value) || 0;
+}; //變更實際收付
+const handleCustomerChange = (index, customerValue) => {
+  if (!customerValue) {
+    editedProducts.value[index].customerId = null;
+    editedProducts.value[index].customerName = '';
+    return;
+  }
+
+  const row = editedProducts.value[index];
+  row.customerId = customerValue;
+  row.customerName = customerValue.name || '';
+
+  // 更新付款方式（從客戶自定義欄位取得）
+  const paymentMethod = customerValue.customFields?.paymentMethod;
+  if (paymentMethod) {
+    row.paymentMethod = paymentMethod;
+  }
+
+  // 檢查是否有該商品的自定義價格
+  const productId = row.productId?.id || row.productId;
+  if (productId) {
+    const customPrice = getCustomPrice(customerValue, productId);
+    if (customPrice !== null) {
+      row.unitPrice = customPrice;
+      // 重新計算金額
+      const quantity = Number(row.quantity) || 0;
+      row.amount = quantity * customPrice;
+      row.actualAmount = row.amount;
+    }
+  }
+}; //變更客戶
+const handlePaymentMethodChange = (index, method) => {
+  editedProducts.value[index].paymentMethod = method;
+}; //變更付款方式
+const handleNoteChange = (index, value) => {
+  editedProducts.value[index].note = value;
+}; //變更備註
+const resetAddProductDialog = () => {
+  newProduct.value = null;
+  newCustomer.value = null;
+  newQuantity.value = 1;
+  newUnitPrice.value = 0;
+  newPaymentMethod.value = '現金';
+  newNote.value = '';
+}; //重置新增商品彈窗
+const handleAddProductCategory = () => {
+  resetAddProductDialog();
+  showProductDialog.value = true;
+}; //開啟新增商品彈窗
+const closeAddProductDialog = () => {
+  showProductDialog.value = false;
+  resetAddProductDialog();
+}; //關閉新增商品彈窗
+const handleConfirmAddProducts = () => {
+  if (!newProduct.value) {
+    Message.warning('請選擇商品');
+    return;
+  }
+  if (!newCustomer.value) {
+    Message.warning('請選擇客戶');
+    return;
+  }
+
+  const product = newProduct.value;
+  const customer = newCustomer.value;
+  const quantity = Number(newQuantity.value) || 0;
+  const unitPrice = Number(newUnitPrice.value) || 0;
+  const amount = quantity * unitPrice;
+
+  const newProductRecord = {
+    productId: product, // 完整商品物件
+    customerId: customer, // 完整客戶物件
+    productName: product.name || '',
+    productCategory: product.categoryName || '',
+    customerName: customer.name || '',
+    quantity,
+    unitPrice,
+    amount,
+    actualAmount: amount,
+    paymentMethod: newPaymentMethod.value || customer.customFields?.paymentMethod || '現金',
+    note: newNote.value || '',
+  };
+
+  editedProducts.value = [...editedProducts.value, newProductRecord];
+
+  // 展開新增的商品分類
+  const productName = product.name || '未知商品';
+  if (!expandedItems.value.includes(productName)) {
+    expandedItems.value = [...expandedItems.value, productName];
+  }
+
+  closeAddProductDialog();
+  Message.success(`已新增商品「${productName}」`);
+}; //確認新增商品
+const handleDeleteProductCategory = async (productName) => {
+  try {
+    await mainStore.SWAL_Confirm(`確定要刪除所有「${productName}」的記錄嗎？`, '此操作無法復原');
+    editedProducts.value = editedProducts.value.filter((product) => {
+      const name = product.productId?.name || product.productName;
+      return name !== productName;
+    });
+    expandedItems.value = expandedItems.value.filter((name) => name !== productName);
+    Message.success(`已刪除 ${productName}`);
+  } catch (error) {
+    if (error !== 'cancel') console.error(error);
+  }
+}; //刪除商品類別
+
+const cleanupResize = systemStore.initializeWindowResize();
+onUnmounted(cleanupResize);
+onMounted(async () => {
+  await loadReport();
+  await nextTick();
+});
+</script>

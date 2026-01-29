@@ -18,7 +18,12 @@ const getUserTimezone = () => {
 }; //取得時區
 
 /** 一般Domain **/
-export const dataList = axios.create({ baseURL: host });
+export const dataList = axios.create({
+  baseURL: host,
+  paramsSerializer: {
+    indexes: null, // 陣列序列化格式：key=1&key=2&key=3（而非 key[]=1&key[]=2）
+  },
+});
 
 const loginEndpoints = [
   "/auth/login",

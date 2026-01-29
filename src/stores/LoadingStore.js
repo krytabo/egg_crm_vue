@@ -77,21 +77,41 @@ export const useMainStore = defineStore("main", {
       });
     },
     async SWAL_Error(error, customTitle, customIcon = "error") {
+      const fallbackMessage = i18n.global.t("swal.noDataFound") || "發生未知錯誤";
       let errorMessage = "";
+      // error?.response?.data?.message || error?.message || fallback;
+
+      const normalizeErrorList = (errors) => {
+        if (!Array.isArray(errors)) return [];
+        return errors
+          .map((item) => {
+            if (!item) return null;
+            if (typeof item === "string") return item;
+            if (typeof item === "object") {
+              if (item.message) return item.message;
+              if (item.code) return item.code;
+              return JSON.stringify(item);
+            }
+            return String(item);
+          })
+          .filter(Boolean);
+      };
 
       try {
         if (error) {
           if (typeof error === "string") {
             errorMessage = error;
           } else if (error?.response?.data) {
-            if (Array.isArray(error.response.data.errors)) {
-              errorMessage = error.response.data.errors.join(", ");
-            } else if (error.response.data.detail) {
-              errorMessage = error.response.data.detail;
-            } else if (error.response.data.message) {
-              errorMessage = error.response.data.message;
-            } else if (typeof error.response.data === "string") {
-              errorMessage = error.response.data;
+            const { data } = error.response;
+            const normalizedErrors = normalizeErrorList(data.errors);
+            if (normalizedErrors.length) {
+              errorMessage = normalizedErrors.join("\n");
+            } else if (data.detail) {
+              errorMessage = data.detail;
+            } else if (data.message) {
+              errorMessage = data.message;
+            } else if (typeof data === "string") {
+              errorMessage = data;
             }
           } else if (error?.message) {
             errorMessage = error.message;
@@ -103,11 +123,11 @@ export const useMainStore = defineStore("main", {
         }
 
         if (!errorMessage) {
-          errorMessage = i18n.global.t("swal.noDataFound") || "發生未知錯誤";
+          errorMessage = fallbackMessage;
         }
       } catch (e) {
         console.error("Error parsing error message:", e);
-        errorMessage = i18n.global.t("swal.noDataFound") || "發生未知錯誤";
+        errorMessage = fallbackMessage;
       }
 
       await Swal.fire({
@@ -138,7 +158,7 @@ export const useMainStore = defineStore("main", {
     }) {
       const result = await Swal.fire({
         customClass: {
-          cancelButton: "bg-[#f2f3f5] text-black"
+          cancelButton: "bg-[#f2f3f5] text-black!"
         },
         title: title || null,
         text: text || null,

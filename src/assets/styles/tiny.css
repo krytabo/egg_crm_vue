@@ -1,0 +1,17 @@
+.tiny-grid .tiny-grid-header__column:not(.col__selection) .tiny-grid-cell ,
+.default-header-text{
+    font-size: 16px !important;
+}
+
+.tiny-text-popup .text {
+    border: none !important;
+    background: #f2f3f5 !important;
+}
+
+.tiny-text-popup .popup {
+    border: 1px solid #165dff !important;
+}
+
+.tiny-grid.tiny-grid-editable .tiny-grid-body__column {
+    font-size: 16px !important;
+}

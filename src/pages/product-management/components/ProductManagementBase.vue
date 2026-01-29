@@ -1,120 +1,235 @@
 <!-- src/pages/product-management/components/ProductManagementBase.vue 產品共用列表 -->
 <template>
   <Card ref="containerRef">
-    <CardHeader>
-      <div class="flex flex-1 flex-col gap-1">
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          表頭            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CardHeader class="gap-20">
+      <div class="flex flex-col">
         <CardTitle>{{ categoryLabel }}資料列表</CardTitle>
         <p class="text-sm text-gray-500">共 {{ totalProducts }} 筆</p>
       </div>
-      <div class="flex items-center gap-3">
-        <Button type="danger" plain @click="clearFilter">清除全部搜尋</Button>
-        <Button type="primary" @click="openCreateDialog">新增{{ categoryLabel }}</Button>
+      <div class="flex flex-1 items-center justify-end gap-1">
+        <a-button @click="toggleSearch">{{ showMoreSearch ? t('collapseSearch', '收合篩選') : t('expandSearch', '展開篩選') }}</a-button>
+        <a-button status="danger" plain @click="clearFilter">{{ t('clearAllSearch', '清除全部搜尋') }}</a-button>
+        <a-button type="primary" @click="openCreateDialog">新增{{ categoryLabel }}</a-button>
       </div>
     </CardHeader>
+
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          內容            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <CardContent class="flex flex-col gap-4">
-      <div class="flex w-full flex-col gap-3 rounded-[10px] bg-[#f5f7fb] px-5 py-4">
-        <TinyForm label-suffix="：" label-width="100px" class="gap-y-0!">
-          <TinyFormItem label="庫存">
-            <div class="flex w-full gap-2">
-              <div class="flex flex-1 items-center justify-start">
-                <TinyCheckbox :model-value="filters.inStock" @update:model-value="(val) => toggleBooleanFilter('inStock', val)">僅顯示有庫存</TinyCheckbox>
-                <TinyCheckbox :model-value="filters.lowStock" @update:model-value="(val) => toggleBooleanFilter('lowStock', val)">低於補貨點</TinyCheckbox>
-              </div>
-              <TinyButton type="danger" plain @click="clearPriceFilter">清除價格</TinyButton>
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--         其他搜尋         -->
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
+        <AForm auto-label-width>
+          <AFormItem :label="t('stock', '庫存')">
+            <TinyCheckbox :model-value="filters.inStock" @update:model-value="(val) => toggleBooleanFilter('inStock', val)">{{ t('showInStockOnly', '僅顯示有庫存') }}</TinyCheckbox>
+            <TinyCheckbox :model-value="filters.lowStock" @update:model-value="(val) => toggleBooleanFilter('lowStock', val)">{{ t('lowReorderPoint', '低於補貨點') }}</TinyCheckbox>
+            <TinyCheckbox :model-value="filters.isPerishable" @update:model-value="(val) => toggleBooleanFilter('isPerishable', val)">{{ t('refrigeration', '冷藏需求') }}</TinyCheckbox>
+          </AFormItem>
+          <Collapsible :isOpen="showMoreSearch">
+            <div class="grid grid-cols-2 gap-2">
+              <AFormItem :label="t('salePriceAmount', '售價金額')">
+                <div class="flex items-center justify-start gap-2">
+                  <TinyNumeric v-model="filters.minPrice" :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+                  <TinyNumeric v-model="filters.maxPrice" :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+                </div>
+              </AFormItem>
+              <AFormItem :label="t('wholesalePrice', '批發價')">
+                <div class="flex items-center justify-start gap-2">
+                  <TinyNumeric
+                    v-model="filters.minWholesalePrice"
+                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                  <TinyNumeric
+                    v-model="filters.maxWholesalePrice"
+                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                </div>
+              </AFormItem>
+              <AFormItem :label="t('cashPrice', '現金價')">
+                <div class="flex items-center justify-start gap-2">
+                  <TinyNumeric
+                    v-model="filters.minCashPrice"
+                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                  <TinyNumeric
+                    v-model="filters.maxCashPrice"
+                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                </div>
+              </AFormItem>
+              <AFormItem :label="t('costPrice', '成本價')">
+                <div class="flex items-center justify-start gap-2">
+                  <TinyNumeric
+                    v-model="filters.minCostPrice"
+                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                  <TinyNumeric
+                    v-model="filters.maxCostPrice"
+                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
+                    class="w-full!"
+                    @change="handleGlobalSearch"
+                    @keyup.enter="handleGlobalSearch"
+                  />
+                </div>
+              </AFormItem>
+              <AFormItem :label="t('productUnit', '商品單位')">
+                <TinyInput v-model="filters.unit" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
+              </AFormItem>
             </div>
-          </TinyFormItem>
-
-          <div class="grid grid-cols-2 gap-2">
-            <TinyFormItem label="最低價格">
-              <TinyNumeric v-model="filters.minPrice" type="number" placeholder="請輸入金額" @keyup.enter="handleGlobalSearch" class="w-[300px]!" />
-            </TinyFormItem>
-
-            <TinyFormItem label="最高價格">
-              <TinyNumeric v-model="filters.maxPrice" type="number" placeholder="請輸入金額" @keyup.enter="handleGlobalSearch" class="w-[300px]!" />
-            </TinyFormItem>
-          </div>
-        </TinyForm>
+          </Collapsible>
+        </AForm>
       </div>
 
-      <CustomTinyGrid :data="productList" row-key="id" :height="640" :border="true" :row-id="'id'">
-        <CustomTinyGridColumn field="name" title="商品名稱" min-width="240" fixed="left" sortable :sort-field="'name'" :current-order="getColumnOrder('name')" @sort="handleColumnSort" @enter="handleGlobalSearch">
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--          列表            -->
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--<JsonViewer :value="basicDataList" boxed copyable />-->
+      <CustomTinyGrid :data="basicDataList" row-key="id" :height="systemStore.tableHeight" :border="true" :row-id="'id'">
+        <CustomTinyGridColumn
+          field="name"
+          :title="t('productName', '商品名稱')"
+          min-width="240"
+          fixed="left"
+          sortable
+          :sort-field="'name'"
+          :current-order="getColumnOrder('name')"
+          @sort="handleColumnSort"
+          @enter="handleGlobalSearch"
+        >
           <template #header>
             <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ categoryLabel }}名稱</span>
-              <TinyInput v-model="filters.name" placeholder="輸入名稱" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" />
+              <span class="text-[16px] text-gray-600">{{ t('productNameWithCategory', { category: categoryLabel }, `${categoryLabel}商品名稱`) }}</span>
+              <TinyInput v-model="filters.name" :placeholder="t('pleaseEnterName', '請輸入名稱')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
             </div>
           </template>
           <template #default="{ row }">
             <div class="flex flex-col">
               <span class="font-medium text-gray-900">{{ row.name }}</span>
-              <span class="text-xs text-gray-500">編號：{{ row.code || "—" }}</span>
+              <span class="text-xs text-gray-500">{{ t('codeColon', '代碼：') }}{{ row.code || '—' }}</span>
               <span v-if="row.description" class="text-xs text-gray-500">{{ row.description }}</span>
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="code" title="產品編號" :width="150" sortable :sort-field="'code'" :current-order="getColumnOrder('code')" @sort="handleColumnSort" @enter="handleGlobalSearch">
+        <!--<CustomTinyGridColumn
+          field="code"
+          :title="t('productCode', '商品編號')"
+          :width="160"
+          sortable
+          :sort-field="'code'"
+          :current-order="getColumnOrder('code')"
+          @sort="handleColumnSort"
+          @enter="handleGlobalSearch"
+        >
           <template #header>
             <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">產品編號</span>
-              <TinyInput v-model="filters.code" placeholder="輸入編號" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" />
+              <span class="text-[16px] text-gray-600">{{ t('productCode', '商品編號') }}</span>
+              <TinyInput v-model="filters.code" :placeholder="t('pleaseEnterCode', '請輸入編號')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" />
             </div>
           </template>
-          <template #default="{ row }">{{ row.code || "—" }}</template>
+          <template #default="{ row }">{{ row.code || '—' }}</template>
+        </CustomTinyGridColumn>-->
+        <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="100" sortable :sort-field="'unit'" :current-order="getColumnOrder('unit')" @sort="handleColumnSort">
+          <template #default="{ row }">{{ row.unit || defaultUnit || '—' }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="unit" title="單位" :width="100">
-          <template #default="{ row }">{{ row.unit || defaultUnit || "—" }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="basePrice" title="售價" :width="200">
+        <CustomTinyGridColumn field="basePrice" :title="t('salePrice', '售價')" :width="200" sortable :sort-field="'basePrice'" :current-order="getColumnOrder('basePrice')" @sort="handleColumnSort">
           <template #default="{ row }">
             <div class="flex flex-col">
-              <span>建議售價：{{ row.basePrice }}</span>
-              <span class="text-xs text-gray-500">批發：{{ row.wholesalePrice }} / 現金：{{ row.cashPrice }}</span>
+              <span>{{ t('suggestedRetailPriceColon', '建議售價：') }}{{ row.basePriceAmount }}</span>
+              <span class="text-xs text-gray-500">{{ t('wholesaleColon', '批發：') }}{{ row.wholesalePriceAmount }} / {{ t('cashColon', '現金：') }}{{ row.cashPriceAmount }}</span>
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="currentStock" title="當前庫存" :width="200" sortable :sort-field="'currentStock'" :current-order="getColumnOrder('currentStock')" @sort="handleColumnSort">
+        <CustomTinyGridColumn
+          field="currentStock"
+          :title="t('currentStock', '目前庫存')"
+          :width="200"
+          sortable
+          :sort-field="'currentStock'"
+          :current-order="getColumnOrder('currentStock')"
+          @sort="handleColumnSort"
+        >
           <template #default="{ row }">
             <div class="flex flex-col">
               <div class="flex items-center gap-2">
                 <span class="text-base font-medium text-gray-900">{{ row.currentStock }}</span>
-                <TinyTag :color="['#D4183D', '#fff']" v-if="row.currentStock === 0">無庫存</TinyTag>
-                <TinyTag v-else-if="isLowStock(row)" type="danger">低於補貨點</TinyTag>
+                <TinyTag :color="['#D4183D', '#fff']" v-if="row.currentStock === 0">{{ t('outOfStock', '缺貨') }}</TinyTag>
+                <TinyTag v-else-if="isLowStock(row)" type="danger">{{ t('belowReorderPoint', '低於補貨點') }}</TinyTag>
                 <!--<TinyTag v-else-if="row.inStock" type="info">有庫存</TinyTag>-->
               </div>
-              <span class="text-xs text-gray-500">補貨點：{{ row.reorderPoint || "—" }} · 安全庫存：{{ row.minStock || "—" }}</span>
+              <span class="text-xs text-gray-500">{{ t('reorderPointColon', '補貨點：') }}{{ row.reorderPoint || '—' }} · {{ t('minStockColon', '最低庫存：') }}{{ row.minStock || '—' }}</span>
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="vendor" title="供應商" min-width="200">
+        <CustomTinyGridColumn
+          field="vendor"
+          :title="t('vendor', '供應商')"
+          min-width="250"
+          sortable
+          :sort-field="'primaryVendorId'"
+          :current-order="getColumnOrder('primaryVendorId')"
+          @sort="handleColumnSort"
+        >
           <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">供應商</span>
-              <TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />
+            <div class="flex w-[190px] flex-col gap-1">
+              <span class="text-[16px] text-gray-600">{{ t('vendor', '供應商') }}</span>
+              <InfiniteSelect
+                v-model="filters.primaryVendorId"
+                dataSource="vendors"
+                type="outline"
+                :placeholder="t('pleaseSelect', '請選擇')"
+                allowClear
+                @change="handleVendorFilterChange"
+                class="w-[180px]"
+              />
+              <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
             </div>
           </template>
           <template #default="{ row }">
             <div class="flex flex-col gap-0.5">
-              <span>{{ row.vendor || "—" }}</span>
-              <span class="text-xs text-gray-500">ID：{{ row.primaryVendorId || "—" }}</span>
+              <span>{{ row.primaryVendorId?.name || '—' }}</span>
+              <span class="text-xs text-gray-500">{{ t('idColon', 'ID：') }}{{ row.primaryVendorId || '—' }}</span>
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="isPerishable" title="冷藏" :width="140" align="center">
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-gray-600">冷藏</span>
-              <TinySelect :model-value="filters.isPerishable" :options="perishableFilterOptions" placeholder="全部" class="h-8 text-xs" @update:model-value="updateIsPerishableFilter" />
-            </div>
-          </template>
+        <CustomTinyGridColumn
+          field="isPerishable"
+          :title="t('refrigeration', '冷藏需求')"
+          :width="160"
+          align="center"
+          sortable
+          :sort-field="'isPerishable'"
+          :current-order="getColumnOrder('isPerishable')"
+          @sort="handleColumnSort"
+        >
           <template #default="{ row }">
-            <TinyBadge :type="row.isPerishable ? 'info' : 'success'">{{ row.isPerishable ? "需冷藏" : "常溫" }}</TinyBadge>
+            <TinyBadge :type="row.isPerishable ? 'info' : 'success'">{{ row.isPerishable ? t('needsRefrigeration', '需冷藏') : t('roomTemperature', '常溫') }}</TinyBadge>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="tags" title="標籤" min-width="220">
+        <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220">
           <template #header>
             <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">標籤</span>
-              <TinyInput v-model="filters.tags" placeholder="輸入關鍵字" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
+              <span class="text-[16px] text-gray-600">{{ t('tags', '標籤') }}</span>
+              <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnterKeyword', '請輸入關鍵字')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
             </div>
           </template>
           <template #default="{ row }">
@@ -124,214 +239,250 @@
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="updatedAt" title="更新時間" :width="160" sortable :sort-field="'updatedAt'" :current-order="getColumnOrder('updatedAt')" @sort="handleColumnSort">
-          <template #default="{ row }">{{ row.updatedAt }}</template>
+        <CustomTinyGridColumn
+          field="updatedAt"
+          :title="t('updatedAt', '更新時間')"
+          :width="160"
+          sortable
+          :sort-field="'updatedAt'"
+          :current-order="getColumnOrder('updatedAt')"
+          @sort="handleColumnSort"
+        >
+          <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" title="狀態" fixed="right" :width="120" align="center">
+        <CustomTinyGridColumn
+          field="status"
+          :title="t('status', '狀態')"
+          fixed="right"
+          :width="150"
+          align="center"
+          sortable
+          :sort-field="'status'"
+          :current-order="getColumnOrder('status')"
+          @sort="handleColumnSort"
+        >
           <template #header>
             <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-gray-600">狀態</span>
-              <TinySelect :model-value="filters.status" :options="statusFilterOptions" placeholder="全部" class="h-8 text-xs" @update:model-value="updateStatusFilter" />
+              <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
+              <TinySelect :model-value="filters.status" :options="statusFilterOptions" :placeholder="t('all', '全部')" class="h-8 text-xs" @update:model-value="updateStatusFilter" />
             </div>
           </template>
           <template #default="{ row }">
             <a-tag :color="statusColorMap[row.status] || 'arcoblue'" size="large">{{ statusLabelMap[row.status] || row.status }}</a-tag>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn title="操作" :width="200" fixed="right" align="center">
+        <CustomTinyGridColumn :title="t('actions', '操作')" :width="200" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <Button variant="ghost" @click="openEditDialog(row)">編輯</Button>
-              <Button variant="ghost" @click="deleteProduct(row.id)">刪除</Button>
+              <button class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+              <button class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
             </div>
           </template>
         </CustomTinyGridColumn>
       </CustomTinyGrid>
-
-      <AppPagination class="md:w-auto" :current="pagination.page" :page-size="pagination.limit" :total="pagination.total" :page-size-options="pageSizeOptions" @change="CurrentChange" @page-size-change="SizeChange" />
+      <AppPagination
+        class="md:w-auto"
+        :current="pagination.page"
+        :page-size="pagination.limit"
+        :total="pagination.total"
+        :page-size-options="pageSizeOptions"
+        @change="CurrentChange"
+        @page-size-change="SizeChange"
+      />
     </CardContent>
   </Card>
 
-  <TinyDialogBox v-model:visible="dialogVisible" :title="dialogTitle" width="720px" :close-on-click-modal="false" top="50px">
-    <!--<JsonViewer :value="basicForm" boxed copyable />-->
-    <TinyForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" label-width="120px" label-position="top">
-      <div v-if="hasFakeData && !editingId" class="mb-3 flex justify-end">
-        <Button variant="outline" size="sm" @click="generateFakeData">產生假資料</Button>
-      </div>
-      <div class="grid gap-4 md:grid-cols-2">
-        <TinyFormItem label="商品名稱" prop="name">
-          <TinyInput v-model="basicForm.name" placeholder="請輸入" />
-        </TinyFormItem>
-        <TinyFormItem label="單位" prop="unit">
-          <TinyInput v-model="basicForm.unit" placeholder="例如：盒 / 桶 / 台" />
-        </TinyFormItem>
-        <TinyFormItem label="建議售價 (TWD)" prop="basePrice">
-          <TinyInput v-model="basicForm.basePrice" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="批發價格 (TWD)" prop="wholesalePrice">
-          <TinyInput v-model="basicForm.wholesalePrice" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="現金價格 (TWD)" prop="cashPrice">
-          <TinyInput v-model="basicForm.cashPrice" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="成本 (TWD)" prop="costPrice">
-          <TinyInput v-model="basicForm.costPrice" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="安全庫存" prop="minStock">
-          <TinyInput v-model="basicForm.minStock" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="最高庫存" prop="maxStock">
-          <TinyInput v-model="basicForm.maxStock" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="補貨點" prop="reorderPoint">
-          <TinyInput v-model="basicForm.reorderPoint" type="number" placeholder="0" />
-        </TinyFormItem>
-        <TinyFormItem label="供應商 ID">
-          <TinySelect v-model="basicForm.primaryVendorId" :options="vendorOptions" placeholder="請選擇供應商" filterable clearable />
-        </TinyFormItem>
-        <TinyFormItem label="標籤">
-          <TinyTextPopup v-model="basicForm.tags" placeholder="輸入後按 Enter 新增" style="width: 100%" class="w-full bg-white" />
-        </TinyFormItem>
-        <TinyFormItem label="狀態">
-          <TinySelect v-model="basicForm.status" :options="statusOptions" placeholder="請選擇" />
-        </TinyFormItem>
-      </div>
-      <TinyFormItem label="商品描述">
-        <TinyInput v-model="basicForm.description" type="textarea" rows="3" placeholder="輸入說明" />
-      </TinyFormItem>
-      <TinyFormItem label="易腐品">
-        <TinyCheckbox :model-value="basicForm.isPerishable" @update:model-value="(val) => (basicForm.isPerishable = val)">此商品需冷藏</TinyCheckbox>
-      </TinyFormItem>
-    </TinyForm>
+  <a-modal v-model:visible="dialogVisible" :title="dialogTitle" draggable :mask-closable="false" width="720px" title-align="start">
+    <perfect-scrollbar class="max-h-[600px] px-1">
+      <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" label-align="left" auto-label-width>
+        <div v-if="hasFakeData && !editingId" class="mb-3 flex justify-end">
+          <Button variant="outline" size="sm" @click="generateFakeData">{{ t('generateFakeData', '生成範例資料') }}</Button>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2">
+          <AFormItem :label="t('productName', '產品名稱')" field="name">
+            <CustomField v-model="basicForm.name" type="input" :placeholder="t('pleaseEnter', '請輸入')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('unit', '規格')" field="unit">
+            <CustomField v-model="basicForm.unit" type="input" :placeholder="t('unitExample', '例：瓶 / 盒 / 包')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('suggestedRetailPriceTWD', '建議售價（NT$）')" field="basePrice">
+            <CustomField v-model="basicForm.basePrice" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('wholesalePriceTWD', '批發價（NT$）')" field="wholesalePrice">
+            <CustomField v-model="basicForm.wholesalePrice" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('cashPriceTWD', '現金價（NT$）')" field="cashPrice">
+            <CustomField v-model="basicForm.cashPrice" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('costPriceTWD', '成本價（NT$）')" field="costPrice">
+            <CustomField v-model="basicForm.costPrice" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('minStock', '最低庫存')" field="minStock">
+            <CustomField v-model="basicForm.minStock" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('maxStock', '最高庫存')" field="maxStock">
+            <CustomField v-model="basicForm.maxStock" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('reorderPoint', '補貨點')" field="reorderPoint">
+            <CustomField v-model="basicForm.reorderPoint" type="number" placeholder="0" :min="0" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('vendorId', '供應商 ID')">
+            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('tags', '標籤')">
+            <CustomField v-model="basicForm.tags" type="input" :placeholder="t('tagsCommaSeparated', '標籤（以逗號分隔）')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('status', '狀態')">
+            <CustomField v-model="basicForm.status" type="select" :options="statusOptions" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
+        </div>
+        <AFormItem :label="t('productDescription', '商品描述')">
+          <CustomField v-model="basicForm.description" type="textarea" :rows="3" :placeholder="t('pleaseEnterDescription', '請輸入商品描述')" allowClear />
+        </AFormItem>
+        <AFormItem :label="t('isPerishable', '是否需冷藏')">
+          <TinyCheckbox :model-value="basicForm.isPerishable" @update:model-value="(val) => (basicForm.isPerishable = val)">{{ t('thisProductNeedsRefrigeration', '此商品需冷藏') }}</TinyCheckbox>
+        </AFormItem>
+      </AForm>
+    </perfect-scrollbar>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <Button variant="ghost" @click="dialogVisible = false">取消</Button>
-        <Button :disabled="isSaving" :loading="isSaving" @click="saveProduct">{{ isSaving ? "儲存中..." : "儲存" }}</Button>
+        <Button variant="ghost" @click="dialogVisible = false">{{ t('cancel', '取消') }}</Button>
+        <Button :disabled="isSaving" :loading="isSaving" @click="saveData">{{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}</Button>
       </div>
     </template>
-  </TinyDialogBox>
+  </a-modal>
 </template>
 
 <script setup>
-import { computed, reactive, ref, onMounted, watch } from "vue";
-import { format } from "date-fns";
-import { TinyButton, TinyInput, TinySelect, TinyCheckbox, TinyForm, TinyFormItem, TinyDialogBox, TinyBadge, TinyTextPopup, TinyTag } from "@opentiny/vue";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { CustomTinyGrid, CustomTinyGridColumn } from "@/components/Table/CustomTable";
-import AppPagination from "@/components/ui/AppPagination.vue";
-import Notify from "@opentiny/vue-notify";
-import { ProductListGet, ProductCreatePost, ProductUpdatePatch, ProductDeleteById, ProductGetByID } from "@/assets/API/Product";
-import { useContentWidth } from "@/composables/useContentWidth";
-import { JsonViewer } from "vue3-json-viewer";
-import { useMainStore } from "@/stores/LoadingStore";
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { ProductCreatePost, ProductDeleteById, ProductGetByID, ProductListGet, ProductUpdatePatch } from '@/assets/API/Product';
+import { VendorListGet } from '@/assets/API/Vendor';
+import { TinyBadge, TinyButton, TinyCheckbox, TinyInput, TinyNumeric, TinySelect, TinyTag } from '@opentiny/vue';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
+import { Collapsible } from '@kousum/semi-ui-vue';
+import AppPagination from '@/components/ui/AppPagination.vue';
+import CustomField from '@/components/Form/CustomField.vue';
+import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import { useMainStore } from '@/stores/LoadingStore';
+import { useTimezoneStore } from '@/stores/TimezoneStore';
+import { useContentWidth } from '@/composables/useContentWidth';
+import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
+import { SquarePen, Trash2 } from 'lucide-vue-next';
+import { debounce } from 'lodash';
+import { useI18n } from 'vue-i18n';
+import { useSystemStore } from '@/stores/system';
+import { JsonViewer } from 'vue3-json-viewer';
 
 const props = defineProps({
   categoryId: { type: Number, required: true },
   categoryLabel: { type: String, required: true },
-  defaultUnit: { type: String, default: "" },
+  defaultUnit: { type: String, default: '' },
   defaultPerishable: { type: Boolean, default: false },
-  productTypeCode: { type: String, default: "FINISHED_GOOD" },
-  fakeDataType: { type: String, default: "" }
+  productTypeCode: { type: String, default: 'FINISHED_GOOD' },
+  fakeDataType: { type: String, default: '' },
 });
-
 const { containerRef } = useContentWidth();
 const mainStore = useMainStore();
+const timezoneStore = useTimezoneStore();
+const systemStore = useSystemStore();
+const { t } = useI18n();
 
-/** 常數與選項 **/
+/** 常數相關 **/
+const isCreate = computed(() => dialogMode.value === 'create'); //是否為新增模式
+const isEdite = computed(() => dialogMode.value === 'edit'); //是否為編輯模式
+const sortFieldMap = {
+  name: 'name',
+  code: 'code',
+  unit: 'unit',
+  basePrice: 'basePrice',
+  currentStock: 'currentStock',
+  primaryVendorId: 'primaryVendorId',
+  isPerishable: 'isPerishable',
+  status: 'status',
+  updatedAt: 'updatedAt',
+  createdAt: 'createdAt',
+}; //排序欄位映射
+const statusColorMap = {
+  ACTIVE: 'arcoblue',
+  INACTIVE: 'orange',
+  DELETED: 'red',
+}; //狀態顏色對應
+const fakeDataPresets = {
+  eggs: {
+    name: '新鮮雞蛋 (30顆裝)',
+    unit: '盒',
+    description: '農場直送新鮮雞蛋，30顆家庭號包裝',
+    basePrice: '180',
+    wholesalePrice: '150',
+    cashPrice: '170',
+    costPrice: '120',
+    minStock: '10',
+    maxStock: '500',
+    reorderPoint: '20',
+    tags: '新鮮,農場直送,優質',
+    isPerishable: true,
+  },
+  bottledWater: {
+    name: '悅氏礦泉水 20L',
+    unit: '桶',
+    description: '悅氏品牌礦泉水，20公升桶裝，採用天然山泉水源',
+    basePrice: '120',
+    wholesalePrice: '100',
+    cashPrice: '110',
+    costPrice: '80',
+    minStock: '50',
+    maxStock: '1000',
+    reorderPoint: '100',
+    tags: '悅氏,礦泉水,20L,桶裝水',
+    isPerishable: true,
+  },
+  waterDispenser: {
+    name: 'Panasonic 智能溫控飲水機 TK-AS44',
+    unit: '台',
+    description: '具備冷熱水功能的智能飲水機，節能設計',
+    basePrice: '12800',
+    wholesalePrice: '11000',
+    cashPrice: '12000',
+    costPrice: '9500',
+    minStock: '5',
+    maxStock: '50',
+    reorderPoint: '10',
+    tags: 'Panasonic,飲水機,智能溫控',
+    isPerishable: false,
+  },
+}; //假資料預設值
+
+/** 選項相關 **/
 const statusOptions = [
-  { label: "啟用", value: "ACTIVE" },
-  { label: "停用", value: "INACTIVE" },
-  { label: "刪除", value: "DELETED" }
-];
+  { label: '啟用', value: 'ACTIVE' },
+  { label: '停用', value: 'INACTIVE' },
+  { label: '刪除', value: 'DELETED' },
+]; //狀態選項
 const statusLabelMap = statusOptions.reduce((acc, option) => {
   acc[option.value] = option.label;
   return acc;
 }, {}); //狀態顯示文字
-const statusColorMap = {
-  ACTIVE: "arcoblue",
-  INACTIVE: "orange",
-  DELETED: "red"
-}; //狀態顏色對應
-const statusFilterOptions = computed(() => [{ label: "全部", value: "all" }, ...statusOptions]); //狀態篩選選單
-const perishableFilterOptions = [
-  { label: "全部", value: "all" },
-  { label: "是", value: "true" },
-  { label: "否", value: "false" }
-]; //冷藏篩選
-const sortFieldMap = {
-  name: "name",
-  code: "code",
-  currentStock: "currentStock",
-  updatedAt: "updatedAt"
-}; //排序欄位映射
-
-/** 狀態管理 **/
-const productList = ref([]);
-const basicFormRef = ref(null);
-const isSaving = ref(false);
-const dialogVisible = ref(false);
-const editingId = ref(null);
-watch(dialogVisible, (visible) => {
-  if (!visible) {
-    basicFormRef.value?.clearValidate?.();
-  }
-});
-
-/** 分頁設定 **/
-const pagination = reactive({
-  page: 1,
-  limit: 10,
-  total: 0,
-  totalPages: 1
-});
-const pageSizeOptions = [10, 20, 50, 100];
+const statusFilterOptions = computed(() => [{ label: '全部', value: 'all' }, ...statusOptions]); //狀態篩選選單
+const vendorOptions = ref([]); //供應商選項
+const vendorFilterOptions = computed(() => [{ label: '全部', value: '' }, ...vendorOptions.value]); //供應商篩選選項
+const hasFakeData = computed(() => Boolean(props.fakeDataType && fakeDataPresets[props.fakeDataType])); //是否有假資料
 const totalProducts = computed(() => pagination.total); //總筆數
-
-/** 篩選與查詢 **/
-const createDefaultFilters = () => ({
-  name: "",
-  code: "",
-  status: "all",
-  minPrice: "",
-  maxPrice: "",
-  primaryVendorId: "",
-  isPerishable: "all",
-  tags: "",
-  lowStock: false,
-  inStock: false
-});
-const filters = reactive(createDefaultFilters());
-const resetFilters = () => Object.assign(filters, createDefaultFilters());
-
-const vendorOptions = ref([]);
-const vendorFilterOptions = computed(() => [{ label: "全部", value: "" }, ...vendorOptions.value]);
-const registerVendorOption = (id, name, code) => {
-  if (!id) return;
-  if (vendorOptions.value.some((option) => option.value === id)) return;
-  const labelName = name || "未命名供應商";
-  const label = code ? `${labelName} (${code})` : labelName;
-  vendorOptions.value.push({ label, value: id });
-};
-
-const sortField = ref("createdAt");
-const sortDirection = ref("desc");
 
 /** 共用工具 **/
 const formatCurrency = (value) => {
   const amount = Number(value ?? 0);
-  if (Number.isNaN(amount)) return "NT$0";
-  return `NT$${amount.toLocaleString("zh-TW", { minimumFractionDigits: 0 })}`;
+  if (Number.isNaN(amount)) return 'NT$0';
+  return `NT$${amount.toLocaleString('zh-TW', { minimumFractionDigits: 0 })}`;
 }; //金額格式化
 const formatDate = (value) => {
-  if (!value) return "—";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return format(date, "yyyy-MM-dd");
+  if (!value) return t('unset', '未設定');
+  return timezoneStore.formatDate(value, 'YYYY-MM-DD') || t('unset', '未設定');
 }; //日期格式化
 const createPositiveRule = (label, { optional = false, allowZero = false } = {}) => ({
-  validator: (rule, value, callback) => {
-    if ((value === "" || value === null || value === undefined) && optional) {
+  validator: (value, callback) => {
+    if ((value === '' || value === null || value === undefined) && optional) {
       callback();
       return;
     }
@@ -339,148 +490,124 @@ const createPositiveRule = (label, { optional = false, allowZero = false } = {})
     const isNumber = Number.isFinite(numeric);
     const passes = allowZero ? numeric >= 0 : numeric > 0;
     if (!isNumber || !passes) {
-      callback(new Error(optional ? `${label}需為正數或留空` : `${label}需為${allowZero ? "大於等於 0" : "正數"}`));
+      const validationKey = optional ? 'rulePositiveOrEmpty' : allowZero ? 'rulePositiveOrZero' : 'rulePositive';
+      const allowZeroLabel = allowZero ? t('greaterThanOrEqualToZero', '需大於或等於 0') : t('positiveNumber', '請輸入正數');
+      const validationFallback = optional ? `${label} 可不填或需為正數` : allowZero ? `${label} 需為 0 或正數` : `${label} 需為正數`;
+      callback(new Error(t(validationKey, { label, allowZero: allowZeroLabel }, validationFallback)));
       return;
     }
     callback();
   },
-  trigger: ["blur", "change"]
-});
+  trigger: ['blur', 'change'],
+}); //建立正數驗證規則
 const buildPricePayload = (amount, { required = false } = {}) => {
   const numeric = Number(amount);
-  if (!Number.isFinite(numeric)) {
-    return undefined;
-  }
+  if (!Number.isFinite(numeric)) return undefined;
   if (!required && numeric <= 0) return undefined;
-  return { amount: numeric, currency: "TWD" };
+  return { amount: numeric, currency: 'TWD' };
 }; //組合金額欄位
 const isLowStock = (row) => {
   if (!row) return false;
   if (!row.reorderPoint) return false;
   return Number(row.currentStock || 0) < Number(row.reorderPoint || 0);
 }; //低庫存判斷
-
-/** 表單設定 **/
-const initializeForm = () => ({
-  name: "",
-  unit: props.defaultUnit || "",
-  description: "",
-  costPrice: "",
-  basePrice: "",
-  wholesalePrice: "",
-  cashPrice: "",
-  minStock: "",
-  maxStock: "",
-  reorderPoint: "",
-  primaryVendorId: "",
-  tags: "",
-  status: "ACTIVE",
-  isPerishable: props.defaultPerishable
-}); //建立預設表單
-const basicForm = ref(initializeForm());
-const dialogTitle = computed(() => (editingId.value ? `編輯${props.categoryLabel}` : `新增${props.categoryLabel}`)); //彈窗標題
-const resetForm = () => {
-  basicForm.value = initializeForm();
-  basicFormRef.value?.clearValidate?.();
-}; //重設表單
-const basicFormRules = {
-  name: [{ required: true, message: "請輸入商品名稱", trigger: "blur" }],
-  unit: [{ required: true, message: "請輸入單位", trigger: "blur" }],
-  basePrice: [{ required: true, message: "請輸入建議售價", trigger: "blur" }, createPositiveRule("建議售價")],
-  wholesalePrice: [createPositiveRule("批發價格", { optional: true })],
-  cashPrice: [createPositiveRule("現金價格", { optional: true })],
-  costPrice: [createPositiveRule("成本", { optional: true })],
-  minStock: [{ required: true, message: "請輸入最小庫存", trigger: "blur" }, createPositiveRule("最小庫存", { allowZero: true })],
-  maxStock: [{ required: true, message: "請輸入最大庫存", trigger: "blur" }, createPositiveRule("最大庫存", { allowZero: true })],
-  reorderPoint: [{ required: true, message: "請輸入補貨點", trigger: "blur" }, createPositiveRule("補貨點", { allowZero: true })]
-};
-const fakeDataPresets = {
-  eggs: {
-    name: "新鮮雞蛋 (30顆裝)",
-    unit: "盒",
-    description: "農場直送新鮮雞蛋，30顆家庭號包裝",
-    basePrice: "180",
-    wholesalePrice: "150",
-    cashPrice: "170",
-    costPrice: "120",
-    minStock: "10",
-    maxStock: "500",
-    reorderPoint: "20",
-    tags: "新鮮,農場直送,優質",
-    isPerishable: true
-  },
-  bottledWater: {
-    name: "悅氏礦泉水 20L",
-    unit: "桶",
-    description: "悅氏品牌礦泉水，20公升桶裝，採用天然山泉水源",
-    basePrice: "120",
-    wholesalePrice: "100",
-    cashPrice: "110",
-    costPrice: "80",
-    minStock: "50",
-    maxStock: "1000",
-    reorderPoint: "100",
-    tags: "悅氏,礦泉水,20L,桶裝水",
-    isPerishable: true
-  },
-  waterDispenser: {
-    name: "Panasonic 智能溫控飲水機 TK-AS44",
-    unit: "台",
-    description: "具備冷熱水功能的智能飲水機，節能設計",
-    basePrice: "12800",
-    wholesalePrice: "11000",
-    cashPrice: "12000",
-    costPrice: "9500",
-    minStock: "5",
-    maxStock: "50",
-    reorderPoint: "10",
-    tags: "Panasonic,飲水機,智能溫控",
-    isPerishable: false
+const registerVendorOption = (id, name, code) => {
+  if (!id) return;
+  if (vendorOptions.value.some((option) => option.value === id)) return;
+  const labelName = name || t('unnamedVendor', '未命名供應商');
+  const label = code ? `${labelName} (${code})` : labelName;
+  vendorOptions.value.push({ label, value: id });
+}; //註冊供應商選項
+const extractPriceAmount = (product, key) => {
+  if (!product) return '';
+  if (typeof product[`${key}Amount`] !== 'undefined') return String(product[`${key}Amount`]);
+  if (product[key]?.amount !== undefined) return String(product[key].amount);
+  return '';
+}; //提取價格金額
+const loadVendorOptions = async () => {
+  try {
+    const response = await VendorListGet({ page: 1, limit: 100, isActive: true });
+    const payload = response?.data ?? response ?? {};
+    const data = payload?.data ?? payload ?? {};
+    const items = data?.data ?? data?.items ?? [];
+    vendorOptions.value = items.map((vendor) => ({
+      label: vendor.name ? `${vendor.name}${vendor.code ? ` (${vendor.code})` : ''}` : vendor.id,
+      value: vendor.id,
+    }));
+  } catch (error) {
+    console.error('Failed to load vendor options', error);
   }
-};
-const hasFakeData = computed(() => Boolean(props.fakeDataType && fakeDataPresets[props.fakeDataType]));
-const applyFakeFormValues = (preset = {}) => {
-  Object.entries(preset).forEach(([key, value]) => {
-    if (!Object.prototype.hasOwnProperty.call(basicForm.value, key)) return;
-    if (key === "isPerishable") {
-      basicForm.value.isPerishable = Boolean(value);
-    } else if (key === "tags") {
-      basicForm.value.tags = String(value);
-    } else {
-      basicForm.value[key] = value;
-    }
-  });
-};
-const generateFakeData = () => {
-  const preset = fakeDataPresets[props.fakeDataType];
-  if (!preset) return;
-  applyFakeFormValues(preset);
-  basicFormRef.value?.clearValidate?.();
-  Notify({ type: "success", title: `${props.categoryLabel}假資料已套用` });
-};
+}; //載入供應商選項
 
-/** 資料取得 **/
-const normalizeListResponse = (response) => {
-  const payload = response?.data ?? response ?? {};
-  const data = payload?.data ?? payload ?? {};
-  const items = data?.data ?? data?.items ?? [];
-  const meta = data?.meta ?? data?.pagination ?? {};
-  return {
-    items: Array.isArray(items) ? items : [],
-    meta
-  };
-}; //解析列表回傳
-const mapProductRow = (product = {}) => {
+/** 篩選與查詢相關 **/
+const showMoreSearch = ref(false); //其他篩選展開收合
+const toggleSearch = () => {
+  showMoreSearch.value = !showMoreSearch.value;
+  if (showMoreSearch.value) systemStore.updateTableHeight(580);
+  if (!showMoreSearch.value) systemStore.updateTableHeight(360);
+}; //展開收合
+const sortField = ref('createdAt'); //排序欄位
+const sortDirection = ref('desc'); //排序方向
+const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : ''); //取得欄位排序狀態
+const handleColumnSort = async ({ field, order }) => {
+  if (!field) return;
+  if (!order) {
+    sortField.value = 'createdAt';
+    sortDirection.value = 'desc';
+  } else {
+    sortField.value = field;
+    sortDirection.value = order;
+  }
+  await getAPI();
+}; //切換欄位排序
+const toggleBooleanFilter = async (field, value) => {
+  filters[field] = Boolean(value);
+  await handleGlobalSearch();
+}; //切換布林篩選
+const updateIsPerishableFilter = async (value) => {
+  filters.isPerishable = value;
+  await handleGlobalSearch();
+}; //更新易腐篩選
+const updateStatusFilter = async (value) => {
+  filters.status = value;
+  await handleGlobalSearch();
+}; //更新狀態篩選
+const handleVendorFilterChange = async () => {
+  await handleGlobalSearch();
+}; //供應商篩選變更
+
+/** 取得資料 **/
+const defaultFilters = {
+  name: '',
+  code: '',
+  unit: '',
+  status: 'all',
+  minPrice: '',
+  maxPrice: '',
+  minWholesalePrice: '',
+  maxWholesalePrice: '',
+  minCashPrice: '',
+  maxCashPrice: '',
+  minCostPrice: '',
+  maxCostPrice: '',
+  primaryVendorId: '',
+  isPerishable: 'all',
+  tags: '',
+  lowStock: false,
+  inStock: false,
+}; //預設篩選條件
+const responseDataToList = (product = {}) => {
   const priceAmount = (target) => formatCurrency(target?.amount ?? 0);
   if (product.primaryVendor?.id || product.primaryVendorId) {
-    registerVendorOption(product.primaryVendor?.id || product.primaryVendorId, product.primaryVendor?.name || "", product.primaryVendor?.code || product.primaryVendorCode);
+    registerVendorOption(product.primaryVendor?.id || product.primaryVendorId, product.primaryVendor?.name || '', product.primaryVendor?.code || product.primaryVendorCode);
   }
+
   return {
     id: product.id || product.code,
-    code: product.code || "—",
-    name: product.name || "—",
-    description: product.description || "",
-    unit: product.unit || props.defaultUnit || "",
+    code: product.code || '—',
+    name: product.name || '—',
+    description: product.description || '',
+    unit: product.unit || props.defaultUnit || '',
     basePrice: priceAmount(product.basePrice),
     wholesalePrice: priceAmount(product.wholesalePrice),
     cashPrice: priceAmount(product.cashPrice),
@@ -489,118 +616,169 @@ const mapProductRow = (product = {}) => {
     minStock: Number(product.minStock ?? 0),
     maxStock: Number(product.maxStock ?? 0),
     reorderPoint: Number(product.reorderPoint ?? 0),
-    vendor: product.primaryVendor?.name || "",
-    primaryVendorId: product.primaryVendor?.id || product.primaryVendorId || "",
-    status: product.status || "ACTIVE",
+    vendor: product.primaryVendor?.name || '',
+    primaryVendorId: product.primaryVendor?.id || product.primaryVendorId || '',
+    status: product.status || 'ACTIVE',
     isPerishable: Boolean(product.isPerishable),
     tags: Array.isArray(product.tags) ? product.tags : [],
     updatedAt: formatDate(product.updatedAt || product.createdAt),
     inStock: Number(product.currentStock ?? 0) > 0,
-    raw: product
+    raw: product,
   };
-}; //轉換 API 商品資料
-const buildListParams = () => {
-  const params = {
+}; //轉換列表列資料
+const wrappedProductListGet = (params) => {
+  console.log(1111, params);
+  params = {
     page: pagination.page,
     limit: pagination.limit,
-    categoryId: props.categoryId
+    categoryId: props.categoryId,
   };
-  const searchCandidate = [filters.name, filters.code].find((value) => value && value.trim());
-  if (searchCandidate) params.search = searchCandidate.trim();
-  if (filters.status !== "all") params.status = filters.status;
-  if (filters.minPrice) params.minPrice = Number(filters.minPrice) || 0;
-  if (filters.maxPrice) params.maxPrice = Number(filters.maxPrice) || 0;
-  if (filters.primaryVendorId) params.primaryVendorId = filters.primaryVendorId.trim();
-  if (filters.isPerishable !== "all") params.isPerishable = filters.isPerishable === "true";
-  if (filters.tags) {
-    const tagValues = filters.tags
-      .split(",")
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-    if (tagValues.length) params.tags = tagValues;
-  }
-  if (filters.lowStock) params.lowStock = true;
-  if (filters.inStock) params.inStock = true;
+
+  const payload = {
+    ...params,
+  };
+
+  payload.name = filters.name; //名稱
+  payload.primaryVendorId = filters.primaryVendorId?.id; //廠商
+  if (filters.tags) payload.tags = filters.tags; //標籤
+  if (filters.status !== 'all') payload.status = filters.status; //狀態
+  if (filters.isPerishable === true) payload.isPerishable = true; //是否冷藏
+  if (filters.lowStock === true) payload.lowStock = true; //低於補貨點
+  if (filters.inStock === true) payload.inStock = true; //僅顯示有庫存
   if (sortField.value) {
-    params.sortBy = sortFieldMap[sortField.value] || sortField.value;
-    params.sortOrder = sortDirection.value;
-  }
-  return params;
-}; //整理查詢條件
-const extractError = (error, fallback) => error?.response?.data?.message || error?.message || fallback; //錯誤訊息整理
-const getAPI = async () => {
-  mainStore.setLoading(true);
-  try {
-    const response = await ProductListGet(buildListParams());
-    const { items, meta } = normalizeListResponse(response);
-    productList.value = items.map(mapProductRow);
-    pagination.limit = Number(meta.limit ?? meta.pageSize ?? pagination.limit) || pagination.limit;
-    pagination.page = meta.page ?? meta.currentPage ?? pagination.page;
-    pagination.total = meta.total ?? items.length;
-    pagination.totalPages = meta.totalPages ?? meta.pages ?? Math.ceil(Math.max(pagination.total, 1) / pagination.limit);
-  } catch (error) {
-    productList.value = [];
-    Notify({ type: "error", title: "載入失敗", message: extractError(error, "無法取得商品資料") });
-  } finally {
-    mainStore.setLoading(false);
-  }
-}; //取得商品列表
-const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : ""); //取得欄位排序狀態
-const handleColumnSort = async ({ field, order }) => {
-  if (!field) return;
-  if (!order) {
-    sortField.value = "createdAt";
-    sortDirection.value = "desc";
-  } else {
-    sortField.value = field;
-    sortDirection.value = order;
-  }
-  await getAPI();
-}; //切換欄位排序
-const CurrentChange = async (page) => {
-  const safePage = Math.min(Math.max(page, 1), pagination.totalPages || 1);
-  if (safePage === pagination.page) return;
-  pagination.page = safePage;
-  await getAPI();
-}; //切換分頁
-const SizeChange = async (size) => {
-  pagination.limit = Number(size) || 10;
-  pagination.page = 1;
-  await getAPI();
-}; //切換每頁筆數
-const handleGlobalSearch = async () => {
-  pagination.page = 1;
-  await getAPI();
-}; //表頭輸入搜尋
-const handleVendorFilterChange = async () => {
-  await handleGlobalSearch();
-}; //供應商篩選變更
-const toggleBooleanFilter = async (field, value) => {
-  filters[field] = Boolean(value);
-  await handleGlobalSearch();
-}; //切換布林篩選
-const updateIsPerishableFilter = async (value) => {
-  filters.isPerishable = value;
-  await handleGlobalSearch();
-}; //易腐篩選
-const updateStatusFilter = async (value) => {
-  filters.status = value;
-  await handleGlobalSearch();
-}; //更新狀態篩選
-const clearPriceFilter = async () => {
-  filters.minPrice = "";
-  filters.maxPrice = "";
-  await handleGlobalSearch();
-}; //清除價格設定
+    payload.sortBy = sortFieldMap[sortField.value] || sortField.value;
+    payload.sortOrder = sortDirection.value;
+  } //排序
+
+  return ProductListGet(payload);
+};
+const {
+  basicDataList,
+  filters,
+  pagination,
+  pageSizeOptions,
+  getDefaultAPI,
+  handleGlobalSearch,
+  clearFilter: _clearFilter,
+  CurrentChange,
+  SizeChange,
+} = usePaginatedSearchApi(wrappedProductListGet, defaultFilters);
+const getAPI = () => getDefaultAPI();
 const clearFilter = async () => {
-  resetFilters();
-  sortField.value = "createdAt";
-  sortDirection.value = "desc";
-  pagination.page = 1;
-  await getAPI();
+  sortField.value = 'createdAt';
+  sortDirection.value = 'desc';
+  _clearFilter();
 }; //清除全部搜尋條件
 
 /** 新增編輯相關 **/
+const dialogMode = ref('create');
+const dialogVisible = ref(false); //彈窗顯示狀態
+const editingId = ref(null); //編輯中的 ID
+const basicFormRef = ref(null); //表單參考
+const isSaving = ref(false); //儲存中
+const initializeForm = () => ({
+  name: '', //名稱
+  unit: props.defaultUnit || '', //規格
+  description: '', //商品描述
+  costPrice: '', //成本價
+  basePrice: '', //建議售價
+  wholesalePrice: '', //批發價
+  cashPrice: '', //現金價
+  minStock: '', //最低庫存
+  maxStock: '', //最高庫存
+  reorderPoint: '', //補貨點
+  primaryVendorId: '', //供應商
+  tags: '', //標籤
+  status: 'ACTIVE', //狀態
+  isPerishable: props.defaultPerishable, //是否需要冷藏
+}); //建立預設表單
+const basicForm = ref(initializeForm()); //表單資料
+const dialogTitle = computed(() =>
+  isEdite.value ? t('editProduct', { category: props.categoryLabel }, `編輯${props.categoryLabel}`) : t('addProduct', { category: props.categoryLabel }, `新增${props.categoryLabel}`),
+); //彈窗標題
+const basicFormRules = {
+  name: [{ required: true, message: t('productNameRequired', '請輸入商品名稱'), trigger: 'blur' }],
+  unit: [{ required: true, message: t('unitRequired', '請輸入單位'), trigger: 'blur' }],
+  basePrice: [{ required: true, message: t('suggestedRetailPriceRequired', '請輸入建議售價'), trigger: 'blur' }, createPositiveRule(t('suggestedRetailPrice', '建議售價'))],
+  wholesalePrice: [createPositiveRule(t('wholesalePrice', '批發價'), { optional: true })],
+  cashPrice: [createPositiveRule(t('cashPrice', '現金價'), { optional: true })],
+  costPrice: [createPositiveRule(t('cost', '成本'), { optional: true })],
+  minStock: [{ required: true, message: t('minStockRequired', '請輸入最低庫存'), trigger: 'blur' }, createPositiveRule(t('minStock', '最低庫存'), { allowZero: true })],
+  maxStock: [{ required: true, message: t('maxStockRequired', '請輸入最高庫存'), trigger: 'blur' }, createPositiveRule(t('maxStock', '最高庫存'), { allowZero: true })],
+  reorderPoint: [{ required: true, message: t('reorderPointRequired', '請輸入補貨點'), trigger: 'blur' }, createPositiveRule(t('reorderPoint', '補貨點'), { allowZero: true })],
+}; //表單驗證規則
+const resetForm = () => {
+  basicForm.value = initializeForm();
+  basicFormRef.value?.clearValidate?.();
+}; //重設表單
+const applyFakeFormValues = (preset = {}) => {
+  Object.entries(preset).forEach(([key, value]) => {
+    if (!Object.prototype.hasOwnProperty.call(basicForm.value, key)) return;
+    if (key === 'isPerishable') {
+      basicForm.value.isPerishable = Boolean(value);
+    } else if (key === 'tags') {
+      basicForm.value.tags = String(value);
+    } else {
+      basicForm.value[key] = value;
+    }
+  });
+}; //套用假資料到表單
+const generateFakeData = () => {
+  const preset = fakeDataPresets[props.fakeDataType];
+  if (!preset) return;
+  applyFakeFormValues(preset);
+  basicFormRef.value?.clearValidate?.();
+  mainStore.SWAL_Success(t('fakeDataApplied', { category: props.categoryLabel }, '已套用範例資料'));
+}; //產生假資料
+const fillFormFromProduct = (product) => {
+  if (!product) return;
+  if (product.primaryVendor?.id || product.primaryVendorId) {
+    registerVendorOption(product.primaryVendor?.id || product.primaryVendorId, product.primaryVendor?.name || '', product.primaryVendor?.code || product.primaryVendorCode);
+  }
+  basicForm.value.name = product.name || ''; //名稱
+  basicForm.value.unit = product.unit || props.defaultUnit || ''; //規格
+  basicForm.value.description = product.description || ''; //商品描述
+  basicForm.value.costPrice = Number(product.costPriceAmount); //成本價
+  basicForm.value.basePrice = Number(product.basePriceAmount); //建議售價
+  basicForm.value.wholesalePrice = Number(product.wholesalePriceAmount); //批發價
+  basicForm.value.cashPrice = Number(product.cashPriceAmount); //現金價
+  basicForm.value.minStock = Number(product.minStock) ?? 0; //最高庫存
+  basicForm.value.maxStock = Number(product.minStock) ?? 0; //最低庫存
+  basicForm.value.reorderPoint = Number(product.reorderPoint) ?? 0; //補貨點
+  basicForm.value.primaryVendorId = product.primaryVendor || {}; //供應商
+  basicForm.value.tags = Array.isArray(product.tags) ? product.tags.join(',') : product.tags || ''; //標籤
+  basicForm.value.status = product.status || 'ACTIVE'; //狀態
+  basicForm.value.isPerishable = Boolean(product.isPerishable); //是否需要冷藏
+}; //表單填入資料
+const getData = async (id) => {
+  if (!id) return;
+  try {
+    const response = await ProductGetByID(id);
+    const detail = response?.data?.data ?? response?.data ?? response;
+    fillFormFromProduct(detail);
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  }
+}; //取得單筆詳細資料
+const openCreateDialog = () => {
+  editingId.value = null;
+  resetForm();
+  dialogMode.value = 'create';
+  dialogVisible.value = true;
+}; //開啟新增視窗
+const editData = (row) => {
+  if (!row?.id) return;
+  editingId.value = row.id;
+  dialogMode.value = 'edit';
+  fillFormFromProduct(row.raw || row);
+  dialogVisible.value = true;
+  getData(row.id);
+}; //開啟編輯視窗
+const closeDialog = () => {
+  isSaving.value = true;
+  dialogVisible.value = false;
+  basicFormRef.value?.clearValidate?.();
+}; //關閉彈窗
 const preparePayload = () => {
   if (!basicForm.value.name) return null;
   const basePricePayload = buildPricePayload(basicForm.value.basePrice, { required: true });
@@ -608,144 +786,84 @@ const preparePayload = () => {
   const payload = {
     name: basicForm.value.name,
     categoryId: props.categoryId,
-    productTypeCode: props.productTypeCode || "FINISHED_GOOD",
-    unit: basicForm.value.unit || props.defaultUnit || "",
+    productTypeCode: props.productTypeCode || 'FINISHED_GOOD',
+    unit: basicForm.value.unit || props.defaultUnit || '',
     description: basicForm.value.description || undefined,
     basePrice: basePricePayload,
     minStock: Number(basicForm.value.minStock) || 0,
     maxStock: Number(basicForm.value.maxStock) || 0,
     reorderPoint: Number(basicForm.value.reorderPoint) || 0,
-    primaryVendorId: basicForm.value.primaryVendorId?.trim() || undefined,
-    isPerishable: Boolean(basicForm.value.isPerishable)
+    primaryVendorId: basicForm.value.primaryVendorId?.id,
+    isPerishable: Boolean(basicForm.value.isPerishable),
   };
   const optionalPrices = {
     wholesalePrice: buildPricePayload(basicForm.value.wholesalePrice),
     cashPrice: buildPricePayload(basicForm.value.cashPrice),
-    costPrice: buildPricePayload(basicForm.value.costPrice)
+    costPrice: buildPricePayload(basicForm.value.costPrice),
   };
   Object.entries(optionalPrices).forEach(([key, value]) => {
     if (value) payload[key] = value;
   });
-  const normalizedTags = String(basicForm.value.tags || "")
-    .split(",")
+  const normalizedTags = String(basicForm.value.tags || '')
+    .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean);
   if (normalizedTags.length) {
     payload.tags = normalizedTags;
   }
   if (editingId.value) {
-    payload.status = basicForm.value.status || "ACTIVE";
+    payload.status = basicForm.value.status || 'ACTIVE';
   }
   return payload;
 }; //整理表單資料
-const validateForm = async () => {
-  if (!basicFormRef.value) return true;
+const _submitForm = async () => {
+  const validateResult = await basicFormRef.value.validate();
+  if (validateResult) return false;
+
   try {
-    await basicFormRef.value.validate();
-    return true;
-  } catch {
-    return false;
-  }
-}; //表單驗證
-const extractPriceAmount = (product, key) => {
-  if (!product) return "";
-  if (typeof product[`${key}Amount`] !== "undefined") return String(product[`${key}Amount`]);
-  if (product[key]?.amount !== undefined) return String(product[key].amount);
-  return "";
-};
-const fillFormFromProduct = (product) => {
-  if (!product) return;
-  if (product.primaryVendor?.id || product.primaryVendorId) {
-    registerVendorOption(product.primaryVendor?.id || product.primaryVendorId, product.primaryVendor?.name || "", product.primaryVendor?.code || product.primaryVendorCode);
-  }
-  basicForm.value.name = product.name || "";
-  basicForm.value.unit = product.unit || props.defaultUnit || "";
-  basicForm.value.description = product.description || "";
-  basicForm.value.costPrice = extractPriceAmount(product, "costPrice");
-  basicForm.value.basePrice = extractPriceAmount(product, "basePrice");
-  basicForm.value.wholesalePrice = extractPriceAmount(product, "wholesalePrice");
-  basicForm.value.cashPrice = extractPriceAmount(product, "cashPrice");
-  basicForm.value.minStock = product.minStock ?? "";
-  basicForm.value.maxStock = product.maxStock ?? "";
-  basicForm.value.reorderPoint = product.reorderPoint ?? "";
-  basicForm.value.primaryVendorId = product.primaryVendor?.id || product.primaryVendorId || "";
-  basicForm.value.tags = Array.isArray(product.tags) ? product.tags.join(",") : product.tags || "";
-  basicForm.value.status = product.status || "ACTIVE";
-  basicForm.value.isPerishable = Boolean(product.isPerishable);
-}; //表單填入資料
-const loadProductDetail = async (id) => {
-  if (!id) return;
-  try {
-    const response = await ProductGetByID(id);
-    const detail = response?.data?.data ?? response?.data ?? response;
-    fillFormFromProduct(detail);
-  } catch (error) {
-    Notify({ type: "error", title: "讀取失敗", message: extractError(error, "無法取得商品資料") });
-  }
-}; //取得單筆詳細資料
-const openCreateDialog = () => {
-  editingId.value = null;
-  resetForm();
-  dialogVisible.value = true;
-}; //開啟新增視窗
-const openEditDialog = (row) => {
-  if (!row?.id) return;
-  editingId.value = row.id;
-  fillFormFromProduct(row.raw || row);
-  dialogVisible.value = true;
-  loadProductDetail(row.id);
-}; //開啟編輯視窗
-const saveProduct = async () => {
-  if (!(await validateForm())) return;
-  const payload = preparePayload();
-  if (!payload) return;
-  isSaving.value = true;
-  try {
+    isSaving.value = true;
+    const payload = preparePayload();
     if (editingId.value) {
       await ProductUpdatePatch(editingId.value, payload);
-      Notify({ type: "success", title: "商品資料已更新" });
+      await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
     } else {
       await ProductCreatePost(payload);
-      Notify({ type: "success", title: "已新增商品" });
+      mainStore.SWAL_Success(t('productAddedSuccessfully', '商品已新增'));
     }
-    dialogVisible.value = false;
+    closeDialog();
     await getAPI();
   } catch (error) {
-    Notify({ type: "error", title: "儲存失敗", message: extractError(error, "無法儲存商品資料") });
+    await mainStore.SWAL_Error(error);
   } finally {
     isSaving.value = false;
   }
 }; //儲存商品資料
-const deleteProduct = async (id) => {
+const saveData = debounce(_submitForm, 300, { leading: true, trailing: false }); //新增編輯儲存-防抖
+const deleteData = async (id) => {
   if (!id) return;
+  const confirmed = await mainStore.SWAL_DeleteConfirm();
+  if (!confirmed) return;
   mainStore.setLoading(true);
   try {
     await ProductDeleteById(id);
-    Notify({ type: "success", title: "商品已刪除" });
-    if (productList.value.length === 1 && pagination.page > 1) pagination.page -= 1;
+    mainStore.SWAL_Success(t('productDeletedSuccessfully', '商品已刪除'));
+    if (basicDataList.value.length === 1 && pagination.page > 1) pagination.page -= 1;
     await getAPI();
   } catch (error) {
-    Notify({ type: "error", title: "刪除失敗", message: extractError(error, "無法刪除該商品") });
+    await mainStore.SWAL_Error(error);
   } finally {
     mainStore.setLoading(false);
   }
 }; //刪除商品
 
-const loadVendorOptions = async () => {
-  try {
-    const { items } = normalizeListResponse(await VendorListGet({ page: 1, limit: 200, isActive: true }));
-    vendorOptions.value = items.map((vendor) => ({
-      label: vendor.name ? `${vendor.name}${vendor.code ? ` (${vendor.code})` : ""}` : vendor.id,
-      value: vendor.id
-    }));
-  } catch (error) {
-    console.error("Failed to load vendor options", error);
-  }
-};
-
+const cleanupResize = systemStore.initializeWindowResize();
+onUnmounted(cleanupResize);
 onMounted(async () => {
   await loadVendorOptions();
   await getAPI();
+
+  await nextTick();
+  systemStore.updateTableHeight(360);
 });
 </script>
 

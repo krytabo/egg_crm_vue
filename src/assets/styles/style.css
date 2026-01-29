@@ -1,0 +1,43 @@
+@import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@200&family=Noto+Sans+TC:wght@400;900&family=Paytone+One&family=Sigmar&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
+@import "tailwindcss";
+@import "./globals.css";
+@import "./arco.css";
+@import "./swal.css";
+@import "./tiny.css";
+@import "./Naive.css";
+
+#app {
+    font-family: "Manrope", 'M PLUS Rounded 1c', Inter, "-apple-system", BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "noto sans", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #2c3e50;
+    background: #f5f7fa;
+    font-size: 16px ;
+}
+
+[class*=tiny-] {
+    font-family: 'Manrope', 'M PLUS Rounded', sans-serif !important;
+}
+
+button {
+    cursor: pointer;
+}
+
+.table-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    height: 32px;
+    width: 32px;
+}
+.table-button:hover {
+    background-color: #e9ebef;
+}
+
+
+.toolbar-background {
+    background: inherit !important;
+    border: 0 !important;
+}

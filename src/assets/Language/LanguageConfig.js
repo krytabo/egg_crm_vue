@@ -19,6 +19,11 @@ export const systemLanguages = {
     zh_TW: () => import("@/assets/Language/Public/zh_TW.json"),
     zh_CN: () => import("@/assets/Language/Public/zh_CN.json"),
     en: () => import("@/assets/Language/Public/en.json")
+  },
+  Customer: {
+    zh_TW: () => import("@/assets/Language/Customer/zh_TW.json"),
+    zh_CN: () => import("@/assets/Language/Customer/zh_CN.json"),
+    en: () => import("@/assets/Language/Customer/en.json")
   }
   //其他更多語系加這裡...
 };

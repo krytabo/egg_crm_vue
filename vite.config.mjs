@@ -1,13 +1,15 @@
-import { defineConfig } from "vite";
-import tailwindcss from "@tailwindcss/vite";
-import vue from "@vitejs/plugin-vue";
-import vueJsx from "@vitejs/plugin-vue-jsx";
-import AutoImport from "unplugin-auto-import/vite";
-import Components from "unplugin-vue-components/vite";
-import { ArcoResolver } from "unplugin-vue-components/resolvers";
-import { TinyVueSingleResolver } from "@opentiny/unplugin-tiny-vue";
-import { createSvgIconsPlugin } from "vite-plugin-svg-icons";
-import path from "node:path";
+// vite.config.mjs
+import { defineConfig } from 'vite';
+import tailwindcss from '@tailwindcss/vite';
+import vue from '@vitejs/plugin-vue';
+import vueJsx from '@vitejs/plugin-vue-jsx';
+import AutoImport from 'unplugin-auto-import/vite';
+import Components from 'unplugin-vue-components/vite';
+import { ArcoResolver } from 'unplugin-vue-components/resolvers';
+import { TinyVueSingleResolver } from '@opentiny/unplugin-tiny-vue';
+import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
+import { TDesignResolver } from '@tdesign-vue-next/auto-import-resolver';
+import path from 'node:path';
 
 export default defineConfig({
   plugins: [
@@ -15,51 +17,56 @@ export default defineConfig({
     tailwindcss(),
     vueJsx(),
     AutoImport({
-      resolvers: [ArcoResolver(), TinyVueSingleResolver]
+      resolvers: [ArcoResolver(), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' })],
     }),
     Components({
-      resolvers: [
-        ArcoResolver({
-          sideEffect: true
-        }),
-        TinyVueSingleResolver
-      ]
+      resolvers: [ArcoResolver({ sideEffect: true }), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' })],
     }),
     createSvgIconsPlugin({
-      iconDirs: [path.resolve(process.cwd(), "src/assets/icon")],
-      symbolId: "icon-[name]",
-      inject: "body-last",
-      customDomId: "__svg__icons__dom__"
-    })
+      iconDirs: [path.resolve(process.cwd(), 'src/assets/icon')],
+      symbolId: 'icon-[name]',
+      inject: 'body-last',
+      customDomId: '__svg__icons__dom__',
+    }),
   ],
   resolve: {
-    extensions: [".js", ".jsx", ".vue", ".json"],
+    extensions: ['.js', '.jsx', '.vue', '.json'],
     alias: {
-      "@": path.resolve(__dirname, "./src")
-    }
+      '@': path.resolve(__dirname, './src'),
+    },
   },
   build: {
-    target: "esnext",
-    outDir: "build"
+    target: 'esnext',
+    outDir: 'build',
+    /*commonjsOptions: {
+      include: [/object-assign/, /url/, /eventemitter3/, /earcut/, /node_modules/]
+    }*/
   },
   server: {
-    port: 3000,
-    open: true,
+    host: true,
+    port: 5176,
     proxy: {
-      "/hostApi": {
-        target: "https://eggdrop.zeabur.app",
+      '/hostApi': {
+        target: 'https://eggdrop-crm.zeabur.app',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/hostApi/, ""),
+        rewrite: (path) => path.replace(/^\/hostApi/, ''),
         ws: true,
         configure: (proxy, options) => {
-          proxy.on("proxyRes", (proxyRes, req, res) => {
+          proxy.on('proxyRes', (proxyRes, req, res) => {
             //處理 CORS
-            proxyRes.headers["Access-Control-Allow-Origin"] = "*";
-            proxyRes.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS";
-            proxyRes.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization";
+            proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+            proxyRes.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS';
+            proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization';
           });
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
+  optimizeDeps: {
+    include: ['object-assign', 'url', 'eventemitter3', 'earcut'],
+    // exclude: ["@krytabo/ai-chat-vue3"]
+  },
+  ssr: {
+    noExternal: ['@krytabo/ai-chat-vue3'], // 如有 SSR/預渲染
+  },
 });

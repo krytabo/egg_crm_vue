@@ -1,0 +1,38 @@
+div:where(.swal2-container) button:where(.swal2-styled) {
+    height: 49.5px !important;
+}
+
+
+div:where(.swal2-container) button:where(.swal2-styled).swal2-default-outline:focus {
+    box-shadow: none !important;
+}
+.swal2-actions {
+    width: 90%;
+}
+div:where(.swal2-container) button:where(.swal2-styled).swal2-confirm {
+    color: #fff !important;
+}
+div:where(.swal2-container) button:where(.swal2-styled):where(.swal2-cancel){
+    color: #000 !important;
+}
+div:where(.swal2-container) button:where(.swal2-styled).swal2-confirm, div:where(.swal2-container) button:where(.swal2-styled).swal2-cancel {
+    flex: 1 1 0%;
+    border-radius: 999px !important;
+    font-size: 18px !important;
+}
+div:where(.swal2-container) div:where(.swal2-popup) {
+    min-width: 400px !important;
+    border-radius: 15px !important;
+}
+div:where(.swal2-icon).swal2-warning {
+    border-color: #f00 !important;
+    color: #f00 !important;
+}
+
+div:where(.swal2-container) button:where(.swal2-close):focus {
+    box-shadow: none !important;
+}
+
+div.swal2-container {
+    z-index: 10003 !important;
+}

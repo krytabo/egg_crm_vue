@@ -1,12 +1,13 @@
 <!-- src/components/layout/AppSidebar.vue 側邊選單 -->
 <script setup>
-import { computed, markRaw } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { BarChart3, Waves, Droplet, Egg, Factory, Package2, ShoppingCart, Truck, Users } from "lucide-vue-next";
+import { computed, markRaw } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { BarChart3, Waves, Droplet, Egg, Factory, Package2, ShoppingCart, Truck, Users } from 'lucide-vue-next';
 
 const props = defineProps({
-  collapsed: { type: Boolean, default: false }
+  collapsed: { type: Boolean, default: false },
 });
+const emit = defineEmits(['menu-click']);
 const makeLucideIcon = (IconComp) => markRaw(IconComp);
 const LucideUsersIcon = makeLucideIcon(Users);
 const LucideFactoryIcon = makeLucideIcon(Factory);
@@ -20,64 +21,79 @@ const LucideReportIcon = makeLucideIcon(BarChart3);
 
 const menuSections = [
   {
-    key: "section-dashboard",
-    label: "儀表板",
-    items: [{ id: "dashboard", label: "儀表板", remixIcon: "ri-dashboard-line" }]
+    key: 'section-dashboard',
+    label: '儀表板',
+    items: [{ id: 'dashboard', label: '儀表板', remixIcon: 'ri-dashboard-line' }],
   },
   {
-    key: "section-basic",
-    label: "基本資料",
-    remixIcon: "ri-database-2-line",
+    key: 'section-basic',
+    label: '基本資料',
+    remixIcon: 'ri-database-2-line',
     items: [
-      { id: "employees", label: "員工資料", remixIcon: "ri-user-3-line" },
-      { id: "customers", label: "客戶資料", remixIcon: "ri-team-line" },
-      { id: "potential-customers", label: "潛在客戶", remixIcon: "ri-user-search-line" },
-      { id: "vendors", label: "廠商資料", remixIcon: "ri-building-line" },
-      { id: "vehicles", label: "車輛資料", remixIcon: "ri-truck-line" },
-      { id: "product-types", label: "參數設定", remixIcon: "ri-settings-3-line" }
-    ]
+      { id: 'employees', label: '員工資料', remixIcon: 'ri-user-3-line' },
+      { id: 'customers', label: '客戶資料', remixIcon: 'ri-team-line' },
+      { id: 'potential-customers', label: '潛在客戶', remixIcon: 'ri-user-search-line' },
+      { id: 'vendors', label: '廠商資料', remixIcon: 'ri-building-line' },
+      { id: 'vehicles', label: '車輛資料', remixIcon: 'ri-truck-line' },
+      { id: 'drivers', label: '司機資料', remixIcon: 'ri-steering-2-line' },
+    ],
   },
   {
-    key: "section-product",
-    label: "商品管理",
-    remixIcon: "ri-box-1-line",
+    key: 'section-product',
+    label: '商品管理',
+    remixIcon: 'ri-box-1-line',
     items: [
-      { id: "bottled-water", label: "桶裝水資料", heroIcon: LucideDropletIcon },
-      { id: "eggs", label: "雞蛋資料", heroIcon: LucideEggIcon },
-      { id: "water-dispensers", label: "飲水機資料", heroIcon: LucideWavesIcon }
-    ]
+      { id: 'bottled-water', label: '桶裝水資料', heroIcon: LucideDropletIcon },
+      { id: 'eggs', label: '雞蛋資料', heroIcon: LucideEggIcon },
+      { id: 'water-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon },
+    ],
   },
   {
-    key: "section-orders",
-    label: "訂單管理",
-    remixIcon: "ri-shopping-bag-3-line",
+    key: 'section-orders',
+    label: '訂單管理',
+    remixIcon: 'ri-shopping-bag-3-line',
     items: [
-      { id: "bottled-water-orders", label: "桶裝水訂單", remixIcon: "ri-shopping-basket-line" },
-      { id: "egg-orders", label: "雞蛋訂單", remixIcon: "ri-shopping-cart-line" },
-      { id: "water-dispenser-orders", label: "飲水機訂單", remixIcon: "ri-file-list-3-line" }
-    ]
+      { id: 'bottled-water-orders', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line' },
+      { id: 'egg-orders', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line' },
+      { id: 'water-dispenser-orders', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line' },
+    ],
   },
   {
-    key: "section-report",
-    label: "庫存與報表",
-    remixIcon: "ri-file-chart-line",
+    key: 'section-report',
+    label: '庫存與報表',
+    remixIcon: 'ri-file-chart-line',
     items: [
-      { id: "inventory", label: "商品庫存", heroIcon: LucidePackageIcon },
-      { id: "delivery-report", label: "送貨報表", remixIcon: "ri-survey-line" },
-      { id: "delivery-report-new", label: "全新送貨報表", remixIcon: "ri-survey-line" }
-      // { id: "delivery-report-new", label: "全新送貨報表", heroIcon: HeroReportIcon }
-    ]
-  }
+      { id: 'inventory', label: '商品庫存', heroIcon: LucidePackageIcon },
+      { id: 'delivery-report-new', label: '送貨報表', remixIcon: 'ri-survey-line' },
+    ],
+  },
+  {
+    key: 'section-billing',
+    label: '帳務管理',
+    remixIcon: 'ri-money-dollar-circle-line',
+    items: [{ id: 'billing', label: '帳務管理', remixIcon: 'ri-money-dollar-circle-line' }],
+  },
+  {
+    key: 'section-parameters',
+    label: '參數設定',
+    remixIcon: 'ri-settings-3-line',
+    items: [
+      { id: 'product-types', label: '產品類型', remixIcon: 'ri-sound-module-line' },
+      { id: 'roles', label: '角色設定', remixIcon: 'ri-shield-user-line' },
+      { id: 'permissions', label: '權限設定', remixIcon: 'ri-key-2-line' },
+    ],
+  },
 ];
 
 const router = useRouter();
 const route = useRoute();
-const activeSidebarId = computed(() => route.meta?.sidebarId || route.name || "dashboard");
+const activeSidebarId = computed(() => route.meta?.sidebarId || route.name || 'dashboard');
 const defaultOpenKeys = menuSections.filter((section) => section.items.length > 1).map((section) => section.key);
 
 const handleMenuItemClick = (key) => {
   if (!key || key === activeSidebarId.value) return;
   router.push({ name: key });
+  emit('menu-click', key); // 通知父層選單已點擊（用於關閉手機版選單）
 };
 </script>
 

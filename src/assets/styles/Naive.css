@@ -1,0 +1,11 @@
+.n-tabs .n-tabs-rail {
+    background: #ececf0 !important;
+    border-radius: 9999px;
+}
+.n-tabs .n-tabs-rail .n-tabs-capsule {
+    border-radius: 9999px;
+}
+.n-tabs .n-tabs-tab .n-tabs-tab__label {
+    font-weight: 600;
+    color: #000 !important;
+}
