@@ -38,9 +38,6 @@ export default defineConfig({
   build: {
     target: 'esnext',
     outDir: 'build',
-    /*commonjsOptions: {
-      include: [/object-assign/, /url/, /eventemitter3/, /earcut/, /node_modules/]
-    }*/
   },
   server: {
     host: true,
@@ -53,7 +50,6 @@ export default defineConfig({
         ws: true,
         configure: (proxy, options) => {
           proxy.on('proxyRes', (proxyRes, req, res) => {
-            //處理 CORS
             proxyRes.headers['Access-Control-Allow-Origin'] = '*';
             proxyRes.headers['Access-Control-Allow-Methods'] = 'GET,POST,OPTIONS';
             proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization';
@@ -61,12 +57,5 @@ export default defineConfig({
         },
       },
     },
-  },
-  optimizeDeps: {
-    include: ['object-assign', 'url', 'eventemitter3', 'earcut'],
-    // exclude: ["@krytabo/ai-chat-vue3"]
-  },
-  ssr: {
-    noExternal: ['@krytabo/ai-chat-vue3'], // 如有 SSR/預渲染
   },
 });

@@ -77,66 +77,48 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { TinyCheckbox } from "@opentiny/vue";
-import { PermissionListGet } from "@/assets/API/Permission";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { TinyCheckbox } from '@opentiny/vue';
+import { PermissionListGet } from '@/assets/API/Permission';
+import { useSelectOptions } from '@/composables/useSelectOptions';
 
 const props = defineProps({
   modelValue: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   disabled: {
     type: Boolean,
-    default: false
+    default: false,
   },
   placeholder: {
     type: String,
-    default: "選擇權限"
+    default: '選擇權限',
   },
   allowClear: {
     type: Boolean,
-    default: true
+    default: true,
   },
   hideTrigger: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 });
-const emit = defineEmits(["update:modelValue", "change"]);
+const emit = defineEmits(['update:modelValue', 'change']);
+
+// 使用共用選項
+const { permissionResourceLabelMap, permissionActionShortLabelMap } = useSelectOptions();
 
 /** 權限名稱對應相關 **/
-const RESOURCE_LABELS = {
-  USER: "使用者管理",
-  ROLE: "角色管理",
-  CUSTOMER: "客戶管理",
-  ORDER: "訂單管理",
-  PRODUCT: "產品管理",
-  INVENTORY: "庫存管理",
-  BILLING: "帳務管理",
-  VENDOR: "供應商管理",
-  VEHICLE: "車輛管理",
-  DRIVER: "司機管理",
-  REPORT: "報表管理",
-  FILE: "檔案管理",
-  NOTIFICATION: "通知管理",
-  KPI: "KPI 儀表板"
-};
-const ACTION_LABELS = {
-  CREATE: "新增",
-  READ: "讀取/查詢",
-  UPDATE: "更新",
-  DELETE: "刪除",
-  EXPORT: "匯出",
-  IMPORT: "匯入"
-};
+const RESOURCE_LABELS = permissionResourceLabelMap; // 資源標籤映射
+const ACTION_LABELS = permissionActionShortLabelMap; // 操作標籤映射（簡短版）
 
 const triggerRef = ref(null);
 const dropdownRef = ref(null);
 const listRef = ref(null);
 const isOpen = ref(false);
 const loading = ref(false);
-const dropdownStyle = ref({ top: "0px", left: "0px", width: "0px" });
+const dropdownStyle = ref({ top: '0px', left: '0px', width: '0px' });
 const permissionGroups = ref([]);
 const totalPermissions = ref(0);
 const valueLabelMap = ref(new Map());
@@ -158,22 +140,22 @@ const buildGroups = (items = []) => {
   const groupMap = new Map();
   items.forEach((item) => {
     if (!item?.id) return;
-    const resource = item.resource || "UNKNOWN";
+    const resource = item.resource || 'UNKNOWN';
     if (!groupMap.has(resource)) {
       groupMap.set(resource, {
         resource,
-        label: RESOURCE_LABELS[resource] || resource,
-        children: []
+        label: RESOURCE_LABELS.value[resource] || resource,
+        children: [],
       });
     }
     const group = groupMap.get(resource);
-    const label = `${ACTION_LABELS[item.action] || item.action}（${item.action}）`;
+    const label = `${ACTION_LABELS.value[item.action] || item.action}（${item.action}）`;
     group.children.push({ value: item.id, label, action: item.action });
     valueLabelMap.value.set(item.id, `${group.label}／${label}`);
   });
   permissionGroups.value = [...groupMap.values()].map((group) => ({
     ...group,
-    children: group.children.sort((a, b) => a.label.localeCompare(b.label))
+    children: group.children.sort((a, b) => a.label.localeCompare(b.label)),
   }));
   totalPermissions.value = items.length;
   syncGroupSelection();
@@ -184,7 +166,7 @@ const syncGroupSelection = () => {
     return {
       ...group,
       isAllSelected: selectedCount === group.children.length && selectedCount > 0,
-      isPartial: selectedCount > 0 && selectedCount < group.children.length
+      isPartial: selectedCount > 0 && selectedCount < group.children.length,
     };
   });
 };
@@ -207,7 +189,7 @@ const gatAPI = async () => {
     }
     buildGroups(allItems);
   } catch (error) {
-    console.error("PermissionTreeSelect load error", error);
+    console.error('PermissionTreeSelect load error', error);
   } finally {
     loading.value = false;
   }
@@ -224,11 +206,11 @@ const toggleDropdown = async () => {
   await nextTick();
   updateDropdownPosition();
   if (!permissionGroups.value.length) await gatAPI();
-  document.addEventListener("mousedown", handleOutsideClick);
+  document.addEventListener('mousedown', handleOutsideClick);
 }; //選單開關
 const closeDropdown = () => {
   isOpen.value = false;
-  document.removeEventListener("mousedown", handleOutsideClick);
+  document.removeEventListener('mousedown', handleOutsideClick);
 }; //關閉選單
 const updateDropdownPosition = () => {
   const rect = triggerRef.value?.getBoundingClientRect();
@@ -236,7 +218,7 @@ const updateDropdownPosition = () => {
   dropdownStyle.value = {
     top: `${rect.bottom + 4}px`,
     left: `${rect.left}px`,
-    width: `${rect.width}px`
+    width: `${rect.width}px`,
   };
 };
 const handleOutsideClick = (event) => {
@@ -252,8 +234,8 @@ const toggleValue = (value) => {
   } else {
     newValue = [...selectedValues.value, value];
   }
-  emit("update:modelValue", newValue);
-  emit("change", newValue);
+  emit('update:modelValue', newValue);
+  emit('change', newValue);
   syncGroupSelection();
 };
 const toggleGroup = (group, checked) => {
@@ -267,19 +249,19 @@ const toggleGroup = (group, checked) => {
   } else {
     newValue = newValue.filter((value) => !childIds.includes(value));
   }
-  emit("update:modelValue", newValue);
-  emit("change", newValue);
+  emit('update:modelValue', newValue);
+  emit('change', newValue);
   syncGroupSelection();
 };
 const clearSelection = () => {
-  emit("update:modelValue", []);
-  emit("change", []);
+  emit('update:modelValue', []);
+  emit('change', []);
   syncGroupSelection();
 };
 watch(
   () => props.modelValue,
   () => syncGroupSelection(),
-  { deep: true }
+  { deep: true },
 );
 watch(
   () => props.hideTrigger,
@@ -288,14 +270,14 @@ watch(
       closeDropdown();
       if (!permissionGroups.value.length) gatAPI();
     }
-  }
+  },
 );
 
 onMounted(() => {
   if (props.hideTrigger || selectedValues.value.length) gatAPI();
 });
 onBeforeUnmount(() => {
-  document.removeEventListener("mousedown", handleOutsideClick);
+  document.removeEventListener('mousedown', handleOutsideClick);
 });
 </script>
 

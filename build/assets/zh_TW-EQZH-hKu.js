@@ -1,1 +1,0 @@
-const c="登入",a="或者",n="還沒有帳號嗎",o="請聯絡管理員",t="請輸入帳號",s="請輸入密碼",e="正在為您登入系統，請稍候...",l={login:"登入",or:"或者",noAccountYet:n,pleaseContactAdmin:o,pleaseEnterUsername:t,pleaseEnterPassword:s,loggingInPleaseWait:e};export{l as default,e as loggingInPleaseWait,c as login,n as noAccountYet,a as or,o as pleaseContactAdmin,s as pleaseEnterPassword,t as pleaseEnterUsername};

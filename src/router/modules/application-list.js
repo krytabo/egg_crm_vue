@@ -1,154 +1,139 @@
 import ApplicationLayout from '@/layouts/ApplicationLayout.vue';
-import DashboardPage from '@/pages/dashboard/DashboardPage.vue';
-import EmployeeManagementPage from '@/pages/basic-data/EmployeeManagementPage.vue';
-import CustomerManagementPage from '@/pages/basic-data/CustomerManagementPage.vue';
-import PotentialCustomerManagementPage from '@/pages/basic-data/PotentialCustomerManagementPage.vue';
-import VendorManagementPage from '@/pages/basic-data/VendorManagementPage.vue';
-import VehicleManagementPage from '@/pages/basic-data/VehicleManagementPage.vue';
-import DriverManagementPage from '@/pages/basic-data/DriverManagementPage.vue';
-import ProductTypeSettingsPage from '@/pages/parameter-settings/ProductTypeSettingsPage.vue';
-import RoleSettingsPage from '@/pages/parameter-settings/RoleSettingsPage.vue';
-import PermissionSettingsPage from '@/pages/parameter-settings/PermissionSettingsPage.vue';
-import BottledWaterManagementPage from '@/pages/product-management/BottledWaterManagementPage.vue';
-import EggManagementPage from '@/pages/product-management/EggManagementPage.vue';
-import WaterDispenserManagementPage from '@/pages/product-management/WaterDispenserManagementPage.vue';
-import InventoryManagementPage from '@/pages/inventory-reports/InventoryManagementPage.vue';
-import BottledWaterOrdersPage from '@/pages/order-management/BottledWaterOrdersPage.vue';
-import EggOrdersPage from '@/pages/order-management/EggOrdersPage.vue';
-import WaterDispenserOrdersPage from '@/pages/order-management/WaterDispenserOrdersPage.vue';
-import DataList from '@/pages/inventory-reports/DataList/index.vue';
-import DeliveryReportEditPage from '@/pages/inventory-reports/DeliveryReportEditPage.vue';
-import FormPage from '@/pages/inventory-reports/FormPage.vue';
-import BillingManagementPage from '@/pages/billing/BillingManagementPage.vue';
 
 const appChildren = [
+  // ===== Dashboard =====
   {
     path: 'dashboard',
     name: 'dashboard',
-    component: DashboardPage,
+    component: () => import('@/pages/dashboard/DataList.vue'),
     meta: { requiresAuth: true, sidebarId: 'dashboard', title: '儀表板' },
   },
+
+  // ===== BasicInfo 基本資料 =====
   {
-    path: 'employees',
-    name: 'employees',
-    component: EmployeeManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'employees', title: '員工資料' },
+    path: 'basic-info/users',
+    name: 'basic-info-users',
+    component: () => import('@/pages/BasicInfo/User/DataList/index.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-users', title: '員工資料' },
   },
   {
-    path: 'customers',
-    name: 'customers',
-    component: CustomerManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'customers', title: '客戶資料', language: 'Customer' },
+    path: 'basic-info/customers',
+    name: 'basic-info-customers',
+    component: () => import('@/pages/BasicInfo/Customer/DataList.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-customers', title: '客戶資料', language: 'Customer' },
   },
   {
-    path: 'potential-customers',
-    name: 'potential-customers',
-    component: PotentialCustomerManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'potential-customers', title: '潛在客戶', language: 'Customer' },
+    path: 'basic-info/leads',
+    name: 'basic-info-leads',
+    component: () => import('@/pages/BasicInfo/Customer/LeadList.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-leads', title: '潛在客戶', language: 'Customer' },
   },
   {
-    path: 'vendors',
-    name: 'vendors',
-    component: VendorManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'vendors', title: '廠商資料' },
+    path: 'basic-info/vendors',
+    name: 'basic-info-vendors',
+    component: () => import('@/pages/BasicInfo/Vendor/DataList/index.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-vendors', title: '廠商資料' },
   },
   {
-    path: 'vehicles',
-    name: 'vehicles',
-    component: VehicleManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'vehicles', title: '車輛資料' },
+    path: 'basic-info/vehicles',
+    name: 'basic-info-vehicles',
+    component: () => import('@/pages/BasicInfo/Car/DataList/index.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-vehicles', title: '車輛資料' },
   },
   {
-    path: 'drivers',
-    name: 'drivers',
-    component: DriverManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'drivers', title: '司機資料' },
+    path: 'basic-info/drivers',
+    name: 'basic-info-drivers',
+    component: () => import('@/pages/BasicInfo/Driver/DataList/index.vue'),
+    meta: { requiresAuth: true, sidebarId: 'basic-info-drivers', title: '司機資料' },
+  },
+
+  // ===== Settings 參數設定 =====
+  {
+    path: 'settings/product-types',
+    name: 'settings-product-types',
+    component: () => import('@/pages/Settings/ProductType.vue'),
+    meta: { requiresAuth: true, sidebarId: 'settings-product-types', title: '產品類型' },
   },
   {
-    path: 'product-types',
-    name: 'product-types',
-    component: ProductTypeSettingsPage,
-    meta: { requiresAuth: true, sidebarId: 'product-types', title: '產品類型' },
+    path: 'settings/roles',
+    name: 'settings-roles',
+    component: () => import('@/pages/Settings/Roles.vue'),
+    meta: { requiresAuth: true, sidebarId: 'settings-roles', title: '角色設定' },
   },
   {
-    path: 'roles',
-    name: 'roles',
-    component: RoleSettingsPage,
-    meta: { requiresAuth: true, sidebarId: 'roles', title: '角色設定' },
+    path: 'settings/permissions',
+    name: 'settings-permissions',
+    component: () => import('@/pages/Settings/Permission.vue'),
+    meta: { requiresAuth: true, sidebarId: 'settings-permissions', title: '權限設定' },
+  },
+
+  // ===== Products 商品管理 =====
+  {
+    path: 'products/water',
+    name: 'products-water',
+    component: () => import('@/pages/Products/WaterPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'products-water', title: '桶裝水資料' },
   },
   {
-    path: 'permissions',
-    name: 'permissions',
-    component: PermissionSettingsPage,
-    meta: { requiresAuth: true, sidebarId: 'permissions', title: '權限設定' },
+    path: 'products/eggs',
+    name: 'products-eggs',
+    component: () => import('@/pages/Products/EggPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'products-eggs', title: '雞蛋資料' },
   },
   {
-    path: 'bottled-water',
-    name: 'bottled-water',
-    component: BottledWaterManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'bottled-water', title: '桶裝水資料' },
+    path: 'products/dispensers',
+    name: 'products-dispensers',
+    component: () => import('@/pages/Products/MachinePage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'products-dispensers', title: '飲水機資料' },
+  },
+
+  // ===== Orders 訂單管理 =====
+  {
+    path: 'orders/water',
+    name: 'orders-water',
+    component: () => import('@/pages/Orders/WaterPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'orders-water', title: '桶裝水訂單', language: 'Customer' },
   },
   {
-    path: '',
-    name: 'eggs',
-    component: EggManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'eggs', title: '雞蛋資料' },
+    path: 'orders/eggs',
+    name: 'orders-eggs',
+    component: () => import('@/pages/Orders/EggPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'orders-eggs', title: '雞蛋訂單' },
   },
   {
-    path: 'water-dispensers',
-    name: 'water-dispensers',
-    component: WaterDispenserManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'water-dispensers', title: '飲水機資料' },
+    path: 'orders/dispensers',
+    name: 'orders-dispensers',
+    component: () => import('@/pages/Orders/MachinePage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'orders-dispensers', title: '飲水機訂單' },
+  },
+
+  // ===== Shipments 配送物流 =====
+  {
+    path: 'shipments/inventory',
+    name: 'shipments-inventory',
+    component: () => import('@/pages/Shipments/InventoryPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'shipments-inventory', title: '商品庫存' },
   },
   {
-    path: 'bottled-water-orders',
-    name: 'bottled-water-orders',
-    component: BottledWaterOrdersPage,
-    meta: { requiresAuth: true, sidebarId: 'bottled-water-orders', title: '桶裝水訂單', language: 'Customer' },
+    path: 'shipments/reports',
+    name: 'shipments-reports',
+    component: () => import('@/pages/Shipments/DataList/index.vue'),
+    meta: { requiresAuth: true, sidebarId: 'shipments-reports', title: '送貨報表' },
   },
   {
-    path: 'egg-orders',
-    name: 'egg-orders',
-    component: EggOrdersPage,
-    meta: { requiresAuth: true, sidebarId: 'egg-orders', title: '雞蛋訂單' },
-  },
-  {
-    path: 'water-dispenser-orders',
-    name: 'water-dispenser-orders',
-    component: WaterDispenserOrdersPage,
-    meta: { requiresAuth: true, sidebarId: 'water-dispenser-orders', title: '飲水機訂單' },
-  },
-  {
-    path: 'inventory',
-    name: 'inventory',
-    component: InventoryManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'inventory', title: '商品庫存' },
-  },
-  {
-    path: 'delivery-report-new',
-    name: 'delivery-report-new',
-    component: DataList,
-    meta: { requiresAuth: true, sidebarId: 'delivery-report-new', title: '送貨報表' },
-  },
-  /*{
-    path: 'delivery-report/edit/:uuid?',
-    name: 'delivery-report-edit',
-    component: DeliveryReportEditPage,
+    path: 'shipments/reports/edit/:uuid?',
+    name: 'shipments-report-edit',
+    component: () => import('@/pages/Shipments/FormPage/index.vue'),
     props: (route) => ({ uuid: route.params.uuid || '' }),
-    meta: { requiresAuth: true, sidebarId: 'delivery-report', title: '報表編輯' },
-  },*/
-  {
-    path: 'delivery-report/edit2/:uuid?',
-    name: 'delivery-report-edit2',
-    component: FormPage,
-    props: (route) => ({ uuid: route.params.uuid || '' }),
-    meta: { requiresAuth: true, sidebarId: 'delivery-report', title: '報表編輯' },
+    meta: { requiresAuth: true, sidebarId: 'shipments-reports', title: '報表編輯' },
   },
+
+  // ===== Finance 帳務管理 =====
   {
-    path: 'billing',
-    name: 'billing',
-    component: BillingManagementPage,
-    meta: { requiresAuth: true, sidebarId: 'billing', title: '帳務管理' },
+    path: 'finance/billing',
+    name: 'finance-billing',
+    component: () => import('@/pages/Finance/DataList.vue'),
+    meta: { requiresAuth: true, sidebarId: 'finance-billing', title: '帳務管理' },
   },
 ];
 

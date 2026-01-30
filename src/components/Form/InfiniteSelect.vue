@@ -189,7 +189,7 @@ const DATA_SOURCE_MAP = {
     valueKey: 'id',
     formatOption: (item) => ({
       value: item.id,
-      label: item.displayName || item.description || item.name || item.id,
+      label: item.name || item.description,
       raw: item,
     }),
   }, //角色

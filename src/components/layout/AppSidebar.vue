@@ -3,6 +3,7 @@
 import { computed, markRaw } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { BarChart3, Waves, Droplet, Egg, Factory, Package2, ShoppingCart, Truck, Users } from 'lucide-vue-next';
+import { usePermissionStore } from '@/stores/PermissionStore';
 
 const props = defineProps({
   collapsed: { type: Boolean, default: false },
@@ -23,19 +24,19 @@ const menuSections = [
   {
     key: 'section-dashboard',
     label: '儀表板',
-    items: [{ id: 'dashboard', label: '儀表板', remixIcon: 'ri-dashboard-line' }],
+    items: [{ id: 'dashboard', label: '儀表板', remixIcon: 'ri-dashboard-line', role: 'KPI' }],
   },
   {
     key: 'section-basic',
     label: '基本資料',
     remixIcon: 'ri-database-2-line',
     items: [
-      { id: 'employees', label: '員工資料', remixIcon: 'ri-user-3-line' },
-      { id: 'customers', label: '客戶資料', remixIcon: 'ri-team-line' },
-      { id: 'potential-customers', label: '潛在客戶', remixIcon: 'ri-user-search-line' },
-      { id: 'vendors', label: '廠商資料', remixIcon: 'ri-building-line' },
-      { id: 'vehicles', label: '車輛資料', remixIcon: 'ri-truck-line' },
-      { id: 'drivers', label: '司機資料', remixIcon: 'ri-steering-2-line' },
+      { id: 'basic-info-users', label: '員工資料', remixIcon: 'ri-user-3-line', role: 'USER' },
+      { id: 'basic-info-customers', label: '客戶資料', remixIcon: 'ri-team-line', role: 'CUSTOMER' },
+      { id: 'basic-info-leads', label: '潛在客戶', remixIcon: 'ri-user-search-line', role: 'CUSTOMER' },
+      { id: 'basic-info-vendors', label: '廠商資料', remixIcon: 'ri-building-line', role: 'VENDOR' },
+      { id: 'basic-info-vehicles', label: '車輛資料', remixIcon: 'ri-truck-line', role: 'VEHICLE' },
+      { id: 'basic-info-drivers', label: '司機資料', remixIcon: 'ri-steering-2-line', role: 'DRIVER' },
     ],
   },
   {
@@ -43,9 +44,9 @@ const menuSections = [
     label: '商品管理',
     remixIcon: 'ri-box-1-line',
     items: [
-      { id: 'bottled-water', label: '桶裝水資料', heroIcon: LucideDropletIcon },
-      { id: 'eggs', label: '雞蛋資料', heroIcon: LucideEggIcon },
-      { id: 'water-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon },
+      { id: 'products-water', label: '桶裝水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
+      { id: 'products-eggs', label: '雞蛋資料', heroIcon: LucideEggIcon, role: 'PRODUCT' },
+      { id: 'products-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon, role: 'PRODUCT' },
     ],
   },
   {
@@ -53,42 +54,67 @@ const menuSections = [
     label: '訂單管理',
     remixIcon: 'ri-shopping-bag-3-line',
     items: [
-      { id: 'bottled-water-orders', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line' },
-      { id: 'egg-orders', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line' },
-      { id: 'water-dispenser-orders', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line' },
+      { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
+      { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
+      { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },
     ],
   },
   {
-    key: 'section-report',
+    key: 'section-shipments',
     label: '庫存與報表',
     remixIcon: 'ri-file-chart-line',
     items: [
-      { id: 'inventory', label: '商品庫存', heroIcon: LucidePackageIcon },
-      { id: 'delivery-report-new', label: '送貨報表', remixIcon: 'ri-survey-line' },
+      { id: 'shipments-inventory', label: '商品庫存', heroIcon: LucidePackageIcon, role: 'INVENTORY' },
+      { id: 'shipments-reports', label: '送貨報表', remixIcon: 'ri-survey-line', role: 'REPORT' },
     ],
   },
   {
-    key: 'section-billing',
+    key: 'section-finance',
     label: '帳務管理',
     remixIcon: 'ri-money-dollar-circle-line',
-    items: [{ id: 'billing', label: '帳務管理', remixIcon: 'ri-money-dollar-circle-line' }],
+    items: [{ id: 'finance-billing', label: '帳務管理', remixIcon: 'ri-money-dollar-circle-line', role: 'BILLING' }],
   },
   {
-    key: 'section-parameters',
+    key: 'section-settings',
     label: '參數設定',
     remixIcon: 'ri-settings-3-line',
     items: [
-      { id: 'product-types', label: '產品類型', remixIcon: 'ri-sound-module-line' },
-      { id: 'roles', label: '角色設定', remixIcon: 'ri-shield-user-line' },
-      { id: 'permissions', label: '權限設定', remixIcon: 'ri-key-2-line' },
+      { id: 'settings-product-types', label: '產品類型', remixIcon: 'ri-sound-module-line', role: 'ROLE' },
+      { id: 'settings-roles', label: '角色設定', remixIcon: 'ri-shield-user-line', role: 'ROLE' },
+      { id: 'settings-permissions', label: '權限設定', remixIcon: 'ri-key-2-line', role: 'ROLE' },
     ],
   },
 ];
 
 const router = useRouter();
 const route = useRoute();
+const permissionStore = usePermissionStore();
+
+// 根據權限過濾選單項目
+const filteredMenuSections = computed(() => {
+  return menuSections
+    .map((section) => {
+      // 過濾掉沒有權限的項目
+      const filteredItems = section.items.filter((item) => {
+        // 如果沒有設定 role，則預設顯示
+        if (!item.role) return true;
+        // 檢查是否有該資源的任何權限
+        return permissionStore.hasResourceAccess(item.role);
+      });
+
+      // 如果過濾後沒有項目，則不顯示該區塊
+      if (filteredItems.length === 0) return null;
+
+      return {
+        ...section,
+        items: filteredItems,
+      };
+    })
+    .filter(Boolean); // 移除 null 的區塊
+});
+
 const activeSidebarId = computed(() => route.meta?.sidebarId || route.name || 'dashboard');
-const defaultOpenKeys = menuSections.filter((section) => section.items.length > 1).map((section) => section.key);
+const defaultOpenKeys = computed(() => filteredMenuSections.value.filter((section) => section.items.length > 1).map((section) => section.key));
 
 const handleMenuItemClick = (key) => {
   if (!key || key === activeSidebarId.value) return;
@@ -102,7 +128,7 @@ const handleMenuItemClick = (key) => {
     <div class="logo" v-if="!collapsed">CRM 管理系統</div>
     <div class="logo h-[32px] bg-gray-500" v-if="collapsed" />
     <a-menu :collapsed="collapsed" :selected-keys="[String(activeSidebarId)]" :default-open-keys="defaultOpenKeys" @menu-item-click="handleMenuItemClick">
-      <template v-for="section in menuSections" :key="section.key">
+      <template v-for="section in filteredMenuSections" :key="section.key">
         <a-menu-item v-if="section.items.length === 1" :key="section.items[0].id">
           <component v-if="section.items[0].heroIcon" :is="section.items[0].heroIcon" class="menu-icon h-[10px] w-[10px] text-[12px]!" />
           <i v-else-if="section.items[0].remixIcon" :class="[section.items[0].remixIcon, 'menu-icon remix']"></i>
