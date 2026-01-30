@@ -3,7 +3,7 @@ import axios from "axios";
 import { getToken, getRefreshToken, logout, setToken } from "@/utils/auth";
 
 const isDevelopment = import.meta.env.VITE_NODE_ENV === "development";
-export const host = isDevelopment ? "/hostApi" : location.origin + "/"; //api路徑前綴
+export const host = isDevelopment ? "/hostApi" : (import.meta.env.VITE_APP_AXIOS_BASEURL || location.origin); //api路徑前綴
 
 const getUserTimezone = () => {
   const userTimezone = localStorage.getItem("userTimezone") || "Asia/Taipei";
