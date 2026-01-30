@@ -92,9 +92,6 @@
                   />
                 </div>
               </AFormItem>
-              <AFormItem :label="t('productUnit', '商品單位')">
-                <TinyInput v-model="filters.unit" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
-              </AFormItem>
             </div>
           </Collapsible>
         </AForm>
@@ -148,14 +145,24 @@
           </template>
           <template #default="{ row }">{{ row.code || '—' }}</template>
         </CustomTinyGridColumn>-->
-        <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="100" sortable :sort-field="'unit'" :current-order="getColumnOrder('unit')" @sort="handleColumnSort">
+        <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="180" sortable :sort-field="'unit'" :current-order="getColumnOrder('unit')" @sort="handleColumnSort">
+          <template #header>
+            <div class="flex flex-col gap-1">
+              <span class="text-[16px] text-gray-600">{{ t('unit', '單位') }}</span>
+              <TinyInput v-model="filters.unit" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
+            </div>
+          </template>
+
           <template #default="{ row }">{{ row.unit || defaultUnit || '—' }}</template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="basePrice" :title="t('salePrice', '售價')" :width="200" sortable :sort-field="'basePrice'" :current-order="getColumnOrder('basePrice')" @sort="handleColumnSort">
           <template #default="{ row }">
             <div class="flex flex-col">
               <span>{{ t('suggestedRetailPriceColon', '建議售價：') }}{{ row.basePriceAmount }}</span>
-              <span class="text-xs text-gray-500">{{ t('wholesaleColon', '批發：') }}{{ row.wholesalePriceAmount }} / {{ t('cashColon', '現金：') }}{{ row.cashPriceAmount }}</span>
+              <span class="text-xs text-gray-500"
+                >{{ t('wholesaleColon', '批發：') }}{{ row.wholesalePriceAmount }} / {{ t('cashColon', '現金：') }}{{ row.cashPriceAmount }} / {{ t('成本：', '成本：')
+                }}{{ row.costPriceAmount }}</span
+              >
             </div>
           </template>
         </CustomTinyGridColumn>
@@ -204,12 +211,7 @@
               <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
             </div>
           </template>
-          <template #default="{ row }">
-            <div class="flex flex-col gap-0.5">
-              <span>{{ row.primaryVendorId?.name || '—' }}</span>
-              <span class="text-xs text-gray-500">{{ t('idColon', 'ID：') }}{{ row.primaryVendorId || '—' }}</span>
-            </div>
-          </template>
+          <template #default="{ row }">{{ row.primaryVendor?.name || '—' }} </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn
           field="isPerishable"
@@ -596,59 +598,41 @@ const defaultFilters = {
   lowStock: false,
   inStock: false,
 }; //預設篩選條件
-const responseDataToList = (product = {}) => {
-  const priceAmount = (target) => formatCurrency(target?.amount ?? 0);
-  if (product.primaryVendor?.id || product.primaryVendorId) {
-    registerVendorOption(product.primaryVendor?.id || product.primaryVendorId, product.primaryVendor?.name || '', product.primaryVendor?.code || product.primaryVendorCode);
-  }
-
-  return {
-    id: product.id || product.code,
-    code: product.code || '—',
-    name: product.name || '—',
-    description: product.description || '',
-    unit: product.unit || props.defaultUnit || '',
-    basePrice: priceAmount(product.basePrice),
-    wholesalePrice: priceAmount(product.wholesalePrice),
-    cashPrice: priceAmount(product.cashPrice),
-    costPrice: priceAmount(product.costPrice),
-    currentStock: Number(product.currentStock ?? 0),
-    minStock: Number(product.minStock ?? 0),
-    maxStock: Number(product.maxStock ?? 0),
-    reorderPoint: Number(product.reorderPoint ?? 0),
-    vendor: product.primaryVendor?.name || '',
-    primaryVendorId: product.primaryVendor?.id || product.primaryVendorId || '',
-    status: product.status || 'ACTIVE',
-    isPerishable: Boolean(product.isPerishable),
-    tags: Array.isArray(product.tags) ? product.tags : [],
-    updatedAt: formatDate(product.updatedAt || product.createdAt),
-    inStock: Number(product.currentStock ?? 0) > 0,
-    raw: product,
-  };
-}; //轉換列表列資料
 const wrappedProductListGet = (params) => {
-  console.log(1111, params);
-  params = {
+  const payload = {
     page: pagination.page,
     limit: pagination.limit,
     categoryId: props.categoryId,
   };
 
-  const payload = {
-    ...params,
-  };
+  // 文字篩選
+  if (filters.name) payload.name = filters.name;
+  if (filters.code) payload.code = filters.code;
+  if (filters.unit) payload.unit = filters.unit;
+  if (filters.tags) payload.tags = filters.tags;
+  if (filters.primaryVendorId?.id) payload.primaryVendorId = filters.primaryVendorId.id;
 
-  payload.name = filters.name; //名稱
-  payload.primaryVendorId = filters.primaryVendorId?.id; //廠商
-  if (filters.tags) payload.tags = filters.tags; //標籤
-  if (filters.status !== 'all') payload.status = filters.status; //狀態
-  if (filters.isPerishable === true) payload.isPerishable = true; //是否冷藏
-  if (filters.lowStock === true) payload.lowStock = true; //低於補貨點
-  if (filters.inStock === true) payload.inStock = true; //僅顯示有庫存
+  // 狀態篩選
+  if (filters.status && filters.status !== 'all') payload.status = filters.status;
+  if (filters.isPerishable === true) payload.isPerishable = true;
+  if (filters.lowStock === true) payload.lowStock = true;
+  if (filters.inStock === true) payload.inStock = true;
+
+  // 價格篩選
+  if (filters.minPrice) payload.minPrice = Number(filters.minPrice);
+  if (filters.maxPrice) payload.maxPrice = Number(filters.maxPrice);
+  if (filters.minWholesalePrice) payload.minWholesalePrice = Number(filters.minWholesalePrice);
+  if (filters.maxWholesalePrice) payload.maxWholesalePrice = Number(filters.maxWholesalePrice);
+  if (filters.minCashPrice) payload.minCashPrice = Number(filters.minCashPrice);
+  if (filters.maxCashPrice) payload.maxCashPrice = Number(filters.maxCashPrice);
+  if (filters.minCostPrice) payload.minCostPrice = Number(filters.minCostPrice);
+  if (filters.maxCostPrice) payload.maxCostPrice = Number(filters.maxCostPrice);
+
+  // 排序
   if (sortField.value) {
     payload.sortBy = sortFieldMap[sortField.value] || sortField.value;
     payload.sortOrder = sortDirection.value;
-  } //排序
+  }
 
   return ProductListGet(payload);
 };

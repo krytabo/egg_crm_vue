@@ -112,3 +112,5 @@ frontend_api_request/
 API_Documentation.md
 src/docs/
 src/docs/
+Project_Guidelines.md
+.env.example

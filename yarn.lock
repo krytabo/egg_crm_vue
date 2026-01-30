@@ -5991,8 +5991,6 @@ __metadata:
     crypto-js: "npm:^4.2.0"
     date-fns: "npm:*"
     fast-glob: "npm:^3.3.3"
-    framework7: "npm:^9.0.2"
-    framework7-vue: "npm:^9.0.2"
     lodash: "npm:^4.17.21"
     lodash.merge: "npm:^4.6.2"
     lucide: "npm:^0.557.0"
@@ -6311,15 +6309,6 @@ __metadata:
     domhandler: "npm:^4.2.0"
     entities: "npm:^2.0.0"
   checksum: 10c0/67d775fa1ea3de52035c98168ddcd59418356943b5eccb80e3c8b3da53adb8e37edb2cc2f885802b7b1765bf5022aec21dfc32910d7f9e6de4c3148f095ab5e0
-  languageName: node
-  linkType: hard
-
-"dom7@npm:^4.0.6":
-  version: 4.0.6
-  resolution: "dom7@npm:4.0.6"
-  dependencies:
-    ssr-window: "npm:^4.0.0"
-  checksum: 10c0/97fdb16e93a1b80ee154a7fa074d3d842e925c003c814da9e938dde270cc4cefa1bfc806718e0a2afd42d6b2359b7e714aab04cb1c7580f3414ebf20686c2d00
   languageName: node
   linkType: hard
 
@@ -7015,27 +7004,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"framework7-vue@npm:^9.0.2":
-  version: 9.0.2
-  resolution: "framework7-vue@npm:9.0.2"
-  checksum: 10c0/8427dea403de3456fed94fb578f665deb06aff2bec2eb695a814576c619473a2974e77b2704e7207d5f2783ad255960759ad9cacb3970460a48655ef2ef430e1
-  languageName: node
-  linkType: hard
-
-"framework7@npm:^9.0.2":
-  version: 9.0.2
-  resolution: "framework7@npm:9.0.2"
-  dependencies:
-    dom7: "npm:^4.0.6"
-    htm: "npm:^3.1.1"
-    path-to-regexp: "npm:^6.2.0"
-    skeleton-elements: "npm:^4.0.1"
-    ssr-window: "npm:^5.0.1"
-    swiper: "npm:^12.0.3"
-  checksum: 10c0/2bd7a3b620b5162fd53a4e7ab3e1d0ca6f733c4606efdfdbbd71f49ce73e9c0c6e41a2eb7657f11feb433c3ee0bbe883de27e6967d09719321b9836b01409a8d
-  languageName: node
-  linkType: hard
-
 "fs-extra@npm:^10.0.0":
   version: 10.1.0
   resolution: "fs-extra@npm:10.1.0"
@@ -7400,13 +7368,6 @@ __metadata:
   version: 5.5.3
   resolution: "hookable@npm:5.5.3"
   checksum: 10c0/275f4cc84d27f8d48c5a5cd5685b6c0fea9291be9deea5bff0cfa72856ed566abde1dcd8cb1da0f9a70b4da3d7ec0d60dc3554c4edbba647058cc38816eced3d
-  languageName: node
-  linkType: hard
-
-"htm@npm:^3.1.1":
-  version: 3.1.1
-  resolution: "htm@npm:3.1.1"
-  checksum: 10c0/0de4c8fff2b8e76c162235ae80dbf93ca5eef1575bd50596a06ce9bebf1a6da5efc467417c53034a9ffa2ab9ecff819cbec041dc9087894b2b900ad4de26c7e7
   languageName: node
   linkType: hard
 
@@ -9544,13 +9505,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"path-to-regexp@npm:^6.2.0":
-  version: 6.3.0
-  resolution: "path-to-regexp@npm:6.3.0"
-  checksum: 10c0/73b67f4638b41cde56254e6354e46ae3a2ebc08279583f6af3d96fe4664fc75788f74ed0d18ca44fa4a98491b69434f9eee73b97bb5314bd1b5adb700f5c18d6
-  languageName: node
-  linkType: hard
-
 "pathe@npm:^0.2.0":
   version: 0.2.0
   resolution: "pathe@npm:0.2.0"
@@ -10525,13 +10479,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"skeleton-elements@npm:^4.0.1":
-  version: 4.0.1
-  resolution: "skeleton-elements@npm:4.0.1"
-  checksum: 10c0/48b63c6f9c52a2ee3eaeef57bf0433ad452e74d2b7cc81e29e05404a2ee9be14691a19b106ebfa5d4b1cce3cb9a6f1675e7525d1826072b95b928ae30dde529a
-  languageName: node
-  linkType: hard
-
 "smart-buffer@npm:^4.2.0":
   version: 4.2.0
   resolution: "smart-buffer@npm:4.2.0"
@@ -10664,20 +10611,6 @@ __metadata:
   dependencies:
     extend-shallow: "npm:^3.0.0"
   checksum: 10c0/72d7cd625445c7af215130e1e2bc183013bb9dd48a074eda1d35741e2b0dcb355e6df5b5558a62543a24dcec37dd1d6eb7a6228ff510d3c9de0f3dc1d1da8a70
-  languageName: node
-  linkType: hard
-
-"ssr-window@npm:^4.0.0":
-  version: 4.0.2
-  resolution: "ssr-window@npm:4.0.2"
-  checksum: 10c0/e91f690f42ab2d4e36577a631a9d7b9bd20864ab99c1394481f64c5a0ae6922165ac0a06228560c2ccdd4f68338e795f2fd3cc16fbf9bfcc9c561bb89eb237cd
-  languageName: node
-  linkType: hard
-
-"ssr-window@npm:^5.0.1":
-  version: 5.0.1
-  resolution: "ssr-window@npm:5.0.1"
-  checksum: 10c0/d42bcf5b02fe79c2eebf1bb53dfdd9633af217dc5ae02647bc52d9d6adda69b72fe222f1a07cf7166fcb9005ad07a41ac2a952122e7f2fe538a893bfb6d796be
   languageName: node
   linkType: hard
 
@@ -10918,13 +10851,6 @@ __metadata:
   version: 11.26.17
   resolution: "sweetalert2@npm:11.26.17"
   checksum: 10c0/00cbc4c394895f5ea2c9766ced2bb11bc73405c66a850e2981673aac27b55c98ba4e968cd3db25bd52087d3c6243ca4f3bf3b4e3269b8705c1a5c6e5405fb18d
-  languageName: node
-  linkType: hard
-
-"swiper@npm:^12.0.3":
-  version: 12.0.3
-  resolution: "swiper@npm:12.0.3"
-  checksum: 10c0/a854531791ba45cb0f6086904a99878fd207b42024820df68fbf64e01c20d542438c023ec4765b223f4dbffabf6858d311ec749bdca4ea4b4a7b74150a010162
   languageName: node
   linkType: hard
 

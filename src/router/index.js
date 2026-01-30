@@ -1,11 +1,11 @@
-import { createRouter, createWebHistory } from "vue-router";
-import { AuthProfileGet, AuthRefreshTokenPost } from "@/assets/API/Auth";
-import { getToken, getRefreshToken, isTokenExpired, logout, setToken, getUserInfo, setUserInfo } from "@/utils/auth";
-import AuthRoutes from "./modules/auth";
-import ApplicationListRouter from "./modules/application-list";
-import AdditionalFeatureRoutes from "./modules/additional";
-import MobileRoutes from "./modules/mobile";
-import { updateI18nMessages } from "@/assets/Language/i18n";
+import { createRouter, createWebHistory } from 'vue-router';
+import { AuthProfileGet, AuthRefreshTokenPost } from '@/assets/API/Auth';
+import { getToken, getRefreshToken, isTokenExpired, logout, setToken, getUserInfo, setUserInfo } from '@/utils/auth';
+import AuthRoutes from './modules/auth';
+import ApplicationListRouter from './modules/application-list';
+import AdditionalFeatureRoutes from './modules/additional';
+import MobileRoutes from './modules/mobile';
+import { updateI18nMessages } from '@/assets/Language/i18n';
 
 const unwrapResponseData = (payload) => payload?.data?.data ?? payload?.data ?? payload;
 const normalizeAuthPayload = (payload) => {
@@ -13,24 +13,24 @@ const normalizeAuthPayload = (payload) => {
   return {
     accessToken: payload.accessToken || payload.token || null,
     refreshToken: payload.refreshToken || null,
-    expiresIn: payload.expiresIn
+    expiresIn: payload.expiresIn,
   };
 };
 
 let refreshPromise = null;
 const ensureFreshAccessToken = async () => {
   const currentToken = getToken();
-  if (!currentToken) throw new Error("Missing access token");
+  if (!currentToken) throw new Error('Missing access token');
   if (!isTokenExpired(currentToken)) return currentToken;
 
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshToken = getRefreshToken();
-      if (!refreshToken) throw new Error("Missing refresh token");
+      if (!refreshToken) throw new Error('Missing refresh token');
       const response = await AuthRefreshTokenPost({ refreshToken });
       const payload = unwrapResponseData(response);
       const normalized = normalizeAuthPayload(payload);
-      if (!normalized.accessToken) throw new Error("Unable to refresh token");
+      if (!normalized.accessToken) throw new Error('Unable to refresh token');
       setToken(normalized);
       if (payload?.user) {
         setUserInfo(payload.user);
@@ -62,36 +62,30 @@ const ensureUserProfile = async () => {
 };
 
 const rootRedirect = () => {
-  if (typeof window === "undefined") return "/auth/login";
-  return getToken() ? "/ApplicationList" : "/auth/login";
+  if (typeof window === 'undefined') return '/auth/login';
+  return getToken() ? '/ApplicationList' : '/auth/login';
 };
-
 let currentLanguageSystem = null;
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
-      path: "/",
-      redirect: rootRedirect
-    },
-    {
-      path: "/ai-chat",
-      component: () => import("@/pages/chat.vue")
+      path: '/',
+      redirect: rootRedirect,
     },
     AuthRoutes,
     ApplicationListRouter,
     MobileRoutes,
     ...AdditionalFeatureRoutes,
     {
-      path: "/:pathMatch(.*)*",
+      path: '/:pathMatch(.*)*',
       meta: {
         requiresAuth: true,
-        language: "Auth"
+        language: 'Auth',
       },
-      component: () => import("@/components/auth/ErrorView.vue")
-    }
-  ]
+      component: () => import('@/components/auth/ErrorView.vue'),
+    },
+  ],
 });
 
 router.beforeEach(async (to, from, next) => {
@@ -99,11 +93,11 @@ router.beforeEach(async (to, from, next) => {
   const hasToken = Boolean(getToken());
 
   if (requiresAuth && !hasToken) {
-    return next({ name: "auth-login", query: { redirect: to.fullPath }, replace: true });
+    return next({ name: 'auth-login', query: { redirect: to.fullPath }, replace: true });
   }
 
-  if (to.name === "auth-login" && hasToken) {
-    return next({ name: "dashboard", replace: true });
+  if (to.name === 'auth-login' && hasToken) {
+    return next({ name: 'dashboard', replace: true });
   }
 
   if (hasToken) {
@@ -111,9 +105,9 @@ router.beforeEach(async (to, from, next) => {
       await ensureFreshAccessToken();
       await ensureUserProfile();
     } catch (error) {
-      console.error("[router] authentication failed", error);
+      console.error('[router] authentication failed', error);
       logout();
-      return next({ name: "auth-login", replace: true });
+      return next({ name: 'auth-login', replace: true });
     }
   }
 
@@ -123,10 +117,10 @@ router.beforeEach(async (to, from, next) => {
         .slice()
         .reverse()
         .find((record) => record.meta?.language) || {}
-    ).meta?.language || "Public";
+    ).meta?.language || 'Public';
   if (targetLanguage !== currentLanguageSystem) {
     currentLanguageSystem = targetLanguage;
-    localStorage.setItem("currentSystem", targetLanguage);
+    localStorage.setItem('currentSystem', targetLanguage);
     await updateI18nMessages(targetLanguage);
   }
 
