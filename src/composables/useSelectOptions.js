@@ -6,16 +6,14 @@ import { useI18n } from 'vue-i18n';
 export function useSelectOptions() {
   const { t } = useI18n();
   const customerCategories = computed(() => [
-    { label: t('categoryBottledWater', '桶裝水'), text: t('categoryBottledWater', '桶裝水') },
-    { label: t('categoryEgg', '雞蛋'), text: t('categoryEgg', '雞蛋') },
-    { label: t('categoryDispenser', '飲水機'), text: t('categoryDispenser', '飲水機') },
-  ]); //客戶類別
+    { label: 'BOTTLED_WATER', text: t('categoryBottledWater', '桶裝水') },
+    { label: 'EGG', text: t('categoryEgg', '雞蛋') },
+    { label: 'DISPENSER', text: t('categoryDispenser', '飲水機') },
+  ]); //客戶類別（label 為存儲值，text 為顯示文字）
   const paymentOptions = computed(() => [
-    { label: t('cash', '現金'), value: '現金' },
-    { label: t('monthly', '月結'), value: '月結' },
-    { label: t('預付', '預付'), value: '預付' },
-    // { label: t('transfer', '轉帳'), value: '轉帳' },
-    // { label: t('check', '票據'), value: '票據' },
+    { label: t('cash', '現金'), value: 'CASH' },
+    { label: t('monthly', '月結'), value: 'MONTHLY' },
+    { label: t('prepaid', '預付'), value: 'PREPAID' },
   ]); //付款方式
   const customerTypeOptions = computed(() => [
     { label: t('typeCompany', '公司'), value: 'COMPANY' },

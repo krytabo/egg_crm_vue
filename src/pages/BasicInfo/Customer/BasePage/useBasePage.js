@@ -49,7 +49,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const FORM_TEMPLATES = {
     contact: { isPrimary: true, name: '', phone: '', address: '', email: '' },
     company: { companyName: '', companyPhone: '', companyEmail: '', companyAddress: '', taxId: '', registeredDate: '' },
-    other: { paymentMethod: t('cash', '現金'), deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
+    other: { paymentMethod: 'CASH', deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
     meta: { type: 'COMPANY', segment: 'RETAIL', source: 'OTHER', salesRepId: '', tags: '', status: 'ACTIVE' },
   };
   const SORT_FIELD_MAP = {
@@ -186,8 +186,8 @@ export function useBasePage(props, t, showMessage = () => {}) {
         customFields.companyAddress || [customer.address?.street, customer.address?.city, customer.address?.state, customer.address?.zipCode, customer.address?.country].filter(Boolean).join(' '),
       companyAddressFields: customer.address || {},
       taxId: customer.taxId || '',
-      categories: customFields.categories || [],
-      paymentMethod: customFields.paymentMethod || '',
+      categories: customer.productCategories || [],
+      paymentMethod: customer.paymentTerm || '',
       deposit: Number(customFields.deposit ?? 0),
       invoiceTitle: customFields.invoiceTitle || customer.name || '',
       invoiceTaxId: customFields.invoiceTaxId || customer.taxId || '',
@@ -348,8 +348,13 @@ export function useBasePage(props, t, showMessage = () => {}) {
       taxId: record.taxId || '',
       registeredDate: record.registeredDate || '',
     };
+    // 付款方式轉換（兼容舊資料中文值）
+    const paymentMethodMap = { 現金: 'CASH', 月結: 'MONTHLY', 預付: 'PREPAID' };
+    const rawPaymentMethod = record.paymentMethod || 'MONTHLY';
+    const normalizedPaymentMethod = paymentMethodMap[rawPaymentMethod] || rawPaymentMethod;
+
     basicForm.value.otherForm = {
-      paymentMethod: record.paymentMethod || '月結',
+      paymentMethod: normalizedPaymentMethod,
       deposit: Number(record.deposit ?? 0),
       invoiceTitle: record.invoiceTitle || '',
       invoiceTaxId: record.invoiceTaxId || '',
@@ -363,7 +368,10 @@ export function useBasePage(props, t, showMessage = () => {}) {
       tags: Array.isArray(record.tags) ? record.tags.join(',') : record.tags || '',
       status: record.status || FORM_TEMPLATES.meta.status,
     };
-    categoriesForm.value = record.categories || [];
+    // 客戶類別轉換（兼容舊資料中文值）
+    const categoryMap = { 桶裝水: 'BOTTLED_WATER', 雞蛋: 'EGG', 飲水機: 'DISPENSER' };
+    const rawCategories = record.categories || [];
+    categoriesForm.value = rawCategories.map((cat) => categoryMap[cat] || cat);
     deliveryDaysForm.value = record.deliveryDays || [];
     customPriceForm.value = (record.customPrices || []).map((item, index) => {
       const product = item.product || null;
@@ -512,10 +520,12 @@ export function useBasePage(props, t, showMessage = () => {}) {
       notes: otherForm.note || undefined,
       salesRepId: typeof metaForm.salesRepId === 'object' ? metaForm.salesRepId?.id : metaForm.salesRepId || undefined,
       deliveryDays: deliveryDaysForm.value,
+      productCategories: categoriesForm.value, //客戶類型
+      paymentTerm: otherForm.paymentMethod, //收付方式
       customFields: {
         contacts: formContacts,
-        categories: categoriesForm.value,
-        paymentMethod: otherForm.paymentMethod,
+        // categories: categoriesForm.value,
+        // paymentMethod: otherForm.paymentMethod,
         deposit: Number(otherForm.deposit || 0),
         invoiceTitle: otherForm.invoiceTitle,
         invoiceTaxId: otherForm.invoiceTaxId,
@@ -607,12 +617,12 @@ export function useBasePage(props, t, showMessage = () => {}) {
     basicForm.value.companyForm.companyAddress = '台北市信義區忠孝東路 100 號';
     basicForm.value.companyForm.taxId = `${Math.floor(Math.random() * 90000000 + 10000000)}`;
     basicForm.value.companyForm.registeredDate = format(new Date(), 'yyyy-MM-dd');
-    basicForm.value.otherForm.paymentMethod = '月結';
+    basicForm.value.otherForm.paymentMethod = 'MONTHLY';
     basicForm.value.otherForm.deposit = 20000;
     basicForm.value.otherForm.invoiceTitle = `${basicForm.value.companyForm.companyName} 發票抬頭`;
     basicForm.value.otherForm.invoiceTaxId = basicForm.value.companyForm.taxId;
     basicForm.value.otherForm.note = '此為快速產生的測試資料';
-    categoriesForm.value = customerCategories;
+    categoriesForm.value = ['BOTTLED_WATER', 'EGG', 'DISPENSER'];
     deliveryDaysForm.value = [1, 3, 5];
     customPriceForm.value = [{ id: Date.now(), productId: mockProducts[0]?.id || 'water-1', adjustment: 200 }];
     basicForm.value.metaForm = {

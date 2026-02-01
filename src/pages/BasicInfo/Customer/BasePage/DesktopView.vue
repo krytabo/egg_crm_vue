@@ -329,11 +329,11 @@
             <AFormItem :label="t('invoiceTaxId', '發票統編')">
               <CustomField v-model="basicForm.otherForm.invoiceTaxId" type="input" allowClear />
             </AFormItem>
-            <AFormItem>
+            <!--<AFormItem>
               <TinyCheckbox :model-value="sameAsCompanyInfo" @update:model-value="handleInvoiceSameAsCompany">
                 {{ t('invoiceSameAsCompany', '同公司資訊') }}
               </TinyCheckbox>
-            </AFormItem>
+            </AFormItem>-->
             <AFormItem :label="t('note', '備註')" class="col-span-2">
               <CustomField v-model="basicForm.otherForm.note" type="textarea" allowClear />
             </AFormItem>
