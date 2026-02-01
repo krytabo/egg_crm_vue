@@ -263,7 +263,17 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const fileInputRef = ref(null);
 
   const handleImportSelect = (value) => {
-    if (value === 'Import') fileInputRef.value?.click();
+    if (value === 'Import') {
+      fileInputRef.value?.click();
+    } else if (value === 'Download') {
+      // 下載客戶資料模板
+      const link = document.createElement('a');
+      link.href = '/客戶資料模板.xlsx';
+      link.download = '客戶資料模板.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleFileChange = async (event) => {
