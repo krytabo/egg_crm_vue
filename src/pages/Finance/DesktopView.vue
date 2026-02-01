@@ -1,4 +1,4 @@
-<!-- src/pages/Finance/DataList.vue 帳務管理 -->
+<!-- src/pages/Finance/DesktopView.vue 帳務管理（桌面版） -->
 <template>
   <Card>
     <!-- Tab 頁籤 -->

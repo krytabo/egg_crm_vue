@@ -1,6 +1,12 @@
 <!-- src/pages/Shipments/InventoryPage.vue 庫存管理 -->
 <template>
-  <Card>
+  <!-- 手機版 -->
+  <template v-if="displayMode === 'mobile'">
+    <InventoryMobileView />
+  </template>
+
+  <!-- 桌面版 -->
+  <Card v-else>
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <!--         Tab 頁籤          -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -71,11 +77,14 @@ import InventoryAlertsTab from './components/InventoryAlertsTab.vue';
 import InventoryTransferTab from './components/InventoryTransferTab.vue';
 import InventoryReportsTab from './components/InventoryReportsTab.vue';
 import CycleCountDialog from './components/CycleCountDialog.vue';
+import InventoryMobileView from './InventoryMobileView.vue';
 import { useI18n } from 'vue-i18n';
 import { usePermissionStore } from '@/stores/PermissionStore';
+import { useDisplayMode } from '@/composables/useDisplayMode';
 
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
+const { displayMode } = useDisplayMode();
 
 /** 常數相關 **/
 const TAB_KEYS = {

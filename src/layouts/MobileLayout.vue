@@ -1,12 +1,16 @@
 <!-- src/layouts/MobileLayout.vue -->
 <template>
   <ion-app class="mobile-app">
-    <RouterView />
+    <MobileSidebar />
+    <div id="main-content" class="ion-page">
+      <RouterView />
+    </div>
   </ion-app>
 </template>
 
 <script setup>
 import { IonApp } from '@ionic/vue';
+import MobileSidebar from '@/components/layout/MobileSidebar.vue';
 </script>
 
 <style>

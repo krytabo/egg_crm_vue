@@ -4,6 +4,9 @@
     <!-- 頂部導航列 -->
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-menu-button />
+        </ion-buttons>
         <ion-title>{{ isProspect ? t('potentialListTitle', '潛在客戶') : t('listTitle', '客戶列表') }}</ion-title>
         <ion-buttons slot="end">
           <ion-button v-if="permissionStore.hasPermission('CUSTOMER', 'CREATE')" fill="clear" @click="openCreateDialog">
@@ -238,6 +241,7 @@ import {
   IonTitle,
   IonButtons,
   IonButton,
+  IonMenuButton,
   IonContent,
   IonCard,
   IonCardContent,

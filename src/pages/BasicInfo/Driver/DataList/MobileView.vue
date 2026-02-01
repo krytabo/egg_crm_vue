@@ -4,6 +4,9 @@
     <!-- 頂部導航列 -->
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-menu-button />
+        </ion-buttons>
         <ion-title>{{ t('driverList', '司機列表') }}</ion-title>
       </ion-toolbar>
     </ion-header>
@@ -190,6 +193,7 @@ import {
   IonToolbar,
   IonTitle,
   IonButtons,
+  IonMenuButton,
   IonButton,
   IonContent,
   IonCard,

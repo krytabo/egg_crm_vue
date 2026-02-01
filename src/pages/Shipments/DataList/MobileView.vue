@@ -4,6 +4,9 @@
     <!-- 頂部導航列 -->
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-menu-button />
+        </ion-buttons>
         <ion-title>{{ t('deliveryReportList', '送貨報表') }}</ion-title>
         <ion-buttons slot="end">
           <ion-button fill="clear" @click="handleCreate">
@@ -250,6 +253,7 @@ import {
   IonTitle,
   IonButtons,
   IonButton,
+  IonMenuButton,
   IonContent,
   IonCard,
   IonCardHeader,

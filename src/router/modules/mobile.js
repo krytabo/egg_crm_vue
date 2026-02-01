@@ -15,7 +15,7 @@ const mobileChildren = [
   {
     path: 'dashboard',
     name: 'm-dashboard',
-    component: () => import('@/pages/dashboard/DataList.vue'),
+    component: () => import('@/pages/dashboard/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'dashboard', title: '首頁', showTabbar: true },
   },
 
@@ -142,7 +142,7 @@ const mobileChildren = [
   {
     path: 'finance/billing',
     name: 'm-finance-billing',
-    component: () => import('@/pages/Finance/DataList.vue'),
+    component: () => import('@/pages/Finance/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'finance-billing', title: '帳務管理' },
   },
 ];

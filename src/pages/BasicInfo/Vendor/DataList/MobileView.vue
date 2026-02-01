@@ -4,6 +4,9 @@
     <!-- 頂部導航列 -->
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-menu-button />
+        </ion-buttons>
         <ion-title>{{ t('vendorListTitle', '供應商管理') }}</ion-title>
         <ion-buttons slot="end">
           <ion-button v-if="permissionStore.hasPermission('VENDOR', 'CREATE')" fill="clear" @click="openCreateDialog">
@@ -264,6 +267,7 @@ import {
   IonTitle,
   IonButtons,
   IonButton,
+  IonMenuButton,
   IonContent,
   IonCard,
   IonCardContent,

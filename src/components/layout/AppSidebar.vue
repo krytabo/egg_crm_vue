@@ -54,7 +54,7 @@ const menuSections = [
     label: '訂單管理',
     remixIcon: 'ri-shopping-bag-3-line',
     items: [
-      { id: 'orders-all', label: '所有訂單', remixIcon: 'ri-list-check-2', role: 'ORDER' },
+      // { id: 'orders-all', label: '所有訂單', remixIcon: 'ri-list-check-2', role: 'ORDER' },
       { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
       { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
       { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },

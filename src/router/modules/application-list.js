@@ -5,7 +5,7 @@ const appChildren = [
   {
     path: 'dashboard',
     name: 'dashboard',
-    component: () => import('@/pages/dashboard/DataList.vue'),
+    component: () => import('@/pages/dashboard/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'dashboard', title: '儀表板' },
   },
 
@@ -138,7 +138,7 @@ const appChildren = [
   {
     path: 'finance/billing',
     name: 'finance-billing',
-    component: () => import('@/pages/Finance/DataList.vue'),
+    component: () => import('@/pages/Finance/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'finance-billing', title: '帳務管理' },
   },
 ];
