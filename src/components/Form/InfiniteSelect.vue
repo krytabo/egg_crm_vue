@@ -76,6 +76,7 @@ import { InventoryLocationsGet } from '@/assets/API/Inventory';
 import { DriverListGet } from '@/assets/API/Drivers';
 import { X, ChevronDown } from 'lucide-vue-next';
 import { DeliveryByDaysGet } from '@/assets/API/DeliveryReports';
+import { InvoiceListGet } from '@/assets/API/Billing';
 
 const props = defineProps({
   modelValue: {
@@ -263,6 +264,15 @@ const DATA_SOURCE_MAP = {
   }, //依出貨日期尋找廠商或客戶
   products: {
     api: ProductListGet,
+    valueKey: 'id',
+    formatOption: (item) => ({
+      value: item.id,
+      label: item.name || item.code || item.id,
+      raw: item,
+    }),
+  }, //產品
+  Invoice: {
+    api: InvoiceListGet,
     valueKey: 'id',
     formatOption: (item) => ({
       value: item.id,

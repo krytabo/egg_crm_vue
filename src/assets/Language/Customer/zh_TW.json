@@ -47,7 +47,7 @@
   "taxId": "統一編號",
   "registeredDate": "註冊日期",
 
-  "segmentWithHint": "客戶分類 (Segment)",
+  "segmentWithHint": "客戶分類",
   "salesRepPlaceholder": "選擇業務人員",
   "tagsWithHint": "標籤 (輸入後按 Enter)",
   "categoriesMulti": "客戶類別（可多選）",
@@ -114,9 +114,8 @@
   "unset": "未設定",
   "requiredFieldsMissing": "請填寫必要欄位",
   "deleteSuccess": "刪除成功",
-  "saveSuccess": "儲存成功"
+  "saveSuccess": "儲存成功",
 
-  ,
   "potentialListTitle": "潛在客戶列表",
   "statusProspect": "潛在客戶",
   "convertToActive": "轉正式資料",

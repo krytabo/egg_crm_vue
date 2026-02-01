@@ -456,26 +456,23 @@ import { usePermissionStore } from '@/stores/PermissionStore';
 import { useI18n } from 'vue-i18n';
 import { useBasePage } from './useBasePage';
 
-/** Props **/
 const props = defineProps({
   pageType: { type: String, default: 'customer', validator: (v) => ['customer', 'prospect'].includes(v) },
 });
-
 const { containerRef } = useContentWidth();
 const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
 
-// 使用共用邏輯
 const {
-  // 頁面類型
+  //頁面類型
   isProspect,
 
-  // 常數
+  //常數
   orderPageSizeOptions,
   orderStatusColors,
 
-  // 選項
+  //選項
   customerCategories,
   paymentOptions,
   customerTypeOptions,
@@ -493,12 +490,12 @@ const {
   sourceFilterOptions,
   statusFilterOptions,
 
-  // 工具函式
+  //工具函式
   currency,
   getPrimaryContact,
   formatWeekDays,
 
-  // 篩選相關
+  //篩選相關
   globalSearch,
   filters,
   getColumnOrder,
@@ -508,7 +505,7 @@ const {
   handleGlobalSearch,
   handleFiltersChange,
 
-  // 列表相關
+  //列表相關
   basicDataList,
   pagination,
   pageSizeOptions,
@@ -517,12 +514,12 @@ const {
   CurrentChange,
   SizeChange,
 
-  // 匯入相關
+  //匯入相關
   fileInputRef,
   handleImportSelect,
   handleFileChange,
 
-  // 新增編輯相關
+  //新增編輯相關
   dialogVisible,
   activeTab,
   isSaving,
@@ -542,17 +539,17 @@ const {
   saveData,
   handleInvoiceSameAsCompany,
 
-  // 聯絡人操作
+  //聯絡人操作
   addContact,
   removeContact,
   setPrimaryContact,
 
-  // 客製價格操作
+  //客製價格操作
   changeProduct,
   addCustomPrice,
   removeCustomPrice,
 
-  // 訂單相關
+  //訂單相關
   customerData,
   drawerVisible,
   drawerCustomer,
@@ -563,17 +560,14 @@ const {
   handleOrderPageChange,
   handleOrderPageSizeChange,
 
-  // Mock 資料
+  //Mock 資料
   generateFakeCustomer,
 } = useBasePage(props, t);
 
-// Drawer 內訂單表格高度
 const tableHeight = computed(() => {
   const height = window.innerHeight || document.documentElement.clientHeight;
   return height - 500;
 });
-
-// 生命週期
 const cleanupResize = systemStore.initializeWindowResize();
 onUnmounted(cleanupResize);
 onMounted(async () => {

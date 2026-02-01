@@ -49,7 +49,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const FORM_TEMPLATES = {
     contact: { isPrimary: true, name: '', phone: '', address: '', email: '' },
     company: { companyName: '', companyPhone: '', companyEmail: '', companyAddress: '', taxId: '', registeredDate: '' },
-    other: { paymentMethod: 'MONTHLY', deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
+    other: { paymentMethod: t('cash', '現金'), deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
     meta: { type: 'COMPANY', segment: 'RETAIL', source: 'OTHER', salesRepId: '', tags: '', status: 'ACTIVE' },
   };
   const SORT_FIELD_MAP = {

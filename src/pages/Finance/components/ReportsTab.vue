@@ -12,7 +12,7 @@
       <!-- 篩選區塊 -->
       <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
         <AForm layout="vertical">
-          <div class="flex flex-wrap gap-3">
+          <div class="grid grid-cols-3 gap-2">
             <AFormItem :label="t('dateRange', '日期範圍')">
               <div class="flex items-center gap-2">
                 <TinyDatePicker v-model="revenueFilters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" />
@@ -21,13 +21,13 @@
               </div>
             </AFormItem>
             <AFormItem :label="t('groupBy', '分組方式')">
-              <TinySelect v-model="revenueFilters.groupBy" :options="groupByOptions" class="w-28" />
+              <TinySelect v-model="revenueFilters.groupBy" :options="groupByOptions" />
             </AFormItem>
             <AFormItem :label="t('customer', '客戶')">
-              <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" />
-            </AFormItem>
-            <AFormItem :label="' '">
-              <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
+              <div class="flex gap-2 w-full">
+                <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" />
+                <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
+              </div>
             </AFormItem>
           </div>
         </AForm>

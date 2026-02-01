@@ -1,6 +1,4 @@
 // src/pages/inventory-reports/DataList/useDataList.js
-// 司機送貨報表列表 - 共用業務邏輯（Desktop / Mobile 共用）
-
 import { ref, reactive, computed, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import {
@@ -19,8 +17,7 @@ import { useFileExport } from '@/composables/useFileExport.js';
 import { useSystemStore } from '@/stores/system';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
-import { Message } from '@arco-design/web-vue';
-import Swal from 'sweetalert2';
+import { getCategoryIdByCode } from '@/constants';
 
 /**
  * 司機送貨報表列表共用邏輯
@@ -37,18 +34,14 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   const { downloadFile } = useFileExport();
   const { isMobile, displayMode } = useDisplayMode();
 
-  // ===== 常數 =====
   const EMPTY_PLACEHOLDER = '—';
   const todayDate = new Date().toISOString().split('T')[0];
-
   const statusOptions = [
     { label: t('draft', '草稿'), value: '草稿' },
     { label: t('submitted', '已提交'), value: '已提交' },
     { label: t('approved', '已審核'), value: '已審核' },
     { label: t('rejected', '已退回'), value: '已退回' },
   ];
-
-  // ===== 共用工具函式 =====
   const formatNumber = (value) => {
     if (value === null || value === undefined) return EMPTY_PLACEHOLDER;
     return Number(value).toLocaleString();
@@ -73,14 +66,13 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   const canEditReport = (row) => row?.status === '草稿' || row?.status === '已退回'; //草稿或已退回可編輯
   const isViewOnlyReport = (row) => row?.status === '已提交' || row?.status === '已審核'; //已提交或已審核只能檢視*/
 
-  // ===== 統計數據 =====
+  /** 統計數據相關 **/
   const summaryData = reactive({
     todayReports: 0,
     todayAmount: 0,
     totalReports: 0,
     totalAmount: 0,
   });
-
   const calculateSummary = (items) => {
     if (!Array.isArray(items)) items = [];
     const todayReports = items.filter((item) => item.reportDate === todayDate);
@@ -136,11 +128,9 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   );
   const getAPI = async () => await getDefaultAPI();
 
-  // ===== 匯出彈窗 =====
+  /** 匯出彈窗相關 **/
   const exportDialogVisible = ref(false);
   const exportLoading = ref(false);
-
-  // 計算當月第一天和最後一天
   const getMonthDateRange = () => {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -156,8 +146,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       start: formatDate(firstDay),
       end: formatDate(lastDay),
     };
-  };
-
+  }; //計算當月第一天和最後一天
   const exportFilters = reactive({
     driverId: null,
     reportDateFrom: '',
@@ -165,7 +154,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     status: '',
     deliveryDays: [],
   });
-
   const openExportDialog = () => {
     // 重置為當月日期範圍
     const { start, end } = getMonthDateRange();
@@ -176,21 +164,16 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     exportFilters.deliveryDays = [];
     exportDialogVisible.value = true;
   };
-
   const closeExportDialog = () => {
     exportDialogVisible.value = false;
   };
-
-  // 計算日期差距（天數）
   const getDateDiff = (startDate, endDate) => {
     if (!startDate || !endDate) return 0;
     const start = new Date(startDate);
     const end = new Date(endDate);
     const diffTime = Math.abs(end - start);
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // 包含頭尾
-  };
-
-  // 驗證日期範圍
+  }; //計算日期差距
   const exportDateError = computed(() => {
     if (!exportFilters.reportDateFrom || !exportFilters.reportDateTo) {
       return t('pleaseSelectDateRange', '請選擇日期範圍');
@@ -204,9 +187,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
     return '';
   });
-
   const canExport = computed(() => !exportDateError.value);
-
   const handleExport = async () => {
     if (!canExport.value) {
       await mainStore.SWAL_Error(exportDateError.value);
@@ -231,9 +212,9 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     } finally {
       exportLoading.value = false;
     }
-  };
+  }; // 驗證日期範圍
 
-  // ===== 新增編輯刪除報表 =====
+  /** 新增編輯刪除報表相關 **/
   const createDialogVisible = ref(false);
   const openCreateDialog = () => (createDialogVisible.value = true);
   const handleReportCreated = async (payload) => {
@@ -241,7 +222,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       const reportData = {
         reportDate: payload.reportDate,
         driverId: payload.driverId,
-        note: payload.weekDayLabel,
+        note: payload.note,
         deliveryDays: payload.deliveryDays,
         items: payload.products.flatMap((product) =>
           product.rows.map((row) => ({
@@ -319,11 +300,10 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   }; //刪除單筆
   const handleCheck = async (row) => {
-    // 顯示審核選項對話框
     const performReview = async (action) => {
       try {
         await DeliveryReportReviewPost(row.id, { action });
-        const successMsg = action === 'approve' ? t('approveSuccess', '審核通過成功') : t('rejectSuccess', '退回成功');
+        const successMsg = action === 'approve' ? t('statusChangedToApproved', '狀態已變更為「已審核」') : t('statusChangedToRejected', '狀態已變更為「已退回」');
         if (isMobile.value && showMessage) {
           showMessage('success', successMsg);
         } else {
@@ -341,7 +321,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     };
 
     if (isMobile.value && showConfirm) {
-      // 手機版使用 Action Sheet 或 Alert
       await showConfirm({
         title: t('reviewReport', '審核報表'),
         message: t('selectReviewAction', '請選擇審核動作'),
@@ -352,8 +331,21 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
         ],
       });
     } else {
-      // 桌面版使用 SweetAlert
-      const result = await Swal.fire({
+      await mainStore.SWAL_Confirm({
+        title: t('reviewReport', '審核報表'),
+        text: t('selectReviewAction', '請選擇審核動作'),
+        confirmButtonText: t('approve', '通過'),
+        cancelButtonText: t('cancel', '取消'),
+        showDenyButton: true,
+        denyButtonText: t('reject', '退回'),
+        onConfirm: async (action) => {
+          await performReview('approve');
+        },
+        onDeny: async (action) => {
+          await performReview('reject');
+        },
+      });
+      /*const result = await Swal.fire({
         title: t('reviewReport', '審核報表'),
         text: t('selectReviewAction', '請選擇審核動作'),
         icon: 'question',
@@ -370,7 +362,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
         await performReview('approve');
       } else if (result.isDenied) {
         await performReview('reject');
-      }
+      }*/
     }
   }; //審核單筆
   const buildEditLink = (row) => {
@@ -397,20 +389,17 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       });
   }; //複製連結
 
-  // ===== 列印報表 =====
+  /** 列印報表相關 **/
   const printDialogVisible = ref(false);
   const printingReport = ref(null);
-
   const handlePrint = (row) => {
     printingReport.value = row;
     printDialogVisible.value = true;
   };
-
   const closePrintDialog = () => {
     printDialogVisible.value = false;
     printingReport.value = null;
   };
-
   const handleDoPrint = async () => {
     window.print();
     closePrintDialog();
@@ -421,7 +410,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   };
 
-  // ===== 轉入訂單 =====
+  /** 轉入訂單相關 **/
   const convertDialogVisible = ref(false);
   const convertingReport = ref(null);
   const selectedProductIndexes = ref([]);
@@ -429,6 +418,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   const convertLoading = ref(false);
   const convertShipDate = ref('');
   const convertNote = ref('');
+  const convertCategoryId = ref(null); //建立新訂單時的產品種類
 
   const TAB_KEYS = {
     PROJECT: 1,
@@ -441,7 +431,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   const handleTabChange = (key = TAB_KEYS.PROJECT) => {
     activeTab.value = key;
   };
-
   const convertProductList = computed(() => {
     const products = convertingReport.value?.products || [];
     return products.map((item, index) => ({
@@ -449,22 +438,18 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       _index: index,
     }));
   });
-
   const selectableProductIndexes = computed(() => {
     return convertProductList.value.filter((item) => !item.isConvertedToOrder).map((item) => item._index);
   });
-
   const isAllProductsSelected = computed(() => {
     if (selectableProductIndexes.value.length === 0) return false;
     return selectableProductIndexes.value.every((idx) => selectedProductIndexes.value.includes(idx));
   });
-
   const isProductsIndeterminate = computed(() => {
     if (selectedProductIndexes.value.length === 0) return false;
     if (isAllProductsSelected.value) return false;
     return selectedProductIndexes.value.some((idx) => selectableProductIndexes.value.includes(idx));
   });
-
   const handleSelectAllProducts = (checked) => {
     if (checked) {
       selectedProductIndexes.value = [...selectableProductIndexes.value];
@@ -472,7 +457,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       selectedProductIndexes.value = [];
     }
   };
-
   const handleToggleProduct = (index, checked) => {
     if (checked) {
       if (!selectedProductIndexes.value.includes(index)) {
@@ -482,14 +466,22 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       selectedProductIndexes.value = selectedProductIndexes.value.filter((i) => i !== index);
     }
   };
-
   const handleConvertToOrder = async (row) => {
     //檢查報表狀態，只有「已提交」可以轉入訂單
     if (row.status !== '已提交') {
       if (isMobile.value && showMessage) {
         showMessage('warning', t('reportNotSubmitted', '該報表尚未提交，請先提交後再轉入訂單'));
       } else {
-        await mainStore.SWAL_Warning(t('reportNotSubmitted', '該報表尚未提交，請先提交後再轉入訂單'));
+        await mainStore.SWAL_Error(t('reportNotSubmitted', '該報表尚未提交，請先提交後再轉入訂單'));
+      }
+      return;
+    }
+
+    if (row.status !== '已審核') {
+      if (isMobile.value && showMessage) {
+        showMessage('warning', t('該報表尚未審核通過，請先審核後再轉入訂單', '該報表尚未審核通過，請先審核後再轉入訂單'));
+      } else {
+        await mainStore.SWAL_Error(t('該報表尚未審核通過，請先審核後再轉入訂單', '該報表尚未審核通過，請先審核後再轉入訂單'));
       }
       return;
     }
@@ -498,6 +490,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     const products = row.products || [];
     selectedProductIndexes.value = products.map((item, index) => (!item.isConvertedToOrder ? index : null)).filter((v) => v !== null);
     convertMode.value = 'new';
+    convertCategoryId.value = null;
     selectedExistingOrder.value = null;
     convertShipDate.value = todayDate;
     convertNote.value = t('convertNoteDefault', '從送貨報表轉入');
@@ -510,8 +503,8 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     selectedExistingOrder.value = null;
     convertShipDate.value = '';
     convertNote.value = '';
+    convertCategoryId.value = null;
   };
-
   const handleDoConvert = async () => {
     if (!convertingReport.value || !selectedProductIndexes.value.length) {
       if (isMobile.value && showMessage) {
@@ -521,6 +514,14 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       }
       return;
     } //未選擇商品
+    if (convertMode.value === 'new' && !convertCategoryId.value) {
+      if (isMobile.value && showMessage) {
+        showMessage('warning', t('selectCategoryFirst', '請選擇產品種類'));
+      } else {
+        await mainStore.SWAL_Error(t('selectCategoryFirst', '請選擇產品種類'));
+      }
+      return;
+    } //未選擇產品種類（建立新訂單時必填）
     if (convertMode.value === 'existing' && !selectedExistingOrder.value) {
       if (isMobile.value && showMessage) {
         showMessage('warning', t('selectOrderFirst', '請選擇要加入的訂單'));
@@ -536,6 +537,9 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
         mode: convertMode.value, //模式：new(新訂單), existing(現有訂單)
         productIndexes: [...selectedProductIndexes.value].sort((a, b) => a - b), //商品index
       };
+      if (convertMode.value === 'new') {
+        convertData.categoryId = getCategoryIdByCode(convertCategoryId.value); //產品種類
+      }
       if (convertMode.value === 'existing') {
         convertData.existingOrderId = selectedExistingOrder.value.id; //訂單ID
         convertData.shipDate = convertShipDate.value || todayDate; //出貨日期
@@ -562,7 +566,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   };
 
-  // ===== 搜尋既有訂單 =====
+  /** 搜尋既有訂單相關 **/
   const orderSearchDialogVisible = ref(false);
   const orderSearchTerm = ref('');
   const existingOrders = ref([]);
@@ -572,7 +576,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     limit: 20,
     total: 0,
   });
-
   const searchExistingOrders = async (page = 1) => {
     mainStore.setLoading(true);
     try {
@@ -599,23 +602,19 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       mainStore.setLoading(false);
     }
   };
-
   const handleSearchExistingOrder = async () => {
     orderSearchTerm.value = '';
     orderSearchPagination.page = 1;
     orderSearchDialogVisible.value = true;
     await searchExistingOrders(1);
   };
-
   const handleOrderSearch = () => {
     orderSearchPagination.page = 1;
     searchExistingOrders(1);
   };
-
   const handleOrderPageChange = (page) => {
     searchExistingOrders(page);
   };
-
   const handleSelectExistingOrder = async (order) => {
     selectedExistingOrder.value = order;
     orderSearchDialogVisible.value = false;
@@ -627,10 +626,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   };
 
-  // ===== 窗口調整 =====
-  const cleanupResize = systemStore.initializeWindowResize();
-
-  // ===== 初始化 =====
+  const cleanupResize = systemStore.initializeWindowResize(); //窗口調整
   const initializeData = async () => {
     await getAPI();
     if (!isMobile.value) {
@@ -638,8 +634,6 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       systemStore.updateTableHeight(520);
     }
   };
-
-  // ===== Return =====
   return {
     // 狀態
     isMobile,
@@ -708,6 +702,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     convertLoading,
     convertShipDate,
     convertNote,
+    convertCategoryId,
     activeTab,
     isProject,
     isOrder,

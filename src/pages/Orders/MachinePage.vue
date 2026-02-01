@@ -1,9 +1,9 @@
 <!-- src/pages/order-management/WaterDispenserOrdersPage.vue 飲水機 -->
 <template>
-  <DataList pageTitle="waterDispenserOrders" :categoryId="categoryId" categoryCode="DISPENSER" />
+  <DataList pageTitle="waterDispenserOrders" :categoryId="CATEGORY_IDS.DISPENSER" :categoryCode="CATEGORY_CODES.DISPENSER" />
 </template>
 
 <script setup>
 import DataList from '@/pages/Orders/DataList.vue';
-const categoryId = 'b2eb8750-10d5-4f90-803f-71ed3ae264da';
+import { CATEGORY_IDS, CATEGORY_CODES } from '@/constants/categories';
 </script>

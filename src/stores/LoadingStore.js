@@ -147,12 +147,16 @@ export const useMainStore = defineStore("main", {
       icon = "warning",
       confirmButtonText,
       cancelButtonText,
+      denyButtonText,
       confirmButtonColor = "#F53F3F",
       cancelButtonColor = "#f2f3f5",
+      denyButtonColor = "#6c757d",
       onConfirm,
       onCancel,
+      onDeny,
       showLoading = true,
       showCancelButton = true,
+      showDenyButton = false,
       preConfirm,
       reverseButtons = false
     }) {
@@ -166,10 +170,13 @@ export const useMainStore = defineStore("main", {
         icon,
         allowOutsideClick: false,
         showCancelButton,
+        showDenyButton,
         confirmButtonColor,
         cancelButtonColor,
+        denyButtonColor,
         confirmButtonText: confirmButtonText || i18n.global.t("swal.confirm"),
         cancelButtonText: cancelButtonText || i18n.global.t("swal.cancel"),
+        denyButtonText: denyButtonText || i18n.global.t("swal.deny", "拒絕"),
         preConfirm: preConfirm || null,
         allowEscapeKey: false,
         reverseButtons
@@ -181,6 +188,19 @@ export const useMainStore = defineStore("main", {
             this.setLoading(true);
           }
           await onConfirm();
+        } catch (error) {
+          await this.SWAL_Error(error);
+        } finally {
+          if (showLoading) {
+            this.setLoading(false);
+          }
+        }
+      } else if (result.isDenied && onDeny) {
+        try {
+          if (showLoading) {
+            this.setLoading(true);
+          }
+          await onDeny();
         } catch (error) {
           await this.SWAL_Error(error);
         } finally {

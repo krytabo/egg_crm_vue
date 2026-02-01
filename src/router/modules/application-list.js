@@ -89,6 +89,12 @@ const appChildren = [
 
   // ===== Orders 訂單管理 =====
   {
+    path: 'orders/all',
+    name: 'orders-all',
+    component: () => import('@/pages/Orders/AllOrdersPage.vue'),
+    meta: { requiresAuth: true, sidebarId: 'orders-all', title: '所有訂單', language: 'Customer' },
+  },
+  {
     path: 'orders/water',
     name: 'orders-water',
     component: () => import('@/pages/Orders/WaterPage.vue'),

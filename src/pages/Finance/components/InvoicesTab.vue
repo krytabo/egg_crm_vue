@@ -26,13 +26,16 @@
     </div>
 
     <!-- 請款單列表 -->
+    <!--<JsonViewer :value="basicDataList" boxed copyable />-->
     <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
-      <CustomTinyGridColumn field="invoiceNumber" :title="t('billingRequestNumber', '請款單號碼')" width="160" fixed="left">
+      <CustomTinyGridColumn field="id" :title="t('billingRequestNumber', '請款單號碼')" width="340" fixed="left">
         <template #default="{ row }">
-          <a-link @click="openDetailDrawer(row)">{{ row.invoiceNumber }}</a-link>
+          <a-link @click="openDetailDrawer(row)">{{ row.id }}</a-link>
         </template>
       </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="180" />
+      <CustomTinyGridColumn field="customer" :title="t('customer', '客戶')" min-width="180">
+        <template #default="{ row }">{{ row.customer?.name }}</template>
+      </CustomTinyGridColumn>
       <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100">
         <template #default="{ row }">
           <TinyBadge :type="getStatusType(row.status)">{{ getStatusLabel(row.status) }}</TinyBadge>
@@ -61,13 +64,14 @@
         :current-order="getColumnOrder('createdAt')"
         @sort="handleColumnSort"
       />
-      <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" width="200" fixed="right">
+      <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" width="220" fixed="right">
         <template #default="{ row }">
           <div class="flex gap-2">
-            <a-button v-if="row.status === 'DRAFT'" type="text" size="mini" @click="openEditDialog(row)">{{ t('edit', '編輯') }}</a-button>
-            <a-button v-if="row.status === 'DRAFT'" type="text" size="mini" status="success" @click="handleSendInvoice(row)">{{ t('send', '發送') }}</a-button>
-            <a-button v-if="['SENT', 'PARTIAL', 'OVERDUE'].includes(row.status)" type="text" size="mini" status="success" @click="handleOpenPayment(row)">{{ t('pay', '付款') }}</a-button>
-            <a-button v-if="row.status === 'DRAFT'" type="text" size="mini" status="danger" @click="handleDeleteInvoice(row)">{{ t('delete', '刪除') }}</a-button>
+            <a-button :disabled="row.status !== 'DRAFT'" type="text" class="px-1!" @click="handleSendInvoice(row)">{{ t('send', '發送') }}</a-button>
+            <a-button :disabled="!['SENT', 'PARTIAL', 'OVERDUE'].includes(row.status)" type="text" status="success" class="px-1!" @click="handleOpenPayment(row)">{{ t('pay', '付款') }}</a-button>
+            <a-button :disabled="row.status !== 'DRAFT'" type="text" status="danger" class="px-1!" @click="handleDeleteInvoice(row)">{{ t('delete', '刪除') }}</a-button>
+            <a-button v-if="row.status !== 'PAID'" :disabled="row.status !== 'DRAFT'" type="text" class="px-1!" @click="openEditDialog(row)">{{ t('edit', '編輯') }}</a-button>
+            <a-button v-if="row.status === 'PAID'" type="text" status="success" class="px-1!" @click="openDetailDrawer(row)">{{ t('view', '檢視') }}</a-button>
           </div>
         </template>
       </CustomTinyGridColumn>
@@ -87,33 +91,83 @@
   <a-modal v-model:visible="dialogVisible" :title="isEditing ? t('editBillingRequest', '編輯請款單') : t('createBillingRequest', '新增請款單')" width="800px" :mask-closable="false">
     <perfect-scrollbar class="h-[calc(100vh-300px)] pr-4">
       <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
-        <div class="grid grid-cols-2 gap-4">
-          <AFormItem :label="t('customer', '客戶')" field="customerId" class="col-span-2">
-            <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('pleaseSelect', '請選擇')" :disabled="isEditing" />
-          </AFormItem>
-
-          <AFormItem :label="t('dueDate', '到期日')" field="dueDate">
-            <TinyDatePicker v-model="basicForm.dueDate" :placeholder="t('pleaseSelect', '請選擇')" value-format="yyyy-MM-dd" class="w-full" />
-          </AFormItem>
-
-          <AFormItem :label="t('taxRate', '稅率 (%)')" field="taxRate">
-            <CustomField v-model="basicForm.taxRate" type="number" :min="0" :max="100" :step="1" />
-          </AFormItem>
-
-          <AFormItem :label="t('discount', '折扣金額')" field="discount">
-            <CustomField v-model="basicForm.discount" type="number" :min="0" />
-          </AFormItem>
-
-          <AFormItem :label="t('notes', '備註')" class="col-span-2">
-            <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('pleaseEnterNotes', '請輸入備註')" />
-          </AFormItem>
+        <!-- 新增模式選擇（僅新增時顯示） -->
+        <div v-if="!isEditing" class="mb-4">
+          <a-radio-group v-model="createMode" type="button">
+            <a-radio value="manual">{{ t('manualCreate', '手動新增') }}</a-radio>
+            <a-radio value="fromOrder">{{ t('importFromOrder', '從訂單匯入') }}</a-radio>
+          </a-radio-group>
         </div>
 
-        <!-- 請款單項目 -->
-        <div class="mt-4">
+        <!-- 從訂單匯入模式 -->
+        <div v-if="!isEditing && createMode === 'fromOrder'" class="mb-4 rounded-lg border bg-gray-50 p-4">
+          <div class="flex items-center justify-between">
+            <span class="text-sm text-gray-600">{{ t('selectCompletedOrder', '選擇已完成的訂單') }}</span>
+            <a-button type="primary" size="small" @click="handleOpenOrderSearch">
+              <i class="ri-search-line mr-1" />
+              {{ t('searchOrder', '搜尋訂單') }}
+            </a-button>
+          </div>
+          <!-- 已選擇的訂單資訊 -->
+          <div v-if="selectedOrder" class="mt-3 rounded border bg-white p-3">
+            <div class="flex items-start justify-between">
+              <div class="flex flex-col gap-1 text-sm">
+                <p>
+                  <span class="text-gray-500">{{ t('orderNumber', '訂單編號') }}：</span>{{ selectedOrder.orderNumber }}
+                </p>
+                <p>
+                  <span class="text-gray-500">{{ t('customer', '客戶') }}：</span>{{ selectedOrder.targetName }}
+                </p>
+                <p>
+                  <span class="text-gray-500">{{ t('orderDate', '訂單日期') }}：</span>{{ selectedOrder.orderDate }}
+                </p>
+                <p>
+                  <span class="text-gray-500">{{ t('totalAmount', '總金額') }}：</span>NT$ {{ formatNumber(selectedOrder.totalAmount) }}
+                </p>
+              </div>
+              <a-button type="text" size="small" status="danger" @click="handleClearSelectedOrder">
+                <i class="ri-close-line text-lg" />
+              </a-button>
+            </div>
+          </div>
+          <p v-else class="mt-3 text-center text-sm text-gray-400">{{ t('noOrderSelected', '尚未選擇訂單') }}</p>
+        </div>
+
+        <AFormItem v-if="createMode === 'manual'" :label="t('customer', '客戶')" field="customerId" class="col-span-2">
+          <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('pleaseSelect', '請選擇')" :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)" />
+        </AFormItem>
+        <AFormItem :label="t('billingRequestItems', '請款單項目')" field="">
+          <template #label>
+            <div class="mb-2 flex items-center justify-between">
+              <span class="font-medium">{{ t('billingRequestItems', '請款單項目') }}</span>
+              <a-button v-if="createMode === 'manual'" type="text" @click="addInvoiceItem">
+                <i class="ri-add-line mr-1"></i>
+                {{ t('addItem', '新增項目') }}
+              </a-button>
+            </div>
+          </template>
+          <div v-for="(item, index) in basicForm.items" :key="index" class="mb-2 flex items-end gap-2 rounded border border-gray-200 p-3">
+            <AFormItem :label="t('product', '商品')" :field="`items.${index}.productId`" class="mb-0 flex-1">
+              <InfiniteSelect v-model="item.productId" dataSource="products" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
+            </AFormItem>
+            <AFormItem :label="t('quantity', '數量')" :field="`items.${index}.quantity`" class="mb-0 w-24">
+              <CustomField v-model="item.quantity" type="number" :min="1" />
+            </AFormItem>
+            <AFormItem :label="t('unitPrice', '單價')" :field="`items.${index}.unitPrice`" class="mb-0 w-32">
+              <CustomField v-model="item.unitPrice" type="number" :min="0" />
+            </AFormItem>
+            <AFormItem :label="t('subtotal', '小計')" class="mb-0 w-32">
+              <div class="flex h-8 items-center font-medium text-blue-600">NT$ {{ formatNumber(item.quantity * item.unitPrice) }}</div>
+            </AFormItem>
+            <a-button type="text" status="danger" class="mb-0" @click="removeInvoiceItem(index)">
+              <i class="ri-delete-bin-line"></i>
+            </a-button>
+          </div>
+        </AFormItem>
+        <!--<div class="mt-4">
           <div class="mb-2 flex items-center justify-between">
             <span class="font-medium">{{ t('billingRequestItems', '請款單項目') }}</span>
-            <a-button type="text" size="small" @click="addInvoiceItem">
+            <a-button v-if="createMode === 'manual'" type="text" @click="addInvoiceItem">
               <i class="ri-add-line mr-1"></i>
               {{ t('addItem', '新增項目') }}
             </a-button>
@@ -131,11 +185,25 @@
             <AFormItem :label="t('subtotal', '小計')" class="mb-0 w-32">
               <div class="flex h-8 items-center font-medium text-blue-600">NT$ {{ formatNumber(item.quantity * item.unitPrice) }}</div>
             </AFormItem>
-            <a-button type="text" status="danger" size="mini" class="mb-0" @click="removeInvoiceItem(index)">
+            <a-button type="text" status="danger" class="mb-0" @click="removeInvoiceItem(index)">
               <i class="ri-delete-bin-line"></i>
             </a-button>
           </div>
           <div v-if="basicForm.items.length === 0" class="py-4 text-center text-gray-400">{{ t('noItems', '尚無項目，請點擊新增') }}</div>
+        </div>-->
+        <div class="grid grid-cols-2 gap-4">
+          <AFormItem :label="t('付款日期', '付款日期')" field="dueDate" class="col-span-2">
+            <TinyDatePicker v-model="basicForm.dueDate" :placeholder="t('pleaseSelect', '請選擇')" value-format="yyyy-MM-dd" class="w-full" />
+          </AFormItem>
+          <AFormItem :label="t('taxRate', '稅率 (%)')" field="taxRate">
+            <CustomField v-model="basicForm.taxRate" type="number" :min="0" :max="100" :step="1" />
+          </AFormItem>
+          <AFormItem :label="t('discount', '折扣金額')" field="discount">
+            <CustomField v-model="basicForm.discount" type="number" :min="0" />
+          </AFormItem>
+          <AFormItem :label="t('notes', '備註')" class="col-span-2">
+            <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('請輸入已開立的統一發票號碼或者其他備註', '請輸入已開立的統一發票號碼或者其他備註')" />
+          </AFormItem>
         </div>
 
         <!-- 金額摘要 -->
@@ -160,9 +228,9 @@
       </AForm>
     </perfect-scrollbar>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button @click="dialogVisible = false">{{ t('cancel', '取消') }}</a-button>
-        <a-button type="primary" :disabled="isSaving" :loading="isSaving" @click="handleSubmit">{{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}</a-button>
+        <a-button type="primary" :loading="isSaving" @click="handleSubmit">{{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -175,16 +243,12 @@
         <h3 class="mb-3 font-medium">{{ t('basicInfo', '基本資訊') }}</h3>
         <div class="grid grid-cols-2 gap-3 text-sm">
           <div>
-            <span class="text-gray-500">{{ t('billingRequestNumber', '請款單號碼') }}：</span>
-            <span class="font-medium">{{ selectedInvoice.invoiceNumber }}</span>
-          </div>
-          <div>
             <span class="text-gray-500">{{ t('status', '狀態') }}：</span>
             <TinyBadge :type="getStatusType(selectedInvoice.status)">{{ getStatusLabel(selectedInvoice.status) }}</TinyBadge>
           </div>
           <div>
             <span class="text-gray-500">{{ t('customer', '客戶') }}：</span>
-            <span>{{ selectedInvoice.customerName }}</span>
+            <span>{{ selectedInvoice.customer?.name }}</span>
           </div>
           <div>
             <span class="text-gray-500">{{ t('dueDate', '到期日') }}：</span>
@@ -264,11 +328,68 @@
       </div>
     </div>
   </a-drawer>
+
+  <!-- 搜尋既有訂單彈窗 -->
+  <a-modal v-model:visible="orderSearchDialogVisible" :title="t('searchCompletedOrder', '搜尋已完成訂單')" width="900px" :footer="false">
+    <div class="flex flex-col gap-3">
+      <!-- 搜尋欄 -->
+      <div class="flex gap-2">
+        <TinyInput v-model="orderSearchTerm" class="flex-1" :placeholder="t('searchOrderPlaceholder', '輸入訂單編號或客戶名稱...')" clearable @keyup.enter="handleOrderSearch" />
+        <a-button type="primary" :loading="orderSearchLoading" @click="handleOrderSearch">
+          <i class="ri-search-line mr-1" />
+          {{ t('search', '搜尋') }}
+        </a-button>
+      </div>
+
+      <!-- 提示文字 -->
+      <p class="text-xs text-gray-500">
+        <i class="ri-information-line mr-1" />
+        {{ t('onlyCompletedOrdersCanBeSelected', '僅顯示狀態為「已完成」的訂單') }}
+      </p>
+
+      <!-- 訂單列表 -->
+      <a-table :data="existingOrders" :bordered="false" :pagination="false" :scroll="{ y: 400 }" :loading="orderSearchLoading" row-key="id">
+        <template #columns>
+          <!--<a-table-column :title="t('orderNumber', '訂單編號')" :width="180">
+            <template #cell="{ record }">{{ record.orderNumber || `#${record.id}` }}</template>
+          </a-table-column>-->
+          <a-table-column :title="t('customer', '客戶')" min-width="150">
+            <template #cell="{ record }">{{ record.targetName || '—' }}</template>
+          </a-table-column>
+          <a-table-column :title="t('orderDate', '訂單日期')" :width="120">
+            <template #cell="{ record }">{{ record.orderDate || '—' }}</template>
+          </a-table-column>
+          <a-table-column :title="t('totalAmount', '總金額')" :width="130" align="right">
+            <template #cell="{ record }">NT$ {{ formatNumber(record.totalAmount) }}</template>
+          </a-table-column>
+          <a-table-column :title="t('itemCount', '商品數')" :width="80" align="center">
+            <template #cell="{ record }">{{ record.products?.length || 0 }}</template>
+          </a-table-column>
+          <a-table-column :title="t('actions', '操作')" :width="100" align="center">
+            <template #cell="{ record }">
+              <a-button type="primary" size="small" @click="handleSelectOrder(record)">{{ t('select', '選擇') }}</a-button>
+            </template>
+          </a-table-column>
+        </template>
+      </a-table>
+
+      <!-- 分頁 -->
+      <a-pagination
+        v-if="orderSearchPagination.total > orderSearchPagination.limit"
+        :current="orderSearchPagination.page"
+        :page-size="orderSearchPagination.limit"
+        :total="orderSearchPagination.total"
+        size="small"
+        @change="handleOrderPageChange"
+      />
+    </div>
+  </a-modal>
 </template>
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { InvoiceCreatePost, InvoiceDeleteById, InvoiceGetById, InvoiceListGet, InvoiceSendPost, InvoiceUpdatePatch } from '@/assets/API/Billing';
+import { OrderListGet } from '@/assets/API/Order';
 import { TinyBadge, TinyDatePicker, TinySelect, TinyInput } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
@@ -293,10 +414,6 @@ const { t } = useI18n();
 const { formatNumber, formatCurrencyNumber } = currencyStore;
 const formatDate = computed(() => timezoneStore.formatDate);
 const EMPTY_PLACEHOLDER = '—';
-/*const formatNumber = (value) => {
-  if (value === null || value === undefined) return '0';
-  return Number(value).toLocaleString();
-};*/ //格式化數字
 
 /** 狀態相關 **/
 const statusOptions = [
@@ -357,11 +474,9 @@ const handleColumnSort = async ({ field, order }) => {
 
 /** 列表資料 **/
 const responseDataToList = (item = {}) => ({
+  ...item,
   id: item.id,
-  invoiceNumber: item.invoiceNumber || EMPTY_PLACEHOLDER,
   customerId: item.customerId,
-  customerName: item.customer?.name || EMPTY_PLACEHOLDER,
-  customerCode: item.customer?.code || '',
   status: item.status,
   amount: item.amount || 0,
   taxAmount: item.taxAmount || 0,
@@ -394,7 +509,7 @@ const wrappedInvoiceListGet = (params) => {
     processedParams.sortOrder = sortDirection.value;
   }
   return InvoiceListGet(processedParams);
-}; //包裝 API 處理日期與排序
+};
 const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, handleFiltersChange, clearFilter, CurrentChange, SizeChange } = usePaginatedSearchApi(
   wrappedInvoiceListGet,
   defaultFilters,
@@ -410,6 +525,7 @@ const isEditing = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);
 const editingInvoiceId = ref(null);
+const createMode = ref('manual'); // 'manual' 手動新增 | 'fromOrder' 從訂單匯入
 const initializeForm = () => ({
   customerId: '',
   dueDate: format(addDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -425,6 +541,8 @@ const basicFormRules = {
 const openCreateDialog = () => {
   isEditing.value = false;
   editingInvoiceId.value = null;
+  createMode.value = 'manual';
+  selectedOrder.value = null;
   basicForm.value = initializeForm();
   dialogVisible.value = true;
 }; //開啟新增對話框
@@ -483,7 +601,7 @@ const calculateTotal = computed(() => {
 }); //計算總計
 const preparePayload = () => {
   return {
-    customerId: typeof basicForm.value.customerId === 'object' ? basicForm.value.customerId.id : basicForm.value.customerId,
+    customerId: basicForm.value.customerId?.id,
     dueDate: basicForm.value.dueDate ? new Date(basicForm.value.dueDate).toISOString() : undefined,
     taxRate: basicForm.value.taxRate / 100,
     discount: basicForm.value.discount || 0,
@@ -498,18 +616,18 @@ const preparePayload = () => {
 }; //準備送出資料
 const _saveForm = async () => {
   const validateResult = await formRef.value?.validate();
-  if (validateResult) return;
+  if (validateResult) return false;
 
   if (basicForm.value.items.length === 0) {
     await mainStore.SWAL_Error(t('pleaseAddItems', '請新增至少一個請款單項目'));
     return;
   }
-
   mainStore.setLoading(true);
   isSaving.value = true;
   try {
     const payload = preparePayload();
     if (isEditing.value) {
+      delete payload.customerId;
       await InvoiceUpdatePatch(editingInvoiceId.value, payload);
     } else {
       await InvoiceCreatePost(payload);
@@ -526,19 +644,21 @@ const _saveForm = async () => {
 }; //儲存
 const handleSubmit = debounce(_saveForm, 300, { leading: true, trailing: false });
 const handleSendInvoice = async (row) => {
-  const confirmed = await mainStore.SWAL_Confirm(t('confirmSendBillingRequest', '確定要發送此請款單嗎？'));
-  if (!confirmed) return;
-
-  mainStore.setLoading(true);
-  try {
-    await InvoiceSendPost(row.id);
-    await mainStore.SWAL_Success(t('sendSuccess', '發送成功'));
-    await getAPI();
-  } catch (error) {
-    await mainStore.SWAL_Error(error);
-  } finally {
-    mainStore.setLoading(false);
-  }
+  await mainStore.SWAL_Confirm({
+    text: t('confirmSendBillingRequest', '確定要發送此請款單嗎？'),
+    onConfirm: async () => {
+      mainStore.setLoading(true);
+      try {
+        await InvoiceSendPost(row.id);
+        await mainStore.SWAL_Success(t('sendSuccess', '發送成功'));
+        await getAPI();
+      } catch (error) {
+        await mainStore.SWAL_Error(error);
+      } finally {
+        mainStore.setLoading(false);
+      }
+    },
+  });
 }; //發送請款單
 const handleDeleteInvoice = async (row) => {
   const confirmed = await mainStore.SWAL_Confirm(t('confirmDeleteBillingRequest', '確定要刪除此請款單嗎？'));
@@ -556,8 +676,75 @@ const handleDeleteInvoice = async (row) => {
   }
 }; //刪除請款單
 const handleOpenPayment = (row) => {
+  console.log(1111, row);
   emit('open-payment', row);
 }; //開啟付款對話框
+
+/** 搜尋既有訂單相關 **/
+const orderSearchDialogVisible = ref(false);
+const orderSearchTerm = ref('');
+const orderSearchLoading = ref(false);
+const existingOrders = ref([]);
+const selectedOrder = ref(null);
+const orderSearchPagination = ref({ page: 1, limit: 10, total: 0 });
+const searchExistingOrders = async (page = 1) => {
+  orderSearchLoading.value = true;
+  try {
+    const params = {
+      page,
+      limit: orderSearchPagination.value.limit,
+      status: 'DELIVERED', //只搜尋已完成的訂單
+    };
+    if (orderSearchTerm.value) params.keyword = orderSearchTerm.value;
+    const response = await OrderListGet(params);
+    const responseData = response?.data?.data || response?.data || {};
+    const data = responseData?.data || responseData || [];
+    const paginationData = responseData?.pagination || {};
+    existingOrders.value = Array.isArray(data) ? data : [];
+    orderSearchPagination.value.page = paginationData.page || page;
+    orderSearchPagination.value.total = paginationData.total || 0;
+  } catch (error) {
+    console.error('搜尋訂單失敗:', error);
+    existingOrders.value = [];
+  } finally {
+    orderSearchLoading.value = false;
+  }
+}; //搜尋既有訂單
+const handleOpenOrderSearch = async () => {
+  orderSearchTerm.value = '';
+  orderSearchPagination.value.page = 1;
+  orderSearchDialogVisible.value = true;
+  await searchExistingOrders(1);
+}; //開啟訂單搜尋彈窗
+const handleOrderSearch = () => {
+  orderSearchPagination.value.page = 1;
+  searchExistingOrders(1);
+}; //執行搜尋
+const handleOrderPageChange = (page) => {
+  searchExistingOrders(page);
+}; //切換頁碼
+const handleSelectOrder = (order) => {
+  selectedOrder.value = order;
+  orderSearchDialogVisible.value = false;
+  basicForm.value.customerId = {
+    id: order.targetId,
+    name: order.targetName,
+  };
+  const products = order.products || [];
+  basicForm.value.items = products.map((item) => ({
+    productId: {
+      id: item.productId,
+      name: item.productName,
+    },
+    productName: item.productName,
+    quantity: item.quantity || 1,
+    unitPrice: item.actualPrice || item.retailPrice || 0,
+  }));
+}; //選擇訂單並填入表單
+const handleClearSelectedOrder = () => {
+  selectedOrder.value = null;
+  basicForm.value = initializeForm();
+}; //清除已選訂單
 
 /** 請款單詳情 **/
 const detailDrawerVisible = ref(false);

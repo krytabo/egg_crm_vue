@@ -47,7 +47,7 @@
   "taxId": "统一编号",
   "registeredDate": "注册日期",
 
-  "segmentWithHint": "客户分类 (Segment)",
+  "segmentWithHint": "客户分类",
   "salesRepPlaceholder": "选择业务人员",
   "tagsWithHint": "标签（输入后按 Enter）",
   "categoriesMulti": "客户类别（可多选）",

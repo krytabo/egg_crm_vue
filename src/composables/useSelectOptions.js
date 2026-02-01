@@ -129,6 +129,51 @@ export function useSelectOptions() {
     { label: t('customRole', '自訂角色'), value: 'custom' },
   ]); //角色類型選項
 
+  /** 訂單相關選項 **/
+  const targetTypeOptions = computed(() => [
+    { label: t('customer', '客戶'), value: 'CUSTOMER' },
+    { label: t('vendor', '廠商'), value: 'VENDOR' },
+  ]); //出貨對象類型
+  const orderPaymentTermOptions = computed(() => [
+    { label: t('cash', '現金'), value: 'CASH' },
+    { label: t('monthly', '月結'), value: 'MONTHLY' },
+    { label: t('prepaid', '預付'), value: 'PREPAID' },
+  ]); //訂單付款方式
+  const shipMethodOptions = computed(() => [
+    { label: t('pickup', '自取'), value: 'PICKUP' },
+    { label: t('driverDelivery', '司機送貨'), value: 'DRIVER_DELIVERY' },
+    { label: t('courier', '宅配'), value: 'COURIER' },
+  ]); //出貨方式
+  const orderStatusOptions = computed(() => [
+    { label: t('pending', '待出貨'), value: 'PENDING' },
+    { label: t('processing', '處理中'), value: 'PROCESSING' },
+    { label: t('delivered', '已完成'), value: 'DELIVERED' },
+    { label: t('cancelled', '取消'), value: 'CANCELLED' },
+  ]); //訂單狀態
+
+  /** 訂單狀態轉換 Map **/
+  const orderStatusLabelMap = {
+    待出貨: 'PENDING',
+    處理中: 'PROCESSING',
+    已完成: 'DELIVERED',
+    取消: 'CANCELLED',
+  }; //後端中文狀態 → 前端 key
+  const targetTypeLabelMap = {
+    客戶: 'CUSTOMER',
+    廠商: 'VENDOR',
+    臨時客戶: 'TEMPORARY_CUSTOMER',
+  }; //對象類型中文 → 英文
+  const paymentMethodLabelMap = {
+    現金: 'CASH',
+    月結: 'MONTHLY',
+    預付: 'PREPAID',
+  }; //付款方式中文 → 英文
+  const shipMethodLabelMap = {
+    自取: 'PICKUP',
+    司機送貨: 'DRIVER_DELIVERY',
+    宅配: 'COURIER',
+  }; //出貨方式中文 → 英文
+
   return {
     // 選項
     customerCategories,
@@ -151,6 +196,16 @@ export function useSelectOptions() {
     permissionOwnOnlyOptions,
     // 角色相關選項
     roleTypeOptions,
+    // 訂單相關選項
+    targetTypeOptions,
+    orderPaymentTermOptions,
+    shipMethodOptions,
+    orderStatusOptions,
+    // 訂單狀態轉換 Map
+    orderStatusLabelMap,
+    targetTypeLabelMap,
+    paymentMethodLabelMap,
+    shipMethodLabelMap,
     // 工具函式
     buildLabelMap,
     buildSelectOptionsWithAll,

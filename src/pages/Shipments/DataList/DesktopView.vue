@@ -124,13 +124,13 @@
             <span v-else>{{ row.status }}</span>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="250" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
               <a-button :disabled="!canReviewReport(row)" class="px-[2px]!" type="text" status="success" @click.stop="handleCheck(row)">{{ t('review', '審核') }}</a-button>
               <a-button :disabled="!canDeleteReport(row)" class="px-[2px]!" type="text" status="danger" @click.stop="handleDelete(row)">{{ t('delete', '刪除') }}</a-button>
               <!--<a-button class="px-[2px]!" type="text" status="success" @click.stop="handlePrint(row)">{{ t('print', '列印') }}</a-button>-->
-              <a-button class="px-[2px]!" type="text" status="warning" @click.stop="handleCopyLink(row)">{{ t('copyLink', '複製連結') }}</a-button>
+              <!--<a-button class="px-[2px]!" type="text" status="warning" @click.stop="handleCopyLink(row)">{{ t('copyLink', '複製連結') }}</a-button>-->
               <a-button class="px-[2px]!" type="text" status="normal" @click.stop="handleEdit(row)">{{ isViewOnlyReport(row) ? t('view', '檢視') : t('edit', '編輯') }}</a-button>
             </div>
           </template>
@@ -257,6 +257,13 @@
         <a-radio value="new">{{ t('createNewOrder', '建立新訂單') }}</a-radio>
         <a-radio value="existing">{{ t('addToExistingOrder', '加入既有訂單') }}</a-radio>
       </a-radio-group>
+
+      <!-- 建立新訂單：選擇產品種類 -->
+      <div v-if="convertMode === 'new'" class="flex flex-col gap-2 rounded-[10px] border bg-[#f2f3f5] p-3">
+        <AFormItem :label="t('productCategory', '產品種類')" required>
+          <InfiniteSelect v-model="convertCategoryId" emitValue dataSource="productTypes" :placeholder="t('pleaseSelectCategory', '請選擇產品種類')" type="outline" class="w-full" />
+        </AFormItem>
+      </div>
 
       <div v-if="convertMode === 'existing'" class="flex flex-col gap-2">
         <a-button type="text" class="w-fit" @click.stop="handleSearchExistingOrder">{{ t('selectOrder', '選擇訂單') }}</a-button>
@@ -481,7 +488,6 @@ import { useI18n } from 'vue-i18n';
 import { useDataList } from './useDataList';
 
 const { t } = useI18n();
-
 const {
   //常數
   statusOptions,
@@ -540,6 +546,7 @@ const {
   convertLoading,
   convertShipDate,
   convertNote,
+  convertCategoryId,
   activeTab,
   isProject,
   isOrder,

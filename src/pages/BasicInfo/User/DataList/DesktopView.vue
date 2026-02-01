@@ -21,17 +21,12 @@
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--         其他搜尋         -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <AFormItem :label="t('hireDate')">
-            <div class="flex gap-2">
-              <TinyDatePicker v-model="filters.hireDateFrom" type="date" :placeholder="t('pleaseSelectDate')" format="yyyy-MM-dd" @change="handleFilterChange" />
-              <TinyDatePicker v-model="filters.hireDateTo" type="date" :placeholder="t('pleaseSelectDate')" format="yyyy-MM-dd" @change="handleFilterChange" />
-
-              <TinyButton type="danger" plain @click="clearHireDateFilter">{{ t('clearHireDate') }}</TinyButton>
-            </div>
-          </AFormItem>
-        </AForm>
+      <div class="mb-4 flex items-center gap-3 rounded-md bg-[#f5f7fb] p-4">
+        <span class="text-sm font-medium text-gray-700">{{ t('hireDate') }}</span>
+        <a-date-picker v-model="filters.hireDateFrom" :placeholder="t('pleaseSelectDate')" format="YYYY-MM-DD" @change="handleFilterChange" />
+        <span>-</span>
+        <a-date-picker v-model="filters.hireDateTo" :placeholder="t('pleaseSelectDate')" format="YYYY-MM-DD" @change="handleFilterChange" />
+        <a-button status="danger" @click="clearHireDateFilter">{{ t('clearHireDate') }}</a-button>
       </div>
 
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -173,7 +168,7 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--       新增編輯視窗        -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editEmployee') : t('addEmployee')" :top="30" draggable :maskClosable="false" :closable="false" width="700px">
+  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editEmployee') : t('addEmployee')" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :unmount-on-close="true">
     <perfect-scrollbar class="h-[calc(100vh-370px)]" :class="userPhoto ? 'h-[calc(100vh-370px)]' : 'h-[calc(100vh-470px)]'">
       <AForm ref="basicFormRef" auto-label-width :model="basicForm" layout="vertical" :rules="basicFormRules">
         <template v-if="userPhoto">
@@ -265,7 +260,7 @@
 
 <script setup>
 import { nextTick, onMounted, onUnmounted } from 'vue';
-import { TinyInput, TinySelect, TinyDatePicker, TinyButton } from '@opentiny/vue';
+import { TinyInput, TinySelect } from '@opentiny/vue';
 import { SquarePen, Trash2 } from 'lucide-vue-next';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';

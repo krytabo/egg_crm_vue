@@ -201,19 +201,15 @@ import { useFormPage } from './useFormPage';
 const props = defineProps({
   uuid: { type: String, default: '' },
 });
-
 const systemStore = useSystemStore();
 const { t } = useI18n();
 
-// 訊息顯示（Desktop 使用 Arco Message）
 const showMessage = (type, content) => {
   if (type === 'success') Message.success(content);
   else if (type === 'warning') Message.warning(content);
   else if (type === 'error') Message.error(content);
   else Message.info(content);
 };
-
-// 使用共用邏輯
 const {
   saving,
   basicForm,
@@ -251,10 +247,8 @@ const {
   handleConfirmAddProduct,
 } = useFormPage(props, t, showMessage);
 
-// 生命週期
 const cleanupResize = systemStore.initializeWindowResize();
 onUnmounted(cleanupResize);
-
 onMounted(async () => {
   await getData();
   await nextTick();

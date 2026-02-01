@@ -54,6 +54,7 @@ const menuSections = [
     label: '訂單管理',
     remixIcon: 'ri-shopping-bag-3-line',
     items: [
+      { id: 'orders-all', label: '所有訂單', remixIcon: 'ri-list-check-2', role: 'ORDER' },
       { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
       { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
       { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },
@@ -85,24 +86,23 @@ const menuSections = [
     ],
   },
 ];
-
 const router = useRouter();
 const route = useRoute();
 const permissionStore = usePermissionStore();
-
-// 根據權限過濾選單項目
+const isLocalEnv = import.meta.env.DEV; // 判斷是否為本地開發環境
 const filteredMenuSections = computed(() => {
   return menuSections
     .map((section) => {
-      // 過濾掉沒有權限的項目
+      // 參數設定只在本地環境顯示
+      if (section.key === 'section-settings' && !isLocalEnv) return null;
+
+      //過濾掉沒有權限的項目
       const filteredItems = section.items.filter((item) => {
-        // 如果沒有設定 role，則預設顯示
-        if (!item.role) return true;
-        // 檢查是否有該資源的任何權限
-        return permissionStore.hasResourceAccess(item.role);
+        if (!item.role) return true; //如果沒有設定 role，則預設顯示
+        return permissionStore.hasResourceAccess(item.role); //檢查是否有該資源的任何權限
       });
 
-      // 如果過濾後沒有項目，則不顯示該區塊
+      //如果過濾後沒有項目，則不顯示該區塊
       if (filteredItems.length === 0) return null;
 
       return {
@@ -110,12 +110,14 @@ const filteredMenuSections = computed(() => {
         items: filteredItems,
       };
     })
-    .filter(Boolean); // 移除 null 的區塊
+    .filter(Boolean);
 });
-
 const activeSidebarId = computed(() => route.meta?.sidebarId || route.name || 'dashboard');
-const defaultOpenKeys = computed(() => filteredMenuSections.value.filter((section) => section.items.length > 1).map((section) => section.key));
-
+// 只展開當前頁面所屬的父級選單
+const defaultOpenKeys = computed(() => {
+  const currentSection = filteredMenuSections.value.find((section) => section.items.some((item) => item.id === activeSidebarId.value));
+  return currentSection && currentSection.items.length > 1 ? [currentSection.key] : [];
+});
 const handleMenuItemClick = (key) => {
   if (!key || key === activeSidebarId.value) return;
   router.push({ name: key });
