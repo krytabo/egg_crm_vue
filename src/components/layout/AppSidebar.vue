@@ -1,4 +1,32 @@
 <!-- src/components/layout/AppSidebar.vue 側邊選單 -->
+<template>
+  <div class="sidebar-container">
+    <div class="logo" v-if="!collapsed">CRM 管理系統</div>
+    <div class="logo h-[32px] bg-gray-500" v-if="collapsed" />
+    <a-menu :collapsed="collapsed" :selected-keys="[String(activeSidebarId)]" :default-open-keys="defaultOpenKeys" @menu-item-click="handleMenuItemClick">
+      <template v-for="section in filteredMenuSections" :key="section.key">
+        <a-menu-item v-if="section.items.length === 1" :key="section.items[0].id">
+          <component v-if="section.items[0].heroIcon" :is="section.items[0].heroIcon" class="menu-icon h-[10px] w-[10px] text-[12px]!" />
+          <i v-else-if="section.items[0].remixIcon" :class="[section.items[0].remixIcon, 'menu-icon remix']"></i>
+          {{ section.items[0].label }}
+        </a-menu-item>
+        <a-sub-menu v-else :key="section.key">
+          <template #title>
+            <component v-if="section.heroIcon" :is="section.heroIcon" class="menu-icon" />
+            <i v-else-if="section.remixIcon" :class="[section.remixIcon, 'menu-icon remix']"></i>
+            <span>{{ section.label }}</span>
+          </template>
+          <a-menu-item v-for="item in section.items" :key="item.id">
+            <component v-if="item.heroIcon" :is="item.heroIcon" class="menu-icon size-4" />
+            <i v-else-if="item.remixIcon" :class="[item.remixIcon, 'menu-icon remix']"></i>
+            <span>{{ item.label }}</span>
+          </a-menu-item>
+        </a-sub-menu>
+      </template>
+    </a-menu>
+  </div>
+</template>
+
 <script setup>
 import { computed, markRaw } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
@@ -124,34 +152,6 @@ const handleMenuItemClick = (key) => {
   emit('menu-click', key); // 通知父層選單已點擊（用於關閉手機版選單）
 };
 </script>
-
-<template>
-  <div class="sidebar-container">
-    <div class="logo" v-if="!collapsed">CRM 管理系統</div>
-    <div class="logo h-[32px] bg-gray-500" v-if="collapsed" />
-    <a-menu :collapsed="collapsed" :selected-keys="[String(activeSidebarId)]" :default-open-keys="defaultOpenKeys" @menu-item-click="handleMenuItemClick">
-      <template v-for="section in filteredMenuSections" :key="section.key">
-        <a-menu-item v-if="section.items.length === 1" :key="section.items[0].id">
-          <component v-if="section.items[0].heroIcon" :is="section.items[0].heroIcon" class="menu-icon h-[10px] w-[10px] text-[12px]!" />
-          <i v-else-if="section.items[0].remixIcon" :class="[section.items[0].remixIcon, 'menu-icon remix']"></i>
-          {{ section.items[0].label }}
-        </a-menu-item>
-        <a-sub-menu v-else :key="section.key">
-          <template #title>
-            <component v-if="section.heroIcon" :is="section.heroIcon" class="menu-icon" />
-            <i v-else-if="section.remixIcon" :class="[section.remixIcon, 'menu-icon remix']"></i>
-            <span>{{ section.label }}</span>
-          </template>
-          <a-menu-item v-for="item in section.items" :key="item.id">
-            <component v-if="item.heroIcon" :is="item.heroIcon" class="menu-icon size-4" />
-            <i v-else-if="item.remixIcon" :class="[item.remixIcon, 'menu-icon remix']"></i>
-            <span>{{ item.label }}</span>
-          </a-menu-item>
-        </a-sub-menu>
-      </template>
-    </a-menu>
-  </div>
-</template>
 
 <style scoped>
 .sidebar-container {

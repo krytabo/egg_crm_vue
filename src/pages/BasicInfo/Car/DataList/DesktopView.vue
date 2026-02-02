@@ -1,31 +1,28 @@
 <!-- src/pages/BasicInfo/Car/DataList/DesktopView.vue 車輛管理（桌面版） -->
 <template>
   <Card ref="containerRef">
-    <CardHeader>
-      <div class="flex flex-1 flex-col gap-1">
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          表頭            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CardHeader class="gap-20">
+      <div class="flex flex-col">
         <CardTitle>{{ t('vehicleList', '車輛列表') }}</CardTitle>
         <p class="text-sm text-gray-500">{{ t('totalCount', { total: pagination.total }, `共 ${pagination.total} 筆`) }}</p>
       </div>
-      <div class="flex items-center gap-3">
-        <Button type="danger" plain @click="clearFilter">{{ t('clearAllSearch', '清除全部搜尋') }}</Button>
-        <Button v-if="permissionStore.hasPermission('VEHICLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addVehicle', '新增車輛') }}</Button>
+      <div class="flex flex-1 items-center justify-end gap-1">
+        <a-button status="danger" plain @click="clearFilter">{{ t('clearAllSearch', '清除全部搜尋') }}</a-button>
+        <a-button v-if="permissionStore.hasPermission('VEHICLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addVehicle', '新增車輛') }}</a-button>
       </div>
     </CardHeader>
 
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          內容            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <CardContent class="flex flex-col gap-4">
       <!-- 篩選區塊 -->
-      <TinyForm label-width="100px" label-position="left" class="grid gap-3 rounded-[10px] bg-[#f5f7fb] px-5 py-4 md:grid-cols-3">
+      <TinyForm label-width="100px" label-position="left" class="grid gap-3 rounded-[10px] bg-[#f5f7fb] px-5 py-4 md:grid-cols-2">
         <TinyFormItem :label="t('keyword', '關鍵字')">
-          <TinyInput
-            v-model="filters.search"
-            :placeholder="t('searchVehiclePlaceholder', '搜尋車牌、品牌、型號')"
-            clearable
-            @keyup.enter="handleGlobalSearch"
-            @clear="handleGlobalSearch"
-          />
-        </TinyFormItem>
-        <TinyFormItem :label="t('vehicleType', '車輛類型')">
-          <TinySelect v-model="filters.type" :options="vehicleTypeOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
+          <TinyInput v-model="filters.search" :placeholder="t('searchVehiclePlaceholder', '搜尋車牌、品牌、型號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
         </TinyFormItem>
         <TinyFormItem :label="t('status', '狀態')">
           <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
@@ -33,19 +30,25 @@
       </TinyForm>
 
       <!-- 表格 -->
+      <!--<JsonViewer :value="basicDataList" boxed copyable />-->
       <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id">
-        <CustomTinyGridColumn field="plateNumber" :title="t('plateNumber', '車牌號碼')" width="150" sortable />
-        <CustomTinyGridColumn field="type" :title="t('vehicleType', '車輛類型')" width="120">
+        <CustomTinyGridColumn field="licensePlate" :title="t('licensePlate', '車牌號碼')" min-width="120" fixed="left" />
+        <CustomTinyGridColumn field="makeModel" :title="t('makeModel', '品牌/型號')" min-width="220">
           <template #default="{ row }">
-            <TinyBadge type="info">{{ vehicleTypeMap[row.type] || row.type }}</TinyBadge>
+            {{ row.brand }} - {{ row.model }} <span v-if="row.year">({{ row.year }})</span>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="brandModel" :title="t('vehicleModel', '品牌/型號')" width="200">
+        <CustomTinyGridColumn field="fuelType" :title="t('fuelType', '燃料類型')" width="100">
           <template #default="{ row }">
-            {{ row.brand }} {{ row.model }} <span v-if="row.year">({{ row.year }})</span>
+            {{ fuelTypeMap[row.fuelType] || row.fuelType || '-' }}
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="assignedDriver" :title="t('assignedDriver', '指派司機')" width="150">
+        <CustomTinyGridColumn field="capacity" :title="t('capacity', '載重量')" width="100" align="right">
+          <template #default="{ row }">
+            {{ row.capacity ? `${row.capacity} kg` : '-' }}
+          </template>
+        </CustomTinyGridColumn>
+        <CustomTinyGridColumn field="assignedDriver" :title="t('assignedDriver', '指派司機')" min-width="120">
           <template #default="{ row }">
             {{ row.assignedDriver?.name || t('unassigned', '未指派') }}
           </template>
@@ -55,17 +58,23 @@
             <TinyTag :type="getStatusType(row.status)">{{ statusMap[row.status] || row.status }}</TinyTag>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions', '操作')" width="150" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+              <button v-if="permissionStore.hasPermission('VEHICLE', 'READ')" class="table-button" :title="t('viewDetail', '詳細資料')" @click="openDetailDrawer(row)">
+                <FileText class="size-4 text-gray-500" />
+              </button>
+              <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('assignDriver', '指派司機')" @click="openDriverDialog(row)">
+                <UserCheck class="size-4 text-blue-500" />
+              </button>
+              <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" :title="t('delete', '刪除')" @click="deleteData(row.id)">
+                <Trash2 class="size-4 text-rose-500" />
+              </button>
+              <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('edit', '編輯')" @click="editData(row)"><SquarePen class="size-4" /></button>
             </div>
           </template>
         </CustomTinyGridColumn>
       </CustomTinyGrid>
-
-      <!-- 分頁 -->
       <AppPagination
         class="md:w-auto"
         :current="pagination.page"
@@ -78,45 +87,65 @@
     </CardContent>
   </Card>
 
-  <!-- 新增/編輯彈窗 -->
-  <a-modal
-    v-model:visible="dialogVisible"
-    :title="isCreate ? t('addVehicle', '新增車輛') : t('editVehicle', '編輯車輛')"
-    :top="30"
-    draggable
-    :mask-closable="false"
-    :closable="false"
-    width="600px"
-  >
-    <perfect-scrollbar class="h-[calc(100vh-300px)] pr-4">
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--      新增/編輯彈窗        -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <a-modal v-model:visible="dialogVisible" :title="isCreate ? t('addVehicle', '新增車輛') : t('editVehicle', '編輯車輛')" :top="30" draggable :mask-closable="false" :closable="false" width="700px">
+    <perfect-scrollbar class="max-h-[calc(100vh-300px)] pr-4">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
+        <!-- 基本資訊 -->
+        <div class="mb-4 text-sm font-medium text-gray-700">{{ t('basicInfo', '基本資訊') }}</div>
         <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <AFormItem :label="t('plateNumber', '車牌號碼')" field="plateNumber">
-            <CustomField v-model="basicForm.plateNumber" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
+          <AFormItem :label="t('licensePlate', '車牌號碼')" field="licensePlate">
+            <CustomField v-model="basicForm.licensePlate" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
           </AFormItem>
-          <AFormItem :label="t('vehicleType', '車輛類型')" field="type">
-            <CustomField v-model="basicForm.type" type="select" :options="vehicleTypeOptions" :placeholder="t('pleaseSelect', '請選擇')" />
+          <AFormItem :label="t('make', '品牌')" field="make">
+            <CustomField v-model="basicForm.make" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
           </AFormItem>
-          <AFormItem :label="t('brand', '品牌')">
-            <CustomField v-model="basicForm.brand" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
-          </AFormItem>
-          <AFormItem :label="t('model', '型號')">
+          <AFormItem :label="t('model', '型號')" field="model">
             <CustomField v-model="basicForm.model" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
           </AFormItem>
-          <AFormItem :label="t('year', '出廠年份')">
+          <AFormItem :label="t('year', '出廠年份')" field="year">
             <CustomField v-model="basicForm.year" type="number" :min="1900" :max="2100" />
-          </AFormItem>
-          <AFormItem :label="t('capacity', '載重量')">
-            <CustomField v-model="basicForm.capacity" type="number" :min="0" />
-          </AFormItem>
-          <AFormItem :label="t('fuelType', '燃料類型')">
-            <CustomField v-model="basicForm.fuelType" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
           </AFormItem>
           <AFormItem v-if="isEdite" :label="t('status', '狀態')" field="status">
             <CustomField v-model="basicForm.status" type="select" :options="statusOptions" />
           </AFormItem>
         </div>
-        <AFormItem :label="t('notes', '備註')">
+
+        <!-- 車輛規格 -->
+        <div class="mb-4 mt-6 text-sm font-medium text-gray-700">{{ t('vehicleSpecs', '車輛規格') }}</div>
+        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <AFormItem :label="t('vin', '車身號碼')">
+            <CustomField v-model="basicForm.vin" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
+          </AFormItem>
+          <AFormItem :label="t('engineNumber', '引擎號碼')">
+            <CustomField v-model="basicForm.engineNumber" type="input" :placeholder="t('pleaseEnter', '請輸入')" />
+          </AFormItem>
+          <AFormItem :label="t('fuelType', '燃料類型')">
+            <CustomField v-model="basicForm.fuelType" type="select" :options="fuelTypeOptions" :placeholder="t('pleaseSelect', '請選擇')" allow-clear />
+          </AFormItem>
+          <AFormItem :label="t('capacity', '載重量 (kg)')">
+            <CustomField v-model="basicForm.capacity" type="number" :min="0" :placeholder="t('pleaseEnter', '請輸入')" />
+          </AFormItem>
+        </div>
+
+        <!-- 證照日期 -->
+        <div class="mb-4 mt-6 text-sm font-medium text-gray-700">{{ t('licenseDates', '證照日期') }}</div>
+        <div class="grid gap-4 grid-cols-3">
+          <AFormItem :label="t('insuranceExpiry', '保險到期日')">
+            <CustomField v-model="basicForm.insuranceExpiry" type="date-picker" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
+          <AFormItem :label="t('registrationExpiry', '行照到期日')">
+            <CustomField v-model="basicForm.registrationExpiry" type="date-picker" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
+          <AFormItem :label="t('inspectionExpiry', '驗車到期日')">
+            <CustomField v-model="basicForm.inspectionExpiry" type="date-picker" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
+        </div>
+
+        <!-- 備註 -->
+        <AFormItem :label="t('notes', '備註')" class="mt-4">
           <CustomField v-model="basicForm.notes" type="textarea" :rows="3" />
         </AFormItem>
       </AForm>
@@ -130,35 +159,72 @@
       </div>
     </template>
   </a-modal>
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--       指派司機彈窗        -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <a-modal v-model:visible="driverDialogVisible" :title="t('assignDriver', '指派司機')" :top="100" draggable :mask-closable="false" :closable="false" width="450px">
+    <div class="py-2">
+      <p class="mb-4 text-gray-600">
+        {{ t('assignDriverFor', '為車輛 {plate} 指派司機', { plate: selectedVehicle?.licensePlate }) }}
+      </p>
+      <AForm layout="vertical">
+        <AFormItem :label="t('selectDriver', '選擇司機')">
+          <InfiniteSelect v-model="selectedDriverId" dataSource="drivers" :placeholder="t('pleaseSelect', '請選擇')" />
+        </AFormItem>
+      </AForm>
+      <div v-if="selectedVehicle?.assignedDriver" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-700">
+        <p>
+          {{ t('currentDriver', '目前指派司機') }}: <strong>{{ selectedVehicle.assignedDriver.name }}</strong>
+        </p>
+        <a-button class="mt-2" size="small" status="warning" @click="handleUnassignDriver">
+          {{ t('unassignDriver', '解除指派') }}
+        </a-button>
+      </div>
+    </div>
+    <template #footer>
+      <div class="flex flex-1 items-center justify-center gap-2">
+        <a-button size="large" @click="closeDriverDialog">{{ t('cancel', '取消') }}</a-button>
+        <Button :disabled="isAssigning || !selectedDriverId" :loading="isAssigning" @click="assignDriver">
+          {{ isAssigning ? t('assigning', '指派中') : t('confirmAssign', '確認指派') }}
+        </Button>
+      </div>
+    </template>
+  </a-modal>
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--      車輛詳細資料抽屜       -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <VehicleDetailDrawer v-model="detailDrawerVisible" :vehicle="detailVehicle" />
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { TinyInput, TinySelect, TinyBadge, TinyTag, TinyForm, TinyFormItem } from '@opentiny/vue';
+import { ref, onMounted } from 'vue';
+import { TinyInput, TinySelect, TinyTag, TinyForm, TinyFormItem } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import AppPagination from '@/components/ui/AppPagination.vue';
+import { Trash2, SquarePen, UserCheck, FileText } from 'lucide-vue-next';
+import VehicleDetailDrawer from './VehicleDetailDrawer.vue';
 import CustomField from '@/components/Form/CustomField.vue';
-import { Trash2, SquarePen } from 'lucide-vue-next';
-import { useI18n } from 'vue-i18n';
-import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
+import AppPagination from '@/components/ui/AppPagination.vue';
+import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import { usePermissionStore } from '@/stores/PermissionStore';
 import { useDataList } from './useDataList';
+import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
 
-// 使用共用邏輯
 const {
-  // 選項
-  vehicleTypeOptions,
-  vehicleTypeMap,
+  //選項
   statusOptions,
   statusMap,
-  // 工具函式
+  fuelTypeOptions,
+  fuelTypeMap,
   getStatusType,
-  // 列表資料
+
+  //列表資料
   basicDataList,
   filters,
   pagination,
@@ -169,7 +235,8 @@ const {
   clearFilter,
   CurrentChange,
   SizeChange,
-  // 新增編輯
+
+  //新增編輯
   dialogVisible,
   basicFormRef,
   isSaving,
@@ -182,7 +249,32 @@ const {
   closeDialog,
   saveData,
   deleteData,
+
+  //指派司機
+  driverDialogVisible,
+  selectedVehicle,
+  selectedDriverId,
+  isAssigning,
+  openDriverDialog,
+  closeDriverDialog,
+  assignDriver,
+  unassignDriver,
 } = useDataList(t);
+
+const handleUnassignDriver = () => {
+  if (selectedVehicle.value?.id) {
+    closeDriverDialog();
+    unassignDriver(selectedVehicle.value.id);
+  }
+};
+
+/** 詳細資料抽屜 **/
+const detailDrawerVisible = ref(false);
+const detailVehicle = ref(null);
+const openDetailDrawer = (vehicle) => {
+  detailVehicle.value = vehicle;
+  detailDrawerVisible.value = true;
+};
 
 onMounted(() => {
   getAPI();

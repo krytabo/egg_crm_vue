@@ -7,34 +7,30 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <ion-list>
+      <a-menu :selected-keys="[String(activeSidebarId)]" :default-open-keys="defaultOpenKeys" @menu-item-click="handleMenuClick" class="mobile-sidebar-menu">
         <template v-for="section in filteredMenuSections" :key="section.key">
           <!-- 單一項目（不需要子選單） -->
-          <ion-item v-if="section.items.length === 1" button :detail="false" @click="handleMenuClick(section.items[0].id)" :class="{ 'item-active': activeSidebarId === section.items[0].id }">
-            <component v-if="section.items[0].heroIcon" :is="section.items[0].heroIcon" slot="start" class="menu-icon" />
-            <i v-else-if="section.items[0].remixIcon" :class="[section.items[0].remixIcon, 'menu-icon']" slot="start"></i>
-            <ion-label>{{ section.items[0].label }}</ion-label>
-          </ion-item>
+          <a-menu-item v-if="section.items.length === 1" :key="section.items[0].id">
+            <component v-if="section.items[0].heroIcon" :is="section.items[0].heroIcon" class="menu-icon" />
+            <i v-else-if="section.items[0].remixIcon" :class="[section.items[0].remixIcon, 'menu-icon remix']"></i>
+            {{ section.items[0].label }}
+          </a-menu-item>
 
           <!-- 多項目（需要子選單） -->
-          <ion-accordion-group v-else :value="expandedSections.includes(section.key) ? section.key : undefined">
-            <ion-accordion :value="section.key">
-              <ion-item slot="header">
-                <component v-if="section.heroIcon" :is="section.heroIcon" slot="start" class="menu-icon" />
-                <i v-else-if="section.remixIcon" :class="[section.remixIcon, 'menu-icon']" slot="start"></i>
-                <ion-label>{{ section.label }}</ion-label>
-              </ion-item>
-              <ion-list slot="content">
-                <ion-item v-for="item in section.items" :key="item.id" button :detail="false" @click="handleMenuClick(item.id)" :class="{ 'item-active': activeSidebarId === item.id }" class="submenu-item">
-                  <component v-if="item.heroIcon" :is="item.heroIcon" slot="start" class="menu-icon submenu-icon" />
-                  <i v-else-if="item.remixIcon" :class="[item.remixIcon, 'menu-icon submenu-icon']" slot="start"></i>
-                  <ion-label>{{ item.label }}</ion-label>
-                </ion-item>
-              </ion-list>
-            </ion-accordion>
-          </ion-accordion-group>
+          <a-sub-menu v-else :key="section.key">
+            <template #title>
+              <component v-if="section.heroIcon" :is="section.heroIcon" class="menu-icon" />
+              <i v-else-if="section.remixIcon" :class="[section.remixIcon, 'menu-icon remix']"></i>
+              <span>{{ section.label }}</span>
+            </template>
+            <a-menu-item v-for="item in section.items" :key="item.id">
+              <component v-if="item.heroIcon" :is="item.heroIcon" class="menu-icon size-4" />
+              <i v-else-if="item.remixIcon" :class="[item.remixIcon, 'menu-icon remix']"></i>
+              <span>{{ item.label }}</span>
+            </a-menu-item>
+          </a-sub-menu>
         </template>
-      </ion-list>
+      </a-menu>
     </ion-content>
   </ion-menu>
 </template>
@@ -42,7 +38,7 @@
 <script setup>
 import { computed, markRaw } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonList, IonItem, IonLabel, IonAccordion, IonAccordionGroup, menuController } from '@ionic/vue';
+import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, menuController } from '@ionic/vue';
 import { BarChart3, Waves, Droplet, Egg, Factory, Package2, ShoppingCart, Truck, Users } from 'lucide-vue-next';
 import { usePermissionStore } from '@/stores/PermissionStore';
 
@@ -62,6 +58,7 @@ const menuSections = [
     key: 'section-basic',
     label: '基本資料',
     remixIcon: 'ri-database-2-line',
+    hiddenOnMobile: true, //手機版隱藏
     items: [
       { id: 'basic-info-users', label: '員工資料', remixIcon: 'ri-user-3-line', role: 'USER' },
       { id: 'basic-info-customers', label: '客戶資料', remixIcon: 'ri-team-line', role: 'CUSTOMER' },
@@ -75,7 +72,7 @@ const menuSections = [
     key: 'section-product',
     label: '商品管理',
     remixIcon: 'ri-box-1-line',
-    hiddenOnMobile: true, // 手機版隱藏
+    hiddenOnMobile: true, //手機版隱藏
     items: [
       { id: 'products-water', label: '桶裝水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
       { id: 'products-eggs', label: '雞蛋資料', heroIcon: LucideEggIcon, role: 'PRODUCT' },
@@ -86,6 +83,7 @@ const menuSections = [
     key: 'section-orders',
     label: '訂單管理',
     remixIcon: 'ri-shopping-bag-3-line',
+    hiddenOnMobile: true, //手機版隱藏
     items: [
       { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
       { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
@@ -97,7 +95,7 @@ const menuSections = [
     label: '庫存與報表',
     remixIcon: 'ri-file-chart-line',
     items: [
-      { id: 'shipments-inventory', label: '商品庫存', heroIcon: LucidePackageIcon, role: 'INVENTORY' },
+      { id: 'shipments-inventory', label: '商品庫存', heroIcon: LucidePackageIcon, role: 'INVENTORY', hiddenOnMobile: true },
       { id: 'shipments-reports', label: '送貨報表', remixIcon: 'ri-survey-line', role: 'REPORT' },
     ],
   },
@@ -105,7 +103,7 @@ const menuSections = [
     key: 'section-finance',
     label: '帳務管理',
     remixIcon: 'ri-money-dollar-circle-line',
-    hiddenOnMobile: true, // 手機版隱藏
+    hiddenOnMobile: true, //手機版隱藏
     items: [{ id: 'finance-billing', label: '帳務管理', remixIcon: 'ri-money-dollar-circle-line', role: 'BILLING' }],
   },
 ];
@@ -130,51 +128,47 @@ const filteredMenuSections = computed(() => {
 
 const activeSidebarId = computed(() => route.meta?.sidebarId || route.name?.replace('m-', '') || 'dashboard');
 
-const expandedSections = computed(() => {
+// 只展開當前頁面所屬的父級選單
+const defaultOpenKeys = computed(() => {
   const currentSection = filteredMenuSections.value.find((section) => section.items.some((item) => item.id === activeSidebarId.value));
-  return currentSection ? [currentSection.key] : [];
+  return currentSection && currentSection.items.length > 1 ? [currentSection.key] : [];
 });
 
-const handleMenuClick = async (id) => {
-  const mobileName = `m-${id}`;
+const handleMenuClick = async (key) => {
+  if (!key || key === activeSidebarId.value) return;
+  const mobileName = `m-${key}`;
   router.push({ name: mobileName });
   await menuController.close();
 };
 </script>
 
 <style scoped>
+.mobile-sidebar-menu {
+  width: 100%;
+  border-right: none;
+}
+
 .menu-icon {
-  font-size: 20px;
-  margin-right: 12px;
-  color: var(--ion-color-medium);
+  margin-right: 8px;
+  color: var(--color-text-2);
 }
 
-.submenu-item {
-  --padding-start: 32px;
-}
-
-.submenu-icon {
+.menu-icon.remix {
   font-size: 16px;
 }
 
-.item-active {
-  --background: var(--ion-color-primary-tint);
-  --color: var(--ion-color-primary);
+:deep(.arco-menu-item-selected .menu-icon),
+:deep(.arco-menu-item-active .menu-icon),
+:deep(.arco-menu-selected .menu-icon),
+:deep(.arco-menu-inline-header.arco-menu-selected .menu-icon) {
+  color: var(--color-primary) !important;
 }
 
-.item-active .menu-icon {
-  color: var(--ion-color-primary);
+:deep(.arco-menu-item-inner) {
+  align-items: center !important;
 }
 
-ion-accordion-group {
-  margin: 0;
-}
-
-ion-accordion ion-item[slot='header'] {
-  --padding-start: 16px;
-}
-
-ion-accordion ion-list[slot='content'] {
-  padding: 0;
+svg {
+  display: inline !important;
 }
 </style>
