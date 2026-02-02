@@ -147,8 +147,16 @@
         <CustomTinyGridColumn field="" :title="t('actions')" :width="120" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('USER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button v-if="permissionStore.hasPermission('USER', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+              <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : ''">
+                <button class="table-button" :disabled="isSystemAdmin(row) && !isDevEnv" :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }" @click="!isSystemAdmin(row) || isDevEnv ? deleteData(row.id) : null">
+                  <Trash2 class="size-4 text-rose-500" />
+                </button>
+              </a-tooltip>
+              <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+                <button class="table-button" :disabled="isSystemAdmin(row) && !isDevEnv" :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }" @click="!isSystemAdmin(row) || isDevEnv ? editData(row) : null">
+                  <SquarePen class="size-4" />
+                </button>
+              </a-tooltip>
             </div>
           </template>
         </CustomTinyGridColumn>
@@ -284,6 +292,14 @@ import { useDataList } from './useDataList';
 const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
+
+// 判斷是否為本地開發環境
+const isDevEnv = import.meta.env.DEV;
+
+// 判斷是否為系統管理員
+const isSystemAdmin = (row) => {
+  return row.role === '系統管理員';
+};
 
 const {
   //常數
