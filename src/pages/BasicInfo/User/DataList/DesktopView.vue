@@ -232,8 +232,13 @@
           <AFormItem :label="t('hireDate')" field="hireDate">
             <CustomField v-model="basicForm.hireDate" type="date-picker" :placeholder="t('pleaseSelectDate')" allowClear />
           </AFormItem>
-          <AFormItem :label="t('password')" field="password">
-            <a-input-password v-model="basicForm.password" :placeholder="isEdite ? t('resetPasswordHint') : t('passwordMinLengthHint', { length: MIN_PASSWORD_LENGTH })" allowClear />
+          <AFormItem v-if="!isEdite" :label="t('password')" field="password">
+            <a-input-password
+              v-model="basicForm.password"
+              :placeholder="isEdite ? t('resetPasswordHint') : t('passwordMinLengthHint', { length: MIN_PASSWORD_LENGTH })"
+              allowClear
+              autocomplete="new-password"
+            />
           </AFormItem>
         </div>
       </AForm>

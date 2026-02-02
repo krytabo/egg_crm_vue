@@ -327,7 +327,7 @@ export function useDataList(t, showMessage = () => {}) {
       payload.email = formState.email?.trim();
       payload.password = formState.password;
 
-      // 新增時，若為司機則加入 driverInfo
+      //新增時，若為司機則加入 driverInfo
       if (formState.jobType === 'DRIVER') {
         payload.driverInfo = {
           employeeId: generateDriverEmployeeId(formState.email),
@@ -338,6 +338,7 @@ export function useDataList(t, showMessage = () => {}) {
     }
 
     if (isUpdate) {
+      // if (formState.password) payload.password = formState.password;
       payload.isActive = Boolean(formState.isActive);
       payload.avatar = formState.avatar?.trim() || '';
     }

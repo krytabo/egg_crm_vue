@@ -20,7 +20,7 @@
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <CardContent class="flex flex-col gap-4">
       <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id" :row-id="'id'">
-        <CustomTinyGridColumn field="employeeId" :title="t('employeeId', '員工編號')" :width="140" fixed="left">
+        <!--<CustomTinyGridColumn field="employeeId" :title="t('employeeId', '員工編號')" :width="140" fixed="left">
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('employeeId', '員工編號') }}</span>
@@ -37,19 +37,12 @@
           <template #default="{ row }">
             <span class="font-medium text-gray-900">{{ row.employeeId }}</span>
           </template>
-        </CustomTinyGridColumn>
+        </CustomTinyGridColumn>-->
         <CustomTinyGridColumn field="fullName" :title="t('fullName', '姓名')" min-width="160">
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('fullName', '姓名') }}</span>
-              <TinyInput
-                v-model="searchFields.fullName"
-                :placeholder="t('enterName', '輸入姓名')"
-                class="h-8 text-xs"
-                clearable
-                @keyup.enter="handleGlobalSearch"
-                @clear="handleGlobalSearch"
-              />
+              <TinyInput v-model="searchFields.fullName" :placeholder="t('enterName', '輸入姓名')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
             </div>
           </template>
           <template #default="{ row }">
