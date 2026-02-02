@@ -2,17 +2,20 @@
 <template>
   <a-drawer v-model:visible="visible" :title="t('vehicleDetail', '車輛詳細資料') + ` - ${vehicle?.licensePlate || ''}`" :width="800" :footer="false" unmount-on-close @close="handleClose">
     <a-tabs v-model:active-key="activeTab" type="card">
+      <template #extra>
+        <a-button v-if="activeTab === 'maintenance'" type="primary" size="small" @click="openMaintenanceDialog()">
+          <template #icon><icon-plus /></template>
+          {{ t('addMaintenance', '新增保養') }}
+        </a-button>
+        <a-button v-if="activeTab === 'repairs'" type="primary" size="small" @click="openRepairDialog()">
+          <template #icon><icon-plus /></template>
+          {{ t('addRepair', '新增維修') }}
+        </a-button>
+      </template>
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--        保養記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="maintenance" :title="t('maintenanceHistory', '保養記錄')">
-        <div class="mb-4 flex items-center justify-between">
-          <span class="text-sm text-gray-500">{{ t('totalRecords', '共 {count} 筆', { count: maintenanceList.length }) }}</span>
-          <a-button type="primary" size="small" @click="openMaintenanceDialog()">
-            <template #icon><icon-plus /></template>
-            {{ t('addMaintenance', '新增保養') }}
-          </a-button>
-        </div>
         <a-table :data="maintenanceList" :loading="maintenanceLoading" :pagination="false" size="small" :bordered="{ cell: true }">
           <template #columns>
             <a-table-column :title="t('type', '類型')" data-index="type" :width="100">
@@ -40,19 +43,15 @@
             </a-table-column>
           </template>
         </a-table>
+        <div class="mt-4 flex justify-end">
+          <a-pagination :current="maintenancePagination.page" :page-size="maintenancePagination.limit" :total="maintenancePagination.total" show-total @change="onMaintenancePageChange" />
+        </div>
       </a-tab-pane>
 
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--        維修記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="repairs" :title="t('repairHistory', '維修記錄')">
-        <div class="mb-4 flex items-center justify-between">
-          <span class="text-sm text-gray-500">{{ t('totalRecords', '共 {count} 筆', { count: repairList.length }) }}</span>
-          <a-button type="primary" size="small" @click="openRepairDialog()">
-            <template #icon><icon-plus /></template>
-            {{ t('addRepair', '新增維修') }}
-          </a-button>
-        </div>
         <a-table :data="repairList" :loading="repairLoading" :pagination="false" size="small" :bordered="{ cell: true }">
           <template #columns>
             <a-table-column :title="t('type', '類型')" data-index="type" :width="100">
@@ -89,15 +88,15 @@
             </a-table-column>
           </template>
         </a-table>
+        <div class="mt-4 flex justify-end">
+          <a-pagination :current="repairPagination.page" :page-size="repairPagination.limit" :total="repairPagination.total" show-total @change="onRepairPageChange" />
+        </div>
       </a-tab-pane>
 
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--        行程記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="trips" :title="t('tripHistory', '行程記錄')">
-        <div class="mb-4">
-          <span class="text-sm text-gray-500">{{ t('totalRecords', '共 {count} 筆', { count: tripList.length }) }}</span>
-        </div>
         <a-table :data="tripList" :loading="tripLoading" :pagination="false" size="small" :bordered="{ cell: true }">
           <template #columns>
             <a-table-column :title="t('orderNumber', '訂單編號')" data-index="orderNumber" :width="140" />
@@ -119,6 +118,9 @@
             </a-table-column>
           </template>
         </a-table>
+        <div class="mt-4 flex justify-end">
+          <a-pagination :current="tripPagination.page" :page-size="tripPagination.limit" :total="tripPagination.total" show-total @change="onTripPageChange" />
+        </div>
       </a-tab-pane>
     </a-tabs>
   </a-drawer>
@@ -252,6 +254,11 @@ watch(
     visible.value = val;
     if (val && props.vehicle) {
       activeTab.value = 'maintenance';
+      // 重置分頁狀態
+      maintenancePagination.value = { page: 1, limit: 20, total: 0 };
+      repairPagination.value = { page: 1, limit: 20, total: 0 };
+      tripPagination.value = { page: 1, limit: 20, total: 0 };
+      // 載入資料
       fetchMaintenanceHistory();
       fetchRepairHistory();
       fetchTripHistory();
@@ -356,20 +363,21 @@ const orderStatusColorMap = {
 /** 保養記錄 **/
 const maintenanceList = ref([]);
 const maintenanceLoading = ref(false);
+const maintenancePagination = ref({ page: 1, limit: 20, total: 0 });
 const maintenanceDialogVisible = ref(false);
 const maintenanceSaving = ref(false);
 const maintenanceFormRef = ref(null);
 const maintenanceForm = ref({
-  id: null,
-  type: 'OIL_CHANGE',
-  description: '',
-  cost: 0,
-  performedBy: '',
-  scheduledDate: null,
-  completedDate: null,
-  mileageAtService: null,
-  nextServiceMileage: null,
-  notes: '',
+  id: null, //記錄 ID
+  type: 'OIL_CHANGE', //保養類型
+  description: '', //保養說明
+  cost: 0, //費用金額
+  performedBy: '', //執行者/廠商
+  scheduledDate: null, //預定日期
+  completedDate: null, //完成日期
+  mileageAtService: null, //保養時里程
+  nextServiceMileage: null, //下次保養里程
+  notes: '', //備註
 });
 const maintenanceFormRules = {
   type: [{ required: true, message: t('required', '此欄位必填') }],
@@ -382,14 +390,22 @@ const fetchMaintenanceHistory = async () => {
   if (!props.vehicle?.id) return;
   maintenanceLoading.value = true;
   try {
-    const res = await VehicleMaintenanceHistoryGet(props.vehicle.id, { limit: 100 });
-    maintenanceList.value = res.data?.data?.data || res.data?.data || [];
+    const { page, limit } = maintenancePagination.value;
+    const res = await VehicleMaintenanceHistoryGet(props.vehicle.id, { page, limit });
+    const responseData = res.data?.data || {};
+    maintenanceList.value = responseData.data || [];
+    maintenancePagination.value.total = responseData.meta?.total || 0;
   } catch (error) {
     console.error('Failed to fetch maintenance history:', error);
     maintenanceList.value = [];
   } finally {
     maintenanceLoading.value = false;
   }
+};
+
+const onMaintenancePageChange = (page) => {
+  maintenancePagination.value.page = page;
+  fetchMaintenanceHistory();
 };
 
 const openMaintenanceDialog = (record = null) => {
@@ -473,21 +489,22 @@ const deleteMaintenance = async (id) => {
 /** 維修記錄 **/
 const repairList = ref([]);
 const repairLoading = ref(false);
+const repairPagination = ref({ page: 1, limit: 20, total: 0 });
 const repairDialogVisible = ref(false);
 const repairSaving = ref(false);
 const repairFormRef = ref(null);
 const repairForm = ref({
-  id: null,
-  type: 'ENGINE',
-  description: '',
-  severity: 'MEDIUM',
-  status: 'PENDING',
-  cost: 0,
-  performedBy: '',
-  reportedDate: null,
-  completedDate: null,
-  laborHours: null,
-  notes: '',
+  id: null, //記錄 ID
+  type: 'ENGINE', //維修類型
+  description: '', //維修說明
+  severity: 'MEDIUM', //嚴重程度 (LOW/MEDIUM/HIGH/CRITICAL)
+  status: 'PENDING', //維修狀態 (PENDING/IN_PROGRESS/COMPLETED/CANCELLED)
+  cost: 0, //費用金額
+  performedBy: '', //執行者/廠商
+  reportedDate: null, //報修日期
+  completedDate: null, //完成日期
+  laborHours: null, //工時
+  notes: '', //備註
 });
 const repairFormRules = {
   type: [{ required: true, message: t('required', '此欄位必填') }],
@@ -501,14 +518,22 @@ const fetchRepairHistory = async () => {
   if (!props.vehicle?.id) return;
   repairLoading.value = true;
   try {
-    const res = await VehicleRepairHistoryGet(props.vehicle.id, { limit: 100 });
-    repairList.value = res.data?.data?.data || res.data?.data || [];
+    const { page, limit } = repairPagination.value;
+    const res = await VehicleRepairHistoryGet(props.vehicle.id, { page, limit });
+    const responseData = res.data?.data || {};
+    repairList.value = responseData.data || [];
+    repairPagination.value.total = responseData.meta?.total || 0;
   } catch (error) {
     console.error('Failed to fetch repair history:', error);
     repairList.value = [];
   } finally {
     repairLoading.value = false;
   }
+};
+
+const onRepairPageChange = (page) => {
+  repairPagination.value.page = page;
+  fetchRepairHistory();
 };
 
 const openRepairDialog = (record = null) => {
@@ -595,18 +620,27 @@ const deleteRepair = async (id) => {
 /** 行程記錄 **/
 const tripList = ref([]);
 const tripLoading = ref(false);
+const tripPagination = ref({ page: 1, limit: 20, total: 0 });
 
 const fetchTripHistory = async () => {
   if (!props.vehicle?.id) return;
   tripLoading.value = true;
   try {
-    const res = await VehicleTripHistoryGet(props.vehicle.id, { limit: 100 });
-    tripList.value = res.data?.data?.data || res.data?.data || [];
+    const { page, limit } = tripPagination.value;
+    const res = await VehicleTripHistoryGet(props.vehicle.id, { page, limit });
+    const responseData = res.data?.data || {};
+    tripList.value = responseData.data || [];
+    tripPagination.value.total = responseData.meta?.total || 0;
   } catch (error) {
     console.error('Failed to fetch trip history:', error);
     tripList.value = [];
   } finally {
     tripLoading.value = false;
   }
+};
+
+const onTripPageChange = (page) => {
+  tripPagination.value.page = page;
+  fetchTripHistory();
 };
 </script>

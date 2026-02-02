@@ -50,7 +50,7 @@
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="assignedDriver" :title="t('assignedDriver', '指派司機')" min-width="120">
           <template #default="{ row }">
-            {{ row.assignedDriver?.name || t('unassigned', '未指派') }}
+            {{ row.assignedDriver?.user?.fullName || '-' }}
           </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center">

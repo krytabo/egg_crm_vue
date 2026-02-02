@@ -60,12 +60,7 @@ export function useDataList(t, showMessage = () => {}) {
     registrationExpiry: item.registrationExpiry,
     inspectionExpiry: item.inspectionExpiry,
     notes: item.notes,
-    assignedDriver: item.assignedDriver
-      ? {
-          id: item.assignedDriver.id,
-          name: `${item.assignedDriver.firstName} ${item.assignedDriver.lastName}`.trim(),
-        }
-      : null,
+    assignedDriver: item.assignedDriver || {},
     raw: item,
   });
   const defaultFilters = {
