@@ -28,9 +28,9 @@
     <!-- 請款單列表 -->
     <!--<JsonViewer :value="basicDataList" boxed copyable />-->
     <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
-      <CustomTinyGridColumn field="id" :title="t('billingRequestNumber', '請款單號碼')" width="340" fixed="left">
+      <CustomTinyGridColumn field="id" :title="t('billingRequestNumber', '請款單號碼')" width="200" fixed="left">
         <template #default="{ row }">
-          <a-link @click="openDetailDrawer(row)">{{ row.id }}</a-link>
+          <a-link @click="openDetailDrawer(row)">{{ row.invoiceNumber }}</a-link>
         </template>
       </CustomTinyGridColumn>
       <CustomTinyGridColumn field="customer" :title="t('customer', '客戶')" min-width="180">
@@ -64,11 +64,11 @@
         :current-order="getColumnOrder('createdAt')"
         @sort="handleColumnSort"
       />
-      <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" width="220" fixed="right">
+      <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" width="170" fixed="right">
         <template #default="{ row }">
           <div class="flex gap-2">
-            <a-button :disabled="row.status !== 'DRAFT'" type="text" class="px-1!" @click="handleSendInvoice(row)">{{ t('send', '發送') }}</a-button>
-            <a-button :disabled="!['SENT', 'PARTIAL', 'OVERDUE'].includes(row.status)" type="text" status="success" class="px-1!" @click="handleOpenPayment(row)">{{ t('pay', '付款') }}</a-button>
+            <!--<a-button :disabled="row.status !== 'DRAFT'" type="text" class="px-1!" @click="handleSendInvoice(row)">{{ t('send', '發送') }}</a-button>-->
+            <a-button :disabled="!['DRAFT', 'PARTIAL', 'OVERDUE'].includes(row.status)" type="text" status="success" class="px-1!" @click="handleOpenPayment(row)">{{ t('pay', '付款') }}</a-button>
             <a-button :disabled="row.status !== 'DRAFT'" type="text" status="danger" class="px-1!" @click="handleDeleteInvoice(row)">{{ t('delete', '刪除') }}</a-button>
             <a-button v-if="row.status !== 'PAID'" :disabled="row.status !== 'DRAFT'" type="text" class="px-1!" @click="openEditDialog(row)">{{ t('edit', '編輯') }}</a-button>
             <a-button v-if="row.status === 'PAID'" type="text" status="success" class="px-1!" @click="openDetailDrawer(row)">{{ t('view', '檢視') }}</a-button>

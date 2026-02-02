@@ -144,16 +144,36 @@
             <a-tag :color="row.isActive ? 'arcoblue' : 'red'" size="large">{{ row.isActive ? t('statusActive') : t('statusInactive') }}</a-tag>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions')" :width="120" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions')" :width="150" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
               <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : ''">
-                <button class="table-button" :disabled="isSystemAdmin(row) && !isDevEnv" :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }" @click="!isSystemAdmin(row) || isDevEnv ? deleteData(row.id) : null">
+                <button
+                  class="table-button"
+                  :disabled="isSystemAdmin(row) && !isDevEnv"
+                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                  @click="!isSystemAdmin(row) || isDevEnv ? deleteData(row.id) : null"
+                >
                   <Trash2 class="size-4 text-rose-500" />
                 </button>
               </a-tooltip>
               <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
-                <button class="table-button" :disabled="isSystemAdmin(row) && !isDevEnv" :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }" @click="!isSystemAdmin(row) || isDevEnv ? editData(row) : null">
+                <button
+                  class="table-button"
+                  :disabled="isSystemAdmin(row) && !isDevEnv"
+                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                  @click="!isSystemAdmin(row) || isDevEnv ? openChangePassword(row) : null"
+                >
+                  <KeyRound class="size-4 text-amber-500" />
+                </button>
+              </a-tooltip>
+              <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+                <button
+                  class="table-button"
+                  :disabled="isSystemAdmin(row) && !isDevEnv"
+                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                  @click="!isSystemAdmin(row) || isDevEnv ? editData(row) : null"
+                >
                   <SquarePen class="size-4" />
                 </button>
               </a-tooltip>
@@ -269,12 +289,41 @@
   <!--         圖片上傳         -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <ImagePickerModal v-model="basicForm.avatar" v-model:visible="imagePickerVisible" :max-size="MAX_AVATAR_SIZE" :upload-api="uploadImageViaApi" />
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--        變更密碼視窗        -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <a-modal v-model:visible="passwordDialogVisible" :title="t('changePassword', '變更密碼')" :top="100" draggable :maskClosable="false" :closable="false" width="450px" :unmount-on-close="true">
+    <AForm ref="passwordFormRef" auto-label-width :model="passwordForm" layout="vertical" :rules="passwordFormRules">
+      <AFormItem :label="t('employee', '員工')">
+        <a-input :model-value="passwordForm.userName" disabled />
+      </AFormItem>
+      <AFormItem :label="t('oldPassword', '舊密碼')" field="oldPassword">
+        <a-input-password v-model="passwordForm.oldPassword" :placeholder="t('pleaseEnterOldPassword', '請輸入舊密碼')" allowClear autocomplete="new-password" />
+      </AFormItem>
+      <AFormItem :label="t('newPassword', '新密碼')" field="newPassword">
+        <a-input-password v-model="passwordForm.newPassword" :placeholder="t('passwordMinLengthHint', { length: PASSWORD_MIN_LENGTH })" allowClear autocomplete="new-password" />
+      </AFormItem>
+      <AFormItem :label="t('confirmNewPassword', '確認新密碼')" field="confirmPassword">
+        <a-input-password v-model="passwordForm.confirmPassword" :placeholder="t('pleaseConfirmNewPassword', '請再次輸入新密碼')" allowClear autocomplete="new-password" />
+      </AFormItem>
+    </AForm>
+
+    <template #footer>
+      <div class="flex flex-1 items-center justify-center gap-2">
+        <a-button size="large" @click="closePasswordDialog">{{ t('cancel') }}</a-button>
+        <Button @click="submitChangePassword" :loading="isChangingPassword">{{ isChangingPassword ? t('saving') : t('save') }}</Button>
+      </div>
+    </template>
+  </a-modal>
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { AuthPasswordChangePost } from '@/assets/API/Auth';
+import Swal from 'sweetalert2';
 import { TinyInput, TinySelect } from '@opentiny/vue';
-import { SquarePen, Trash2 } from 'lucide-vue-next';
+import { SquarePen, Trash2, KeyRound } from 'lucide-vue-next';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { ImagePreview } from '@kousum/semi-ui-vue';
@@ -299,6 +348,91 @@ const isDevEnv = import.meta.env.DEV;
 // 判斷是否為系統管理員
 const isSystemAdmin = (row) => {
   return row.role === '系統管理員';
+};
+
+// ＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
+const passwordDialogVisible = ref(false);
+const isChangingPassword = ref(false);
+const passwordFormRef = ref(null);
+const passwordForm = ref({
+  userId: null,
+  userName: '',
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: '',
+});
+
+const PASSWORD_MIN_LENGTH = 6; // 密碼最小長度
+
+const passwordFormRules = {
+  oldPassword: [{ required: true, message: t('pleaseEnterOldPassword', '請輸入舊密碼') }],
+  newPassword: [
+    { required: true, message: t('pleaseEnterNewPassword', '請輸入新密碼') },
+    { minLength: PASSWORD_MIN_LENGTH, message: t('passwordMinLengthHint', { length: PASSWORD_MIN_LENGTH }) },
+  ],
+  confirmPassword: [
+    { required: true, message: t('pleaseConfirmNewPassword', '請再次輸入新密碼') },
+    {
+      validator: (value, callback) => {
+        if (value !== passwordForm.value.newPassword) {
+          callback(t('passwordNotMatch', '兩次輸入的密碼不一致'));
+        } else {
+          callback();
+        }
+      },
+    },
+  ],
+};
+
+// 開啟變更密碼視窗
+const openChangePassword = (row) => {
+  passwordForm.value = {
+    userId: row.id,
+    userName: row.fullName,
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  };
+  passwordDialogVisible.value = true;
+};
+
+// 關閉變更密碼視窗
+const closePasswordDialog = () => {
+  passwordDialogVisible.value = false;
+  passwordFormRef.value?.resetFields();
+};
+
+// 提交變更密碼
+const submitChangePassword = async () => {
+  try {
+    const valid = await passwordFormRef.value?.validate();
+    if (valid) return false;
+
+    isChangingPassword.value = true;
+    await AuthPasswordChangePost({
+      userId: passwordForm.value.userId,
+      oldPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword,
+    });
+
+    Swal.fire({
+      icon: 'success',
+      title: t('success', '成功'),
+      text: t('passwordChangedSuccess', '密碼變更成功'),
+      timer: 1500,
+      showConfirmButton: false,
+    });
+
+    closePasswordDialog();
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: t('error', '錯誤'),
+      text: error?.response?.data?.message || t('passwordChangedFailed', '密碼變更失敗'),
+    });
+  } finally {
+    isChangingPassword.value = false;
+  }
 };
 
 const {

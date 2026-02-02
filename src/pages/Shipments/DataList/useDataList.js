@@ -468,14 +468,14 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   };
   const handleConvertToOrder = async (row) => {
     //檢查報表狀態，只有「已提交」可以轉入訂單
-    if (row.status !== '已提交') {
+    /*if (row.status !== '已提交') {
       if (isMobile.value && showMessage) {
         showMessage('warning', t('reportNotSubmitted', '該報表尚未提交，請先提交後再轉入訂單'));
       } else {
         await mainStore.SWAL_Error(t('reportNotSubmitted', '該報表尚未提交，請先提交後再轉入訂單'));
       }
       return;
-    }
+    }*/
 
     if (row.status !== '已審核') {
       if (isMobile.value && showMessage) {
