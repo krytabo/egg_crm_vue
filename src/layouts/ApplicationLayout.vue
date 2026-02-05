@@ -1,5 +1,6 @@
 <!-- src/layouts/ApplicationLayout.vue -->
 <template>
+  <IncomingCallNotification />
   <LoadingPage v-if="loading" />
   <tiny-config-provider>
     <a-config-provider :locale="zhTW">
@@ -63,6 +64,8 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { useSystemStore } from '@/stores/system';
 import { storeToRefs } from 'pinia';
 import { RouterLink, RouterView, useRoute } from 'vue-router';
+import IncomingCallNotification from '@/components/cti/IncomingCallNotification.vue';
+import { useCtiSocket } from '@/composables/useCtiSocket';
 
 const mainStore = useMainStore();
 const systemStore = useSystemStore();
@@ -95,13 +98,18 @@ watch(isMobile, (mobile) => {
   }
 });
 
+/** CTI WebSocket 來電通知 **/
+const { connect: connectCti, disconnect: disconnectCti } = useCtiSocket();
+
 /** 初始化 window resize 監聽 **/
 let cleanupResize = null;
 onMounted(() => {
   cleanupResize = systemStore.initializeWindowResize();
+  connectCti();
 });
 onUnmounted(() => {
   if (cleanupResize) cleanupResize();
+  disconnectCti();
 });
 
 const breadcrumbItems = computed(() => {
