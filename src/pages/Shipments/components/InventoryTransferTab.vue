@@ -45,54 +45,65 @@
   </div>
 
   <!-- 新增調撥彈窗 -->
-  <a-modal v-model:visible="transferDialogVisible" :title="t('newTransfer', '新增調撥')" width="600px" :mask-closable="false">
-    <perfect-scrollbar class="h-[calc(100vh-350px)] pr-4">
-      <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
-        <AFormItem :label="t('product', '商品')" field="productId">
-          <InfiniteSelect v-model="basicForm.productId" dataSource="products" :placeholder="t('pleaseSelect', '請選擇')" />
-        </AFormItem>
+  <a-modal v-model:visible="transferDialogVisible" :title="t('newTransfer', '新增調撥')" width="1300px" :mask-closable="false">
+    <div class="grid grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+      <!-- 左側：調撥基本資訊 -->
+      <perfect-scrollbar class="flex-1 pr-4">
+        <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
+          <AFormItem :label="t('fromLocation', '來源位置')" field="fromLocation">
+            <InfiniteSelect v-model="basicForm.fromLocation" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
 
-        <AFormItem :label="t('fromLocation', '來源位置')" field="fromLocation">
-          <InfiniteSelect v-model="basicForm.fromLocation" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" />
-        </AFormItem>
+          <AFormItem :label="t('toLocation', '目標位置')" field="toLocation">
+            <InfiniteSelect v-model="basicForm.toLocation" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" />
+          </AFormItem>
 
-        <AFormItem :label="t('toLocation', '目標位置')" field="toLocation">
-          <InfiniteSelect v-model="basicForm.toLocation" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" />
-        </AFormItem>
+          <AFormItem :label="t('notes', '備註')">
+            <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('pleaseEnterNotes', '請輸入備註')" />
+          </AFormItem>
+        </AForm>
+      </perfect-scrollbar>
 
-        <AFormItem :label="t('quantity', '數量')" field="quantity">
-          <CustomField v-model="basicForm.quantity" type="number" :min="1" />
-        </AFormItem>
-
-        <AFormItem :label="t('notes', '備註')">
-          <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('pleaseEnterNotes', '請輸入備註')" />
-        </AFormItem>
-      </AForm>
-    </perfect-scrollbar>
+      <!-- 右側：商品選擇表格 -->
+      <div class="col-span-2 border-l border-gray-200 pl-4">
+        <h3 class="mb-3 text-sm font-semibold">{{ t('selectProducts', '選擇商品') }}</h3>
+        <ProductSelectionTable
+          ref="productSelectionTableRef"
+          v-model="basicForm.items"
+          :visible-columns="['name', 'unit', 'tags', 'primaryVendor']"
+          :show-unit-price="false"
+          :readonly="false"
+          :page-size="20"
+        />
+      </div>
+    </div>
     <template #footer>
       <div class="flex justify-end gap-2">
-        <a-button @click="transferDialogVisible = false">{{ t("cancel", "取消") }}</a-button>
-        <a-button type="primary" :disabled="isSaving" :loading="isSaving" @click="handleSubmit">{{ isSaving ? t("saving", "儲存中") : t("save", "儲存") }}</a-button>
+        <a-button @click="transferDialogVisible = false">{{ t('cancel', '取消') }}</a-button>
+        <a-button type="primary" :disabled="isSaving || basicForm.items.length === 0" :loading="isSaving" @click="handleSubmit">
+          {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
+        </a-button>
       </div>
     </template>
   </a-modal>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from "vue";
-import { InventoryMovementsGet, InventoryTransferPost } from "@/assets/API/Inventory";
-import { TinyBadge, TinyDatePicker } from "@opentiny/vue";
-import { CustomTinyGrid, CustomTinyGridColumn } from "@/components/Table/CustomTable";
-import AppPagination from "@/components/ui/AppPagination.vue";
-import InfiniteSelect from "@/components/Form/InfiniteSelect.vue";
-import CustomField from "@/components/Form/CustomField.vue";
-import { usePaginatedSearchApi } from "@/composables/usePaginatedSearchApi";
-import { useMainStore } from "@/stores/LoadingStore";
-import { useTimezoneStore } from "@/stores/TimezoneStore";
-import { useSystemStore } from "@/stores/system";
-import { useI18n } from "vue-i18n";
-import { endOfDay } from "date-fns";
-import { debounce } from "lodash";
+import { ref, onMounted, nextTick, onUnmounted, watch } from 'vue';
+import { InventoryMovementsGet, InventoryTransferPost } from '@/assets/API/Inventory';
+import { TinyBadge, TinyDatePicker } from '@opentiny/vue';
+import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
+import AppPagination from '@/components/ui/AppPagination.vue';
+import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTable.vue';
+import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomField from '@/components/Form/CustomField.vue';
+import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
+import { useMainStore } from '@/stores/LoadingStore';
+import { useTimezoneStore } from '@/stores/TimezoneStore';
+import { useSystemStore } from '@/stores/system';
+import { useI18n } from 'vue-i18n';
+import { endOfDay } from 'date-fns';
+import { debounce } from 'lodash';
 
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
@@ -100,16 +111,16 @@ const systemStore = useSystemStore();
 const { t } = useI18n();
 
 /** 常數相關 **/
-const EMPTY_PLACEHOLDER = "—";
+const EMPTY_PLACEHOLDER = '—';
 
 /** 排序相關 **/
-const sortField = ref("createdAt"); //排序欄位
+const sortField = ref('createdAt'); //排序欄位
 const sortDirection = ref(null); //排序方向
-const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : ""); //取得欄位排序狀態
+const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : ''); //取得欄位排序狀態
 const handleColumnSort = async ({ field, order }) => {
   if (!field) return;
   if (!order) {
-    sortField.value = "createdAt";
+    sortField.value = 'createdAt';
     sortDirection.value = null;
   } else {
     sortField.value = field;
@@ -132,9 +143,9 @@ const responseDataToList = (item = {}) => ({
   raw: item
 }); //結果轉換
 const defaultFilters = {
-  startDate: "",
-  endDate: "",
-  location: ""
+  startDate: '',
+  endDate: '',
+  location: ''
 };
 const wrappedTransferMovementsGet = (params) => {
   const processedParams = { ...params };
@@ -154,7 +165,7 @@ const getListFromResponse = (response) => {
   let items = payload?.data ?? payload?.items ?? [];
   if (!Array.isArray(items)) items = [];
   //只保留調撥相關的異動記錄
-  const filteredItems = items.filter((item) => ["TRANSFER_IN", "TRANSFER_OUT"].includes(item.type));
+  const filteredItems = items.filter((item) => ['TRANSFER_IN', 'TRANSFER_OUT'].includes(item.type));
   const meta = payload?.meta ?? payload?.pagination ?? {};
   return { items: filteredItems, meta };
 }; //自訂資料處理：過濾只保留調撥記錄
@@ -168,56 +179,69 @@ const getAPI = () => getDefaultAPI(); //取得列表資料
 const transferDialogVisible = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);
+const productSelectionTableRef = ref(null);
 const initializeForm = () => ({
-  productId: "",
-  fromLocation: "",
-  toLocation: "",
-  quantity: 1,
-  notes: ""
+  fromLocation: '',
+  toLocation: '',
+  items: [],
+  notes: ''
 }); //初始化表單資料
 const basicForm = ref(initializeForm());
 const basicFormRules = {
-  productId: [{ required: true, message: t("required", "此欄位必填") }],
-  fromLocation: [{ required: true, message: t("required", "此欄位必填") }],
+  fromLocation: [{ required: true, message: t('required', '此欄位必填') }],
   toLocation: [
-    { required: true, message: t("required", "此欄位必填") },
+    { required: true, message: t('required', '此欄位必填') },
     {
       validator: (value, callback) => {
         if (value === basicForm.value.fromLocation) {
-          callback(t("sameLocationError", "來源位置與目標位置不可相同"));
+          callback(t('sameLocationError', '來源位置與目標位置不可相同'));
         } else {
           callback();
         }
       }
     }
-  ],
-  quantity: [{ required: true, message: t("required", "此欄位必填") }]
+  ]
 };
 const openTransferDialog = () => {
   basicForm.value = initializeForm();
   transferDialogVisible.value = true;
 }; //開啟新增調撥對話框
 const preparePayload = () => {
+  // 準備批量調撥資料
+  const items = basicForm.value.items.filter((item) => item.quantity > 0).map((item) => ({
+    productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
+    quantity: Number(item.quantity),
+  }));
+  
   return {
-    productId: typeof basicForm.value.productId === "object" ? basicForm.value.productId.id : basicForm.value.productId,
-    fromLocation: typeof basicForm.value.fromLocation === "object" ? basicForm.value.fromLocation.value : basicForm.value.fromLocation,
-    toLocation: typeof basicForm.value.toLocation === "object" ? basicForm.value.toLocation.value : basicForm.value.toLocation,
-    quantity: Number(basicForm.value.quantity),
-    notes: basicForm.value.notes || undefined
+    transactionType: 'TRANSFER',
+    items,
+    fromLocation: typeof basicForm.value.fromLocation === 'object' ? basicForm.value.fromLocation.value : basicForm.value.fromLocation,
+    toLocation: typeof basicForm.value.toLocation === 'object' ? basicForm.value.toLocation.value : basicForm.value.toLocation,
+    ...(basicForm.value.notes && { notes: basicForm.value.notes }),
   };
 }; //準備送出資料
 const _saveForm = async () => {
   const validateResult = await formRef.value?.validate();
   if (validateResult) return;
 
+  // 驗證是否有選中商品
+  if (!basicForm.value.items || basicForm.value.items.length === 0) {
+    await mainStore.SWAL_Error(new Error(t('pleaseSelectProduct', '請選擇至少一個商品')));
+    return;
+  }
+
   mainStore.setLoading(true);
   isSaving.value = true;
   try {
     const payload = preparePayload();
+    
+    // 使用批量 API 一次提交所有商品
     await InventoryTransferPost(payload);
-    await mainStore.SWAL_Success(t("transferSuccess", "調撥成功"));
+
+    await mainStore.SWAL_Success(t('transferSuccess', '調撥成功'));
     transferDialogVisible.value = false;
-    await getAPI();
+    await getAPI(); //重新載入列表
   } catch (error) {
     await mainStore.SWAL_Error(error);
   } finally {
@@ -226,6 +250,16 @@ const _saveForm = async () => {
   }
 }; //儲存
 const handleSubmit = debounce(_saveForm, 300, { leading: true, trailing: false }); //編輯儲存-防抖
+
+// 監聽對話框打開，自動加載商品列表
+watch(
+  () => transferDialogVisible.value,
+  async (newVal) => {
+    if (newVal && productSelectionTableRef.value) {
+      await productSelectionTableRef.value.loadProducts();
+    }
+  }
+); //當對話框打開時加載商品列表
 
 defineExpose({
   openTransferDialog,
