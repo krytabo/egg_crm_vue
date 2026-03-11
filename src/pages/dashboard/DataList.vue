@@ -369,7 +369,7 @@ const groupByOptions = [
   { label: t('byMonth', '按月'), value: 'month' },
 ]; //分組選項
 const productCategoryOptions = [
-  { label: t('bottledWater', '桶裝水'), value: '桶裝水' },
+  { label: t('water', '飲水'), value: '飲水' },
   { label: t('egg', '雞蛋'), value: '雞蛋' },
   { label: t('dispenser', '飲水機'), value: '飲水機' },
 ]; //產品類別選項

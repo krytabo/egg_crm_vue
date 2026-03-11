@@ -508,8 +508,25 @@ const formatDateTime = (timestamp) => {
   const pad = (n) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-` + `${pad(d.getMonth() + 1)}-` + `${pad(d.getDate())}T` + `${pad(d.getHours())}:` + `${pad(d.getMinutes())}:` + `${pad(d.getSeconds())}`;
 }; //日期格式化 ISO 8601 Date-Time
-const startTime = formatDateTime(Date.now());
-const endTime = formatDateTime(Date.now());
+
+const startTime = computed(() => {
+  if (filters.reportDateFrom) {
+    return filters.reportDateFrom.includes('T') 
+      ? filters.reportDateFrom 
+      : `${filters.reportDateFrom}T00:00:00`;
+  }
+  return formatDateTime(Date.now());
+});
+
+const endTime = computed(() => {
+  if (filters.reportDateTo) {
+    return filters.reportDateTo.includes('T') 
+      ? filters.reportDateTo 
+      : `${filters.reportDateTo}T23:59:59`;
+  }
+  return formatDateTime(Date.now());
+});
+
 const onStartDateChange = (event) => {
   const value = event.detail.value;
   filters.reportDateFrom = value ? formatDateTime(value) : '';

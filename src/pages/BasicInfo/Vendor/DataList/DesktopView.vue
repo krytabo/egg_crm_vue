@@ -88,17 +88,18 @@
         <CustomTinyGridColumn field="email" :title="t('email')" min-width="220">
           <template #default="{ row }">{{ row.email }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="productType" :title="t('productType')" :width="180">
+        <!--<CustomTinyGridColumn field="productType" :title="t('productType')" :width="180">
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('productType') }}</span>
-              <TinySelect v-model="filters.productTypeCode" :options="productTypeFilterOptions" :placeholder="t('all')" class="h-8 text-xs" />
+              <InfiniteSelect v-model="filters.productTypeId" dataSource="productTypes" :placeholder="t('pleaseSelect', '請選擇')" type="outline" class="w-[145px]!" />
+              &lt;!&ndash;<TinySelect v-model="filters.productTypeId" :options="productTypeFilterOptions" :placeholder="t('all')" class="h-8 text-xs" />&ndash;&gt;
             </div>
           </template>
           <template #default="{ row }">
             <TinyBadge type="info">{{ row.productTypeName || t('uncategorized') }}</TinyBadge>
           </template>
-        </CustomTinyGridColumn>
+        </CustomTinyGridColumn>-->
         <CustomTinyGridColumn field="address" :title="t('address')" min-width="260">
           <template #default="{ row }">{{ row.addressDisplay }}</template>
         </CustomTinyGridColumn>
@@ -150,9 +151,9 @@
           <AFormItem :label="t('vendorName')" field="name">
             <CustomField v-model="basicForm.name" type="input" :placeholder="t('pleaseEnterVendorName')" allowClear />
           </AFormItem>
-          <AFormItem :label="t('productType')">
-            <InfiniteSelect v-model="basicForm.productTypeCode" dataSource="productTypes" :placeholder="t('pleaseSelectProductType')" allowClear emitValue />
-          </AFormItem>
+          <!--<AFormItem :label="t('productType')">
+            <InfiniteSelect v-model="basicForm.productTypeId" dataSource="productTypes" :placeholder="t('pleaseSelectProductType')" allowClear />
+          </AFormItem>-->
           <AFormItem :label="t('taxId')">
             <CustomField v-model="basicForm.taxId" type="input" :placeholder="t('pleaseEnterTaxId')" allowClear />
           </AFormItem>

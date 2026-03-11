@@ -148,7 +148,7 @@
           </template>
           <div v-for="(item, index) in basicForm.items" :key="index" class="mb-2 flex items-end gap-2 rounded border border-gray-200 p-3">
             <AFormItem :label="t('product', '商品')" :field="`items.${index}.productId`" class="mb-0 flex-1">
-              <InfiniteSelect v-model="item.productId" dataSource="products" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
+              <InfiniteSelect v-model="item.productId" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
             </AFormItem>
             <AFormItem :label="t('quantity', '數量')" :field="`items.${index}.quantity`" class="mb-0 w-24">
               <CustomField v-model="item.quantity" type="number" :min="1" />
@@ -174,7 +174,7 @@
           </div>
           <div v-for="(item, index) in basicForm.items" :key="index" class="mb-2 flex items-end gap-2 rounded border border-gray-200 p-3">
             <AFormItem :label="t('product', '商品')" :field="`items.${index}.productId`" class="mb-0 flex-1">
-              <InfiniteSelect v-model="item.productId" dataSource="products" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
+              <InfiniteSelect v-model="item.productId" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
             </AFormItem>
             <AFormItem :label="t('quantity', '數量')" :field="`items.${index}.quantity`" class="mb-0 w-24">
               <CustomField v-model="item.quantity" type="number" :min="1" />

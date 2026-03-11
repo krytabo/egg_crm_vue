@@ -1,6 +1,6 @@
 # 訂單管理模組操作說明
 
-本模組負責管理所有產品類型的訂單，包含桶裝水、雞蛋、飲水機三大類。
+本模組負責管理所有產品類型的訂單，包含飲水、雞蛋、飲水機三大類。
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 一、進入訂單管理
 
-- **桶裝水訂單**：左側選單「訂單管理」→「桶裝水訂單」
+- **飲水訂單**：左側選單「訂單管理」→「飲水訂單」
 - **雞蛋訂單**：左側選單「訂單管理」→「雞蛋訂單」
 - **飲水機訂單**：左側選單「訂單管理」→「飲水機訂單」
 
@@ -55,23 +55,40 @@
 | 狀態 | 說明 | 可執行操作 |
 |------|------|-----------|
 | **待出貨** | 訂單已建立，等待處理 | 編輯、開始處理、取消 |
-| **處理中** | 正在準備出貨 | 出貨確認、取消 |
+| **已出貨-未收款** | 已出貨但尚未收款（後端代碼：`PROCESSING`） | 出貨確認、取消 |
 | **已完成** | 訂單已送達完成 | 僅能查看 |
 | **取消** | 訂單已取消 | 僅能查看 |
 
 #### 狀態變更操作
-- **開始處理**：訂單從「待出貨」變更為「處理中」
-- **出貨確認**：訂單從「處理中」變更為「已完成」
+- **開始處理**：訂單從「待出貨」變更為「已出貨-未收款」
+- **出貨確認**：訂單從「已出貨-未收款」變更為「已完成」
 - **取消訂單**：在「已完成」之前都可取消
 
 ### 五、編輯訂單
 
 1. 在列表點擊「編輯」按鈕
 2. **待出貨**狀態：可修改所有內容
-3. **處理中**狀態：僅能修改備註、配送資訊
+3. **已出貨-未收款**狀態：僅能修改備註、配送資訊
 4. **已完成/取消**：無法編輯，僅能查看
 
-### 六、常見問題
+### 六、列印訂單出貨單
+
+#### 單筆列印
+1. 在操作欄點擊 🖨️（ScrollText 圖示）按鈕
+2. 系統自動取得完整訂單資料（含商品明細）
+3. 使用 `vue-to-print` 產生 A4 格式 iframe 列印對話框
+
+#### 批次列印
+1. 勾選列表中多筆訂單（左側勾選框）
+2. 點擊右上角「批次列印」按鈕
+3. 系統依序取得每筆完整資料後一次列印，每筆訂單佔一頁
+
+> **列印技術**：採用 `vue-to-print`（`useVueToPrint`），透過 iframe 複製 scoped 樣式後列印，不影響主頁面顯示。  
+> **列印元件**：`src/components/dialogs/OrderPrintSlip.vue`  
+> 使用 `defineExpose({ printContentRef })` 暴露 DOM ref，父層以 `content: () => orderPrintSlipRef.value?.printContentRef` 取得。  
+> 商品過多時自動換頁（CSS `page-break-after`），預設最少顯示 5 行商品列。
+
+### 七、常見問題
 
 **Q: 如何修改已完成的訂單？**
 - 已完成訂單無法修改，如需調整請建立折讓單
@@ -89,13 +106,15 @@
 
 為了維護一致性並減少重複代碼，所有訂單管理頁面皆基於一個共用組件構建：
 
-*   **共用組件**: `src/pages/order-management/components/OrderManagementBase.vue`
+*   **共用組件**: `src/pages/Orders/DataList.vue`
 *   **各業務頁面**:
-    *   `BottledWaterOrdersPage.vue` (桶裝水訂單)
-    *   `EggOrdersPage.vue` (雞蛋訂單)
-    *   `WaterDispenserOrdersPage.vue` (飲水機訂單)
+    *   `WaterPage.vue` (飲水訂單) — i18n key: `orderWater`，categoryId: `CATEGORY_IDS.WATER`
+    *   `EggPage.vue` (雞蛋訂單) — i18n key: `orderEgg`，categoryId: `CATEGORY_IDS.EGG`
+    *   `MachinePage.vue` (飲水機訂單) — i18n key: `orderDispenser`，categoryId: `CATEGORY_IDS.DISPENSER`
 
-各頁面僅需傳遞 `pageTitle` (頁面標題 i18n key) 與 `categoryId` (業務分類 UUID) 給共用組件即可。
+各頁面僅需傳遞 `pageTitle` (頁面標題 i18n key) 與 `categoryId` (業務分類 UUID，來自 `src/constants/categories.js`) 給共用組件即可。
+
+> ⚠️ **注意**：`pageTitle` 必須使用 `src/constants/categories.js` 中的 `CATEGORY_IDS`，不可寫死 UUID。API 傳遞的類別代碼為 `BOTTLED_WATER`（飲水）、`EGG`（雞蛋）、`DISPENSER`（飲水機）。
 
 ## 2. 視圖與篩選 (View & Filtering)
 
@@ -114,7 +133,7 @@
 | **訂單日期** | `TinyDatePicker` | 範圍搜尋。前端會自動將結束日期 (`orderDateTo`) 調整為該日 **23:59:59**，確保包含全天資料。 |
 | **訂單編號** | `TinyInput` (表頭) | 針對訂單編號進行欄位過濾。 |
 | **客戶/廠商** | `InfiniteSelect` (表頭) | 根據目前頁籤顯示對應的客戶或廠商選擇器。 |
-| **狀態** | `TinySelect` (表頭) | 提供「待出貨、處理中、已完成、取消」四種簡化狀態。 |
+| **狀態** | `TinySelect` (表頭) | 提供「待出貨、已出貨-未收款、已完成、取消」四種簡化狀態。 |
 
 ## 3. 訂單狀態管理 (Order Status)
 
@@ -122,16 +141,23 @@
 
 ### 3.1 狀態映射規則
 
-| 前端代碼 (Enum Key) | 前端顯示 (中文) | 後端原始狀態 (Enum) |
-| :--- | :--- | :--- |
-| `PENDING` | **待出貨** | `DRAFT`, `PENDING`, `CONFIRMED` |
-| `PROCESSING` | **處理中** | `PROCESSING`, `SHIPPED` |
-| `DELIVERED` | **已完成** | `DELIVERED` |
-| `CANCELLED` | **取消** | `CANCELLED`, `RETURNED` |
+> ⚠️ 後端傳回的中文狀態為「處理中」，前端透過 `orderStatusDisplayMap` 轉換為「已出貨-未收款」顯示。`orderStatusLabelMap` 的「處理中」→ `PROCESSING` **不可更動**（後端資料）。
+
+| 前端代碼 (Enum Key) | 前端顯示 (中文) | 後端原始狀態 (Enum) | 後端傳回中文 |
+| :--- | :--- | :--- | :--- |
+| `PENDING` | **待出貨** | `DRAFT`, `PENDING`, `CONFIRMED` | 待出貨 |
+| `PROCESSING` | **已出貨-未收款** | `PROCESSING`, `SHIPPED` | 處理中 |
+| `DELIVERED` | **已完成** | `DELIVERED` | 已完成 |
+| `CANCELLED` | **取消** | `CANCELLED`, `RETURNED` | 取消 |
+
+**映射來源**（`src/composables/useSelectOptions.js`）：
+- `orderStatusLabelMap`：後端中文 → 英文 key（`處理中 → PROCESSING`）
+- `orderStatusDisplayMap`：英文 key → 前端顯示文字（`PROCESSING → 已出貨-未收款`）
+- `responseDataToList` 的 `statusLabel` 使用 `orderStatusDisplayMap` 轉換
 
 ### 3.2 自動晉升機制 (Auto-Promotion)
 後端對狀態跳轉有嚴格限制（如 `DRAFT` 不可直接跳 `PROCESSING`）。前端透過 `updateOrderStatusWithAutoPromote` 函式補足中間步驟：
-*   轉至 **處理中** (`PROCESSING`) 時：若目前為 `DRAFT`，會自動先嘗試補發 `PENDING` 請求。
+*   轉至 **已出貨-未收款** (`PROCESSING`) 時：若目前為 `DRAFT`，會自動先嘗試補發 `PENDING` 請求。
 *   轉至 **已完成** (`DELIVERED`) 時：會自動嘗試補發 `SHIPPED` 請求。
 *   中間步驟的錯誤會被忽略（代表已處於該狀態），確保最終能到達目標狀態。
 
@@ -139,7 +165,7 @@
 
 ### 4.1 欄位鎖定規則
 *   **PENDING (待出貨)**：可修改所有欄位（包括商品明細與出貨對象）。
-*   **PROCESSING (處理中)**：核心欄位鎖定（商品、對象、日期），僅可修改備註、配送資訊與狀態。
+*   **PROCESSING (已出貨-未收款)**：核心欄位鎖定（商品、對象、日期），僅可修改備註、配送資訊與狀態。
 *   **DELIVERED/CANCELLED (已完成/取消)**：進入**唯讀模式**，僅供檢視，隱藏儲存按鈕。
 
 ### 4.2 編輯提交流程
@@ -155,4 +181,4 @@
 4.  **Loading 規範**：所有 API 呼叫必須配合 `mainStore.setLoading` 進行狀態管理。
 
 ---
-*最後更新：2026-01-16*
+*最後更新：2026-03-10*

@@ -68,9 +68,15 @@
   "finalPrice": "Final Price",
   "suggestedRetailPrice": "Suggested Retail Price",
 
-  "categoryBottledWater": "Bottled Water",
-  "categoryEgg": "Egg",
-  "categoryDispenser": "Water Dispenser",
+  "egg": "Egg",
+  "water": "Water",
+  "bottledWater": "Bottled Water",
+  "dispenser": "Dispenser",
+  "orderEgg": "Egg Orders",
+  "orderWater": "Water Orders",
+  "orderDispenser": "Water Dispenser Orders",
+  "orderBottledWater": "Bottled Water Orders",
+  "allOrders": "All Orders",
 
   "paymentCash": "Cash",
   "paymentMonthly": "Monthly",
@@ -102,13 +108,6 @@
   "statusActive": "Active",
   "statusInactive": "Inactive",
   "statusDeleted": "Deleted",
-
-  "orderTabWater": "Bottled Water",
-  "orderTabEgg": "Egg",
-  "orderTabDispenser": "Water Dispenser",
-  "orderTitleWater": "Bottled Water Orders",
-  "orderTitleEgg": "Egg Orders",
-  "orderTitleDispenser": "Water Dispenser Orders",
 
   "unnamedCustomer": "Unnamed Customer",
   "unset": "Not Set",
@@ -175,5 +174,15 @@
   "SHIPPED": "Shipped",
   "DELIVERED": "Delivered",
   "CANCELLED": "Cancelled",
-  "RETURNED": "Returned"
+  "RETURNED": "Returned",
+  "depositManagement": "Deposit Management",
+  "depositProductSetting": "Water Product Deposit Settings",
+  "addDeposit": "Add Deposit",
+  "noDepositYet": "No deposits set yet. Click the button above to add.",
+  "depositNote": "Quantity and amount can be filled in either or both. When shipping orders, the system will deduct quantity first, then amount.",
+  "depositQuantity": "Deposit Quantity",
+  "depositAmount": "Deposit Amount",
+  "remainingQuantity": "Remaining Qty",
+  "remainingDepositAmount": "Remaining Amount",
+  "optional": "Optional"
 }

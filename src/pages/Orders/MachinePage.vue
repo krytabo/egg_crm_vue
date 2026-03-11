@@ -1,10 +1,10 @@
 <!-- src/pages/Orders/MachinePage.vue 飲水機訂單 -->
 <template>
   <template v-if="displayMode === 'mobile'">
-    <MobileView :pageTitle="t('waterDispenserOrders', '飲水機訂單')" :categoryId="CATEGORY_IDS.DISPENSER" :categoryCode="CATEGORY_CODES.DISPENSER" />
+    <MobileView :pageTitle="t('orderDispenser', '飲水機訂單')" :categoryId="CATEGORY_IDS.DISPENSER" :categoryCode="CATEGORY_CODES.DISPENSER" />
   </template>
   <template v-else>
-    <DataList pageTitle="waterDispenserOrders" :categoryId="CATEGORY_IDS.DISPENSER" :categoryCode="CATEGORY_CODES.DISPENSER" />
+    <DataList pageTitle="orderDispenser" :categoryId="CATEGORY_IDS.DISPENSER" :categoryCode="CATEGORY_CODES.DISPENSER" />
   </template>
 </template>
 

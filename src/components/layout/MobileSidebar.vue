@@ -74,7 +74,7 @@ const menuSections = [
     remixIcon: 'ri-box-1-line',
     hiddenOnMobile: true, //手機版隱藏
     items: [
-      { id: 'products-water', label: '桶裝水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
+      { id: 'products-water', label: '飲水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
       { id: 'products-eggs', label: '雞蛋資料', heroIcon: LucideEggIcon, role: 'PRODUCT' },
       { id: 'products-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon, role: 'PRODUCT' },
     ],
@@ -85,7 +85,7 @@ const menuSections = [
     remixIcon: 'ri-shopping-bag-3-line',
     hiddenOnMobile: true, //手機版隱藏
     items: [
-      { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
+      { id: 'orders-water', label: '飲水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
       { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
       { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },
     ],

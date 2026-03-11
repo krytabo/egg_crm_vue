@@ -1,7 +1,7 @@
 // src/lib/mock-orders.js 模擬訂單資料
 const ORDER_TYPE_CONFIG = {
   water: {
-    label: "桶裝水",
+    label: "飲水",
     prefix: "WTR",
     products: ["清泉 20L", "純淨 20L", "山泉 20L"],
     unitPrice: 150,
@@ -138,11 +138,11 @@ const orderTypeLabels = Object.keys(ORDER_TYPE_CONFIG).reduce((acc, key) => {
 }, {});
 
 const orderStatusColors = {
-  待出貨: "bg-yellow-100 text-yellow-800",
-  處理中: "bg-blue-100 text-blue-800",
-  已出貨: "bg-indigo-100 text-indigo-800",
-  已完成: "bg-green-100 text-green-800",
-  取消: "bg-red-100 text-red-800"
+  PENDING: "bg-yellow-100 text-yellow-800",
+  PROCESSING: "bg-blue-100 text-blue-800",
+  SHIPPED: "bg-indigo-100 text-indigo-800",
+  DELIVERED: "bg-green-100 text-green-800",
+  CANCELLED: "bg-red-100 text-red-800"
 };
 
 export {

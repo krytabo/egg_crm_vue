@@ -29,10 +29,7 @@ export function useDataList(t, showMessage = () => {}) {
     { label: t('statusActive'), value: true },
     { label: t('statusInactive'), value: false },
   ];
-  const productTypeFilterOptions = computed(() => [
-    { label: '全部', value: 'all' },
-    ...productTypeOptions.value.map((option) => ({ label: option.label, value: option.value })),
-  ]);
+  const productTypeFilterOptions = computed(() => [{ label: '全部', value: 'all' }, ...productTypeOptions.value.map((option) => ({ label: option.label, value: option.value }))]);
 
   // ===== 共用工具函式 =====
   const formatDate = (value) => {
@@ -45,8 +42,8 @@ export function useDataList(t, showMessage = () => {}) {
   const findProductTypeByCode = (code) => productTypeOptions.value.find((option) => option.value === code);
 
   const responseDataToList = (vendor = {}) => {
-    const productTypeCode = vendor.primaryProductType?.code || vendor.productType?.code || vendor.productTypeCode || '';
-    const productTypeName = findProductTypeByCode(productTypeCode)?.label || vendor.primaryProductType?.name || vendor.productType?.name || productTypeCode || '';
+    const productTypeId = vendor.primaryProductType?.code || vendor.productType?.code || vendor.productTypeId || '';
+    const productTypeName = findProductTypeByCode(productTypeId)?.label || vendor.primaryProductType?.name || vendor.productType?.name || productTypeId || '';
     return {
       id: vendor.id || vendor.code || `vendor-${Date.now()}`,
       code: vendor.code || '',
@@ -55,7 +52,7 @@ export function useDataList(t, showMessage = () => {}) {
       phone: vendor.phone || t('unset'),
       companyPhone: vendor.companyPhone || t('unset'),
       email: vendor.email || t('unset'),
-      productTypeCode,
+      productTypeId,
       productTypeName: productTypeName || t('uncategorized'),
       addressDisplay: formatAddress(vendor.fullAddress),
       fullAddress: vendor.fullAddress || '',
@@ -117,7 +114,7 @@ export function useDataList(t, showMessage = () => {}) {
 
   // ===== 列表資料取得相關 =====
   const defaultFilters = {
-    productTypeCode: 'all',
+    productTypeId: 'all',
     status: 'all',
   };
   const wrappedVendorListGet = (params) => {
@@ -180,7 +177,7 @@ export function useDataList(t, showMessage = () => {}) {
 
   // 監聽篩選條件變化
   watch(
-    () => [filters.productTypeCode, filters.status],
+    () => [filters.productTypeId, filters.status],
     () => {
       handleFiltersChange();
     },
@@ -202,7 +199,7 @@ export function useDataList(t, showMessage = () => {}) {
     email: '',
     phone: '',
     companyPhone: '',
-    productTypeCode: '',
+    productTypeId: '',
     taxId: '',
     paymentTerms: '30',
     isActive: true,
@@ -236,7 +233,7 @@ export function useDataList(t, showMessage = () => {}) {
     basicForm.value.email = vendor.email || '';
     basicForm.value.phone = vendor.phone || '';
     basicForm.value.companyPhone = vendor.companyPhone || '';
-    basicForm.value.productTypeCode = vendor.primaryProductType?.code || vendor.productType?.code || vendor.productTypeCode || '';
+    basicForm.value.productTypeId = vendor.primaryProductType?.code || vendor.productType?.code || vendor.productTypeId || '';
     basicForm.value.taxId = vendor.taxId || '';
     basicForm.value.paymentTerms = vendor.paymentTerms != null ? String(vendor.paymentTerms) : '';
     basicForm.value.isActive = vendor.isActive !== false && vendor.status !== 'inactive';
@@ -290,7 +287,7 @@ export function useDataList(t, showMessage = () => {}) {
       contactPerson: basicForm.value.contactPerson.trim(),
       email: basicForm.value.email.trim(),
       phone: basicForm.value.phone.trim(),
-      productTypeCode: basicForm.value.productTypeCode || undefined,
+      // categoryId: basicForm.value.productTypeId?.id,
       isActive: Boolean(basicForm.value.isActive),
     };
 
@@ -323,6 +320,7 @@ export function useDataList(t, showMessage = () => {}) {
       payload.notes = basicForm.value.notes.trim();
     }
 
+    console.log(1111, payload);
     return payload;
   };
 

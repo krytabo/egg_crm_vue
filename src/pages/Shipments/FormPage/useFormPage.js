@@ -91,11 +91,60 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
   });
 
   // 表格欄位合併設定（Desktop 使用）
-  const rowSpanConfig = [{ field: 'productName' }];
+  // 根據客戶分組，合併客戶名稱欄
+  const rowSpanConfig = computed(() => {
+    // 統計每個客戶出現的行數
+    const customerCounts = {};
+    editedProducts.value.forEach((item) => {
+      const customerId = item.customerId?.id || item.customerId;
+      customerCounts[customerId] = (customerCounts[customerId] || 0) + 1;
+    });
+
+    // 生成合併配置
+    const spans = [];
+    let currentCustomerId = null;
+    let spanStart = 0;
+
+    editedProducts.value.forEach((item, index) => {
+      const customerId = item.customerId?.id || item.customerId;
+
+      if (customerId !== currentCustomerId) {
+        // 不同客戶，記錄前一個客戶的合併資訊
+        if (currentCustomerId !== null && index > spanStart) {
+          spans.push({
+            field: 'customerName',
+            rowIndex: spanStart,
+            rowspan: index - spanStart,
+          });
+        }
+        currentCustomerId = customerId;
+        spanStart = index;
+      }
+    });
+
+    // 處理最後一個客戶
+    if (currentCustomerId !== null && editedProducts.value.length > spanStart) {
+      spans.push({
+        field: 'customerName',
+        rowIndex: spanStart,
+        rowspan: editedProducts.value.length - spanStart,
+      });
+    }
+
+    return spans;
+  });
 
   // ===== 排序函式 =====
   const sortEditedProducts = () => {
     editedProducts.value = [...editedProducts.value].sort((a, b) => {
+      // 首先按客戶分組排序
+      const aCustomerId = a.customerId?.id || '';
+      const bCustomerId = b.customerId?.id || '';
+      const customerSort = aCustomerId.localeCompare(bCustomerId);
+      
+      // 如果客戶相同，則按商品 ID 排序
+      if (customerSort !== 0) return customerSort;
+      
       const aProductId = a.productId?.id || '';
       const bProductId = b.productId?.id || '';
       return aProductId.localeCompare(bProductId);

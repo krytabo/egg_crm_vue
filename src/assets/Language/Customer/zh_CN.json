@@ -67,9 +67,15 @@
   "finalPrice": "最终价格",
   "suggestedRetailPrice": "建议售价",
 
-  "categoryBottledWater": "桶装水",
-  "categoryEgg": "鸡蛋",
-  "categoryDispenser": "饮水机",
+  "egg": "鸡蛋",
+  "water": "饮水",
+  "bottledWater": "桶装水",
+  "dispenser": "饮水机",
+  "orderEgg": "鸡蛋订单",
+  "orderWater": "饮水订单",
+  "orderDispenser": "饮水机订单",
+  "orderBottledWater": "桶装水订单",
+  "allOrders": "全部订单",
 
   "paymentCash": "现金",
   "paymentMonthly": "月结",
@@ -102,20 +108,13 @@
   "statusInactive": "停用",
   "statusDeleted": "删除",
 
-  "orderTabWater": "桶装水",
-  "orderTabEgg": "鸡蛋",
-  "orderTabDispenser": "饮水机",
-  "orderTitleWater": "桶装水订单",
-  "orderTitleEgg": "鸡蛋订单",
-  "orderTitleDispenser": "饮水机订单",
-
   "unnamedCustomer": "未命名客户",
   "unset": "未设定",
   "requiredFieldsMissing": "请填写必要栏位",
   "deleteSuccess": "删除成功",
   "saveSuccess": "储存成功",
 
-  "bottledWaterOrders": "桶装水订单",
+  "bottledWaterOrders": "饮水订单",
   "keyword": "关键字",
   "orderStatus": "订单状态",
   "orderNumber": "订单编号",
@@ -167,5 +166,15 @@
   "SHIPPED": "已出货",
   "DELIVERED": "已送达",
   "CANCELLED": "已取消",
-  "RETURNED": "已退货"
+  "RETURNED": "已退货",
+  "depositManagement": "储值管理",
+  "depositProductSetting": "饮水商品储值设定",
+  "addDeposit": "新增储值",
+  "noDepositYet": "尚未设定储值，点击上方按钮新增",
+  "depositNote": "储值数量与金额可择一填写，订单出货时系统会先扣数量，扣完后再扣金额",
+  "depositQuantity": "储值数量",
+  "depositAmount": "储值金额",
+  "remainingQuantity": "剩余数量",
+  "remainingDepositAmount": "剩余金额",
+  "optional": "选填"
 }

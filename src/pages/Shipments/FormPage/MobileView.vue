@@ -10,7 +10,7 @@
             {{ t('back', '返回') }}
           </ion-button>
         </ion-buttons>
-        <ion-title>{{ isCreateMode ? t('createReport', '新增報表') : (isReadOnly ? t('viewReport', '檢視報表') : t('editReport', '編輯報表')) }}</ion-title>
+        <ion-title>{{ isCreateMode ? t('createReport', '新增報表') : isReadOnly ? t('viewReport', '檢視報表') : t('editReport', '編輯報表') }}</ion-title>
       </ion-toolbar>
     </ion-header>
 
@@ -70,34 +70,48 @@
           </ion-card-title>
         </ion-card-header>
         <ion-card-content>
-          <ion-list>
-            <ion-item-sliding v-for="(item, index) in editedProducts" :key="item.rowKey">
-              <ion-item button @click="openEditPopup(index)">
-                <div class="py-2 flex w-full items-center gap-4">
-                  <ion-label class="flex-1 overflow-hidden">
-                    <div class="flex items-center gap-1">
-                      <span class="product-name truncate">{{ item.productName }}</span>
-                      <ion-chip :color="getChipColor(item.productCategory)" size="small" class="px-2 truncate min-w-[48px]">
-                        {{ item.productCategory || '—' }}
-                      </ion-chip>
-                    </div>
-                    <p class="customer-name">{{ t('customer', '客戶') }}: {{ item.customerName || '—' }}</p>
-                  </ion-label>
-                  <div slot="end" class="amount-info">
-                    <span class="quantity-price">{{ item.quantity }} × NT$ {{ formatNumber(item.unitPrice) }}</span>
-                    <span class="total-amount">NT$ {{ formatNumber(item.amount) }}</span>
-                  </div>
-                </div>
-              </ion-item>
-              <ion-item-options v-if="!isReadOnly" side="end">
-                <ion-item-option color="danger" @click="handleDeleteRow(index)">
-                  <ion-icon slot="icon-only" :icon="trashOutline" />
-                </ion-item-option>
-              </ion-item-options>
-            </ion-item-sliding>
+          <ion-list v-if="groupedByCustomer.length > 0">
+            <!-- 客戶分組 -->
+            <ion-item-group v-for="customerGroup in groupedByCustomer" :key="customerGroup.customerId">
+              <!-- 客戶分組標題 -->
+              <ion-item-divider>
+                <ion-label class="customer-divider-label px-2 text-[16px]!">
+                  {{ customerGroup.customerName }}
+                  <span class="customer-count">({{ customerGroup.items.length }})</span>
+                </ion-label>
+              </ion-item-divider>
 
-            <!-- 空狀態 -->
-            <ion-item v-if="!editedProducts.length" class="empty-state">
+              <!-- 該客戶的商品列表 -->
+              <ion-item-sliding v-for="(item, index) in customerGroup.items" :key="item.rowKey">
+                <ion-item button @click="openEditPopup(editedProducts.indexOf(item))">
+                  <div class="py-2 flex w-full items-center gap-4">
+                    <ion-label class="flex-1 overflow-hidden">
+                      <div class="flex items-center gap-1">
+                        <span class="product-name truncate">{{ item.productName }}</span>
+                        <!--<ion-chip :color="getChipColor(item.productCategory)" size="small" class="px-2 truncate min-w-[48px]">
+                          {{ item.productCategory || '—' }}
+                        </ion-chip>-->
+                      </div>
+                      <!--<p class="text-[12px] text-gray-500">{{ item.paymentMethod }}</p>-->
+                    </ion-label>
+                    <div slot="end" class="amount-info">
+                      <span class="quantity-price">{{ item.quantity }} × NT$ {{ formatNumber(item.unitPrice) }}</span>
+                      <span class="total-amount">NT$ {{ formatNumber(item.amount) }}</span>
+                    </div>
+                  </div>
+                </ion-item>
+                <ion-item-options v-if="!isReadOnly" side="end">
+                  <ion-item-option color="danger" @click="handleDeleteRow(editedProducts.indexOf(item))">
+                    <ion-icon slot="icon-only" :icon="trashOutline" />
+                  </ion-item-option>
+                </ion-item-options>
+              </ion-item-sliding>
+            </ion-item-group>
+          </ion-list>
+
+          <!-- 空狀態 -->
+          <ion-list v-else>
+            <ion-item class="empty-state">
               <ion-label class="ion-text-center">
                 <ion-icon :icon="cubeOutline" size="large" color="medium" />
                 <p>{{ t('noProducts', '尚無商品') }}</p>
@@ -452,6 +466,8 @@ import {
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
+  IonItemGroup,
+  IonItemDivider,
   IonLabel,
   IonNote,
   IonInput,
@@ -702,7 +718,7 @@ const loadProducts = async (page = 1, append = false) => {
   if (productLoading.value) return;
   productLoading.value = true;
   try {
-    const params = { page, limit: PAGE_SIZE };
+    const params = { page, limit: PAGE_SIZE, status: 'ACTIVE' };
     if (productSearch.value.trim()) {
       params.search = productSearch.value.trim();
     }
@@ -927,7 +943,7 @@ watch(
 const getChipColor = (category) => {
   const colorMap = {
     雞蛋: 'tertiary',
-    桶裝水: 'primary',
+    飲水: 'primary',
     飲水機: 'secondary',
   };
   return colorMap[category] || 'medium';
@@ -999,6 +1015,34 @@ const onEditUnitPriceChange = (value) => {
   }
 };
 
+// ===== 按客戶分組 =====
+const groupedByCustomer = computed(() => {
+  // 按客戶 ID 分組
+  const groups = new Map();
+
+  editedProducts.value.forEach((item) => {
+    const customerId = item.customerId?.id || item.customerId;
+    const customerName = item.customerId?.name || item.customerName || '未指定';
+
+    if (!groups.has(customerId)) {
+      groups.set(customerId, {
+        customerId,
+        customerName,
+        items: [],
+      });
+    }
+
+    groups.get(customerId).items.push(item);
+  });
+
+  // 轉換為陣列並按客戶 ID 排序
+  return Array.from(groups.values()).sort((a, b) => {
+    const aId = a.customerId || '';
+    const bId = b.customerId || '';
+    return aId.localeCompare(bId);
+  });
+});
+
 // 生命週期
 onMounted(async () => {
   await getData();
@@ -1048,6 +1092,20 @@ onMounted(async () => {
 .customer-name {
   font-size: 13px;
   color: var(--ion-color-medium);
+}
+
+/* 客戶分組標題樣式 */
+.customer-divider-label {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ion-color-dark);
+}
+
+.customer-count {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  margin-left: 8px;
 }
 
 .amount-info {

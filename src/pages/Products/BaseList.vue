@@ -443,7 +443,7 @@ const fakeDataPresets = {
     minStock: '50',
     maxStock: '1000',
     reorderPoint: '100',
-    tags: '悅氏,礦泉水,20L,桶裝水',
+    tags: '悅氏,礦泉水,20L,飲水',
     isPerishable: true,
   },
   waterDispenser: {
@@ -827,19 +827,14 @@ const _submitForm = async () => {
 const saveData = debounce(_submitForm, 300, { leading: true, trailing: false }); //新增編輯儲存-防抖
 const deleteData = async (id) => {
   if (!id) return;
-  const confirmed = await mainStore.SWAL_DeleteConfirm();
-  if (!confirmed) return;
-  mainStore.setLoading(true);
-  try {
-    await ProductDeleteById(id);
-    mainStore.SWAL_Success(t('productDeletedSuccessfully', '商品已刪除'));
-    if (basicDataList.value.length === 1 && pagination.page > 1) pagination.page -= 1;
-    await getAPI();
-  } catch (error) {
-    await mainStore.SWAL_Error(error);
-  } finally {
-    mainStore.setLoading(false);
-  }
+  await mainStore.SWAL_DeleteConfirm({
+    onConfirm: async () => {
+      await ProductDeleteById(id);
+      mainStore.SWAL_Success(t('productDeletedSuccessfully', '商品已刪除'));
+      if (basicDataList.value.length === 1 && pagination.page > 1) pagination.page -= 1;
+      await getAPI();
+    },
+  });
 }; //刪除商品
 
 const cleanupResize = systemStore.initializeWindowResize();

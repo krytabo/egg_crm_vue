@@ -46,6 +46,20 @@
       <!--          列表            -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <CustomTinyGrid :data="basicDataList" row-key="id" :height="systemStore.tableHeight" :border="true" :expand-config="{ trigger: 'row', showIcon: true }" :row-id="'id'">
+        <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220" fixed="left">
+          <template #header>
+            <div class="flex flex-col gap-1">
+              <span class="text-[16px] text-[#111827]">{{ t('tags', '標籤') }}</span>
+              <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full" @update:model-value="handleFiltersChange" />
+            </div>
+          </template>
+          <template #default="{ row }">
+            <div class="flex flex-wrap gap-1 text-xs text-gray-700">
+              <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
+              <span v-if="!row.tags?.length">—</span>
+            </div>
+          </template>
+        </CustomTinyGridColumn>
         <CustomTinyGridColumn field="primaryContact" :title="t('primaryContact', '主要聯絡人')" min-width="180" fixed="left">
           <template #default="{ row }">
             <div class="flex flex-col">
@@ -55,14 +69,14 @@
           </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="companyName" :title="t('customerName', '客戶名稱')" min-width="260" sortable :sort-field="'name'" :current-order="getColumnOrder('name')" @sort="handleColumnSort">
-          <template #header>
+          <!--<template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-[#111827]">{{ t('customerName', '客戶名稱') }}</span>
               <div class="flex items-center gap-1">
                 <TinyInput v-model="globalSearch" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 flex-1 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="clearGlobalSearch" />
               </div>
             </div>
-          </template>
+          </template>-->
           <template #default="{ row }">
             <div class="flex flex-col">
               <span class="font-medium text-gray-900">{{ row.companyName }}</span>
@@ -140,20 +154,7 @@
             <span class="text-sm text-gray-900">{{ row.salesRepId?.fullName || '—' }}</span>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('tags', '標籤') }}</span>
-              <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full" @update:model-value="handleFiltersChange" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex flex-wrap gap-1 text-xs text-gray-700">
-              <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
-              <span v-if="!row.tags?.length">—</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
+
         <CustomTinyGridColumn
           field="createdAt"
           :title="t('createdAt', '建立日期')"
@@ -242,7 +243,6 @@
           </div>
         </TinyForm>
       </div>
-
       <div class="mb-4 flex items-center gap-2 font-[16px]">
         <ShoppingCart strokeWidth="2" size="20" />
         <p class="text-gray-900">{{ t('orderRecordTitle', '客戶訂單記錄') }}</p>
@@ -250,16 +250,51 @@
       </div>
 
       <!--訂單列表-->
-      <CustomTinyGrid :data="orderList" size="small" :height="tableHeight">
+      <a-tabs :active-tab="selectedOrderCategory" @change="handleOrderCategoryChange">
+        <a-tab-pane v-for="category in orderCategories" :key="category.key" :title="category.label" :value="category.key" />
+      </a-tabs>
+      <CustomTinyGrid :data="orderList" size="small" :height="tableHeight" :expand-config="{ trigger: 'row', showIcon: true }" row-key="id">
+        <CustomTinyGridColumn type="expand" :width="60" align="center" field="" title="">
+          <template #default="{ row: orderRow }">
+            <div class="bg-gray-50 p-4">
+              <div class="mb-2 flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Package strokeWidth="2" size="16" />
+                <p class="flex-1">{{ t('orderItems', '訂單明細') }}</p>
+
+                <div class="text-sm flex items-center text-gray-600">
+                  <p>{{ t('totalAmount', '總金額') }}：</p>
+                  <span class="ml-4 text-lg text-emerald-600">{{ currency(orderRow.totalAmount) }}</span>
+                </div>
+              </div>
+              <CustomTinyGrid :data="orderRow.products" size="small" :height="200" :border="true">
+                <CustomTinyGridColumn field="productName" :title="t('productName', '商品名稱')" min-width="150" />
+                <CustomTinyGridColumn field="retailPrice" :title="t('retailPrice', '建議售價')" :width="120" align="right">
+                  <template #default="{ row: product }">{{ currency(product.retailPrice) }}</template>
+                </CustomTinyGridColumn>
+                <CustomTinyGridColumn field="actualPrice" :title="t('actualPrice', '實際售價')" :width="120" align="right">
+                  <template #default="{ row: product }">
+                    <span class="text-emerald-600">{{ currency(product.actualPrice) }}</span>
+                  </template>
+                </CustomTinyGridColumn>
+                <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" :width="100" align="center">
+                  <template #default="{ row: product }">{{ product.quantity }} {{ product.unit }}</template>
+                </CustomTinyGridColumn>
+                <CustomTinyGridColumn field="subtotal" :title="t('subtotal', '小計')" :width="120" align="right">
+                  <template #default="{ row: product }">{{ currency(product.subtotal) }}</template>
+                </CustomTinyGridColumn>
+              </CustomTinyGrid>
+            </div>
+          </template>
+        </CustomTinyGridColumn>
         <CustomTinyGridColumn field="orderNumber" :title="t('orderCode', '訂單編號')" :width="180" />
         <CustomTinyGridColumn field="targetName" :title="t('targetName', '客戶名稱')" min-width="150" />
         <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="120" align="right">
           <template #default="{ row: orderRow }">{{ currency(orderRow.totalAmount) }}</template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="orderDate" :title="t('orderDate', '訂單日期')" :width="130" />
-        <CustomTinyGridColumn field="statusLabel" :title="t('status', '狀態')" :width="120">
+        <CustomTinyGridColumn field="statusLabel" :title="t('status', '狀態')" :width="180">
           <template #default="{ row: orderRow }">
-            <span class="inline-flex items-center rounded-full px-2 py-1 text-xs" :class="orderStatusColors[orderRow.status] || 'bg-gray-100 text-gray-600'">
+            <span class="inline-flex items-center rounded-full px-2 py-1" :class="orderStatusColors[orderRow.status] || 'bg-gray-100 text-gray-600'">
               {{ orderRow.statusLabel }}
             </span>
           </template>
@@ -278,13 +313,14 @@
   </TinyDrawer>
 
   <!--新增編輯客戶視窗-->
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editCustomer', '編輯客戶') : t('newCustomer', '新增客戶')" :top="30" draggable :maskClosable="false" :closable="false" width="800px">
+  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editCustomer', '編輯客戶') : t('newCustomer', '新增客戶')" :top="30" draggable :maskClosable="false" :closable="false" width="1000px">
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
       <a-tab-pane key="infoData" :title="t('資本資料', '資本資料')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
+      <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
       <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
       <a-tab-pane v-if="basicForm.metaForm?.type === 'COMPANY'" key="company" :title="t('companyTab', '公司資訊')"></a-tab-pane>
-      <template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>
+      <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
     <perfect-scrollbar class="h-[calc(100vh-400px)] px-4">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
@@ -340,22 +376,29 @@
           </div>
         </template>
 
+        <!--商品價格調整-->
         <template v-if="activeTab === 'product'">
-          <AFormItem :label="t('productPriceAdjust', '商品價格調整')" class="col-span-2">
+          <AFormItem :label="t('productPriceAdjust', '商品價格調整')">
             <template #label>
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-gray-900">{{ t('productSalePriceSetting', '商品銷售價格設定') }}</p>
                 <a-button type="text" @click="addCustomPrice">{{ t('addProductPrice', '新增商品價格') }}</a-button>
               </div>
             </template>
-            <p v-if="customPriceForm.length === 0" class="text-xs text-gray-500">
+            <p v-if="customPriceForm.length === 0" class="text-xs text-gray-500 w-full">
               {{ t('noProductPriceYet', '尚未設定商品價格，點擊上方按鈕新增') }}
             </p>
             <div class="flex w-full flex-col gap-1">
               <template v-for="(item, index) in customPriceForm" :key="item.id">
                 <div class="flex items-center gap-2 rounded-md border p-2">
-                  <AFormItem :label="t('product', '商品')" class="flex-1">
-                    <InfiniteSelect v-model="item.productId" dataSource="products" :placeholder="t('pleaseSelectProduct', '請選擇商品')" @change="(product) => changeProduct(product, index)" />
+                  <AFormItem :label="t('product', '商品')" class="min-w-[180px] flex-1">
+                    <InfiniteSelect
+                      v-model="item.productId"
+                      dataSource="products"
+                      :filters="{ status: 'ACTIVE' }"
+                      :placeholder="t('pleaseSelectProduct', '請選擇商品')"
+                      @change="(product) => changeProduct(product, index)"
+                    />
                   </AFormItem>
                   <AFormItem :label="t('suggestedRetailPriceTWD', '建議售價')" class="flex-1">
                     <p class="h-8 w-full text-right text-[16px]">{{ item.basePriceAmount }}</p>
@@ -367,6 +410,53 @@
                     <p class="h-8 w-full text-right text-[16px] text-emerald-500">{{ currency((Number(item.basePriceAmount) || 0) + (Number(item.adjustment) || 0)) }}</p>
                   </AFormItem>
                   <a-button type="text" @click="removeCustomPrice(item.id)">{{ t('remove') }}</a-button>
+                </div>
+              </template>
+            </div>
+          </AFormItem>
+        </template>
+
+        <!-- 儲值管理 -->
+        <template v-if="activeTab === 'deposit'">
+          <AFormItem>
+            <template #label>
+              <div class="flex items-center justify-between">
+                <p class="text-sm font-medium text-gray-900">{{ t('depositProductSetting', '飲水商品儲值設定') }}</p>
+                <a-button type="text" @click="addWaterDeposit">{{ t('addDeposit', '新增儲值') }}</a-button>
+              </div>
+            </template>
+            <p v-if="waterDepositsForm.length === 0" class="text-xs text-gray-500 w-full">
+              {{ t('noDepositYet', '尚未設定儲值，點擊上方按鈕新增') }}
+            </p>
+            <!--<p class="mb-2 text-xs text-blue-500">{{ t('depositNote', '儲值數量與金額可擇一填寫，訂單出貨時系統會先扣數量，扣完後再扣金額') }}</p>-->
+            <div class="flex w-full flex-col gap-1">
+              <template v-for="(item, index) in waterDepositsForm" :key="item.id">
+                <div class="flex items-center gap-2 rounded-md border p-2">
+                  <AFormItem :label="t('product', '商品')" class="min-w-[180px] flex-1">
+                    <InfiniteSelect
+                      v-model="item.productId"
+                      dataSource="products"
+                      :filters="{ status: 'ACTIVE' }"
+                      :placeholder="t('pleaseSelectProduct', '請選擇商品')"
+                      @change="(product) => changeDepositProduct(product, index)"
+                    />
+                  </AFormItem>
+                  <AFormItem :label="t('unit', '單位')" class="flex-1">
+                    <p class="h-8 flex items-center text-[15px] text-gray-600">{{ item.unit || '—' }}</p>
+                  </AFormItem>
+                  <AFormItem :label="t('depositQuantity', '儲值數量')" class="flex-1">
+                    <CustomField v-model="item.quantity" type="number" :min="0" :placeholder="t('optional', '選填')" allowClear />
+                  </AFormItem>
+                  <AFormItem :label="t('depositAmount', '儲值金額')" class="flex-1">
+                    <CustomField v-model="item.amount" type="number" thousands :min="0" :placeholder="t('optional', '選填')" allowClear />
+                  </AFormItem>
+                  <AFormItem v-if="item.remainingQuantity !== null" :label="t('remainingQuantity', '剩餘數量')" class="flex-1">
+                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ item.remainingQuantity }}</p>
+                  </AFormItem>
+                  <AFormItem v-if="item.remainingAmount !== null" :label="t('remainingDepositAmount', '剩餘金額')" class="flex-1">
+                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ currency(item.remainingAmount) }}</p>
+                  </AFormItem>
+                  <a-button type="text" status="danger" @click="removeWaterDeposit(item.id)">{{ t('remove') }}</a-button>
                 </div>
               </template>
             </div>
@@ -449,7 +539,7 @@ import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import CustomField from '@/components/Form/CustomField.vue';
-import { UserRoundSearch, ShoppingCart, Trash2, SquarePen, ScrollText } from 'lucide-vue-next';
+import { UserRoundSearch, ShoppingCart, Trash2, SquarePen, ScrollText, Package } from 'lucide-vue-next';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { useSystemStore } from '@/stores/system';
 import { usePermissionStore } from '@/stores/PermissionStore';
@@ -549,16 +639,25 @@ const {
   addCustomPrice,
   removeCustomPrice,
 
+  //儲值管理操作
+  waterDepositsForm,
+  addWaterDeposit,
+  removeWaterDeposit,
+  changeDepositProduct,
+
   //訂單相關
   customerData,
   drawerVisible,
   drawerCustomer,
   orderList,
   orderPagination,
+  selectedOrderCategory,
+  orderCategories,
   openCustomerData,
   openDrawer,
   handleOrderPageChange,
   handleOrderPageSizeChange,
+  handleOrderCategoryChange,
 
   //Mock 資料
   generateFakeCustomer,
@@ -566,7 +665,7 @@ const {
 
 const tableHeight = computed(() => {
   const height = window.innerHeight || document.documentElement.clientHeight;
-  return height - 500;
+  return height - 600;
 });
 const cleanupResize = systemStore.initializeWindowResize();
 onUnmounted(cleanupResize);

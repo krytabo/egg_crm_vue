@@ -25,183 +25,191 @@
           </a-radio-group>
         </a-form-item>-->
 
-        <!-- 批量選擇模式 -->
-        <div v-if="selectionMode === 'batch'" class="flex gap-2">
-          <!-- 商品選擇區塊（使用無限捲軸組件） -->
-          <div class="rounded border p-3 w-[320px] flex-shrink-0">
-            <div class="flex flex-wrap items-center gap-2 mb-3">
-              <TinySelect v-model="selectedCategory" :options="productCategoryFilters" :placeholder="t('selectCategory', '選擇分類')" />
-              <div class="space-x-1">
-                <TinyButton v-for="category in quickSelectCategories" :key="category" size="small" type="text" @click="handleQuickSelectCategory(category)">
-                  {{ t('quick', '快速') }}：{{ category }}
-                </TinyButton>
-              </div>
-            </div>
-            <InfiniteScrollList
-              ref="productListRef"
-              :fetcher="ProductListGet"
-              :item-formatter="formatProduct"
-              :filter-fn="filterProduct"
-              :filters="productFilters"
-              :selected-values="selectedProductIds"
-              value-key="id"
-              label-key="name"
-              description-key="categoryName"
-              :limit="20"
-              :search-placeholder="t('searchProduct', '搜尋商品...')"
-              :empty-text="t('noProducts', '查無商品')"
-              max-height="380px"
-              @toggle="handleProductToggle"
-              @loaded="handleProductListLoaded"
-            >
-              <template #item="{ item, selected }">
-                <div class="flex flex-1 flex-col">
-                  <span class="text-sm font-medium">{{ item.name }}</span>
-                  <span class="text-xs text-gray-500">{{ item.categoryName }}</span>
-                </div>
-              </template>
-            </InfiniteScrollList>
+        <div class="relative mt-4">
+          <div v-if="!basicForm.driver || basicForm.weekDays.length === 0" class="bg-black/80 absolute w-full z-10 h-full rounded-[10px] flex items-center justify-center">
+            <p class="text-white text-[20px]">{{ t('請先選擇上方欄位') }}</p>
           </div>
 
-          <!-- 已選商品的客戶選擇（使用 Tabs 切換） -->
-          <div class="rounded border flex-1 overflow-hidden">
-            <div v-if="!basicForm.products.length" class="flex h-full items-center justify-center text-gray-400 p-8">
-              {{ t('pleaseSelectProductFirst', '請先從左側選擇商品') }}
-            </div>
-            <a-tabs v-else v-model:active-key="activeProductTab" type="card-gutter" class="product-customer-tabs">
-              <a-tab-pane v-for="item in basicForm.products" :key="item.productId">
-                <template #title>
-                  <div class="flex items-center gap-1">
-                    <span>{{ item.productName }}</span>
-                    <a-badge v-if="item.customerIds.length" :count="item.customerIds.length" :dot-style="{ background: '#10b981' }" />
-                    <a-button type="text" size="mini" status="danger" class="ml-1 p-0!" @click.stop="handleRemoveProductFromBatch(item.productId)">
-                      <i class="ri-close-line text-[14px]" />
-                    </a-button>
+          <!-- 批量選擇模式 -->
+          <div v-if="selectionMode === 'batch'" class="flex gap-2">
+            <!-- 商品選擇區塊（使用無限捲軸組件） -->
+            <div class="rounded border p-3 w-[320px] flex-shrink-0">
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <TinySelect v-model="selectedCategory" :options="productCategoryFilters" :placeholder="t('selectCategory', '選擇分類')" />
+                <div class="flex items-center gap-1">
+                  <p>{{ t('quick', '快速選單') }}：</p>
+                  <TinyButton v-for="category in quickSelectCategories" :key="category.categoryId" size="small" type="text" @click="handleQuickSelectCategory(category)">
+                    {{ category.text }}
+                  </TinyButton>
+                </div>
+              </div>
+              <InfiniteScrollList
+                ref="productListRef"
+                :fetcher="fetchProductsWithFilters"
+                :itemFormatter="formatProduct"
+                :filterFn="filterProduct"
+                :filters="productFilters"
+                :selectedValues="selectedProductIds"
+                valueKey="id"
+                labelKey="name"
+                descriptionKey="categoryName"
+                :limit="20"
+                :searchPlaceholder="t('searchProduct', '搜尋商品...')"
+                :emptyText="t('noProducts', '查無商品')"
+                max-height="380px"
+                @toggle="handleProductToggle"
+                @loaded="handleProductListLoaded"
+              >
+                <template #item="{ item, selected }">
+                  <div class="flex flex-1 flex-col">
+                    <span class="text-sm font-medium">{{ item.name }}</span>
+                    <span class="text-xs text-gray-500">{{ item.categoryName }}</span>
                   </div>
                 </template>
-                <div class="p-3">
-                  <div class="mb-3 flex items-center justify-between">
-                    <span class="text-xs text-gray-500">{{ item.categoryName }}</span>
-                    <span class="text-xs" :class="item.customerIds.length ? 'text-green-600' : 'text-gray-400'">
-                      {{
-                        item.customerIds.length
-                          ? t('selectedCustomersCount', '已選擇 {count} 位客戶', { count: item.customerIds.length })
-                          : t('noCustomerSelectedOptional', '尚未選擇客戶（將自動排除）')
-                      }}
-                    </span>
+              </InfiniteScrollList>
+            </div>
+
+            <!-- 已選商品的客戶選擇（使用 Tabs 切換） -->
+            <div class="rounded border flex-1 overflow-hidden">
+              <div v-if="!basicForm.products.length" class="flex h-full items-center justify-center text-gray-400 p-8">
+                {{ t('pleaseSelectProductFirst', '請先從左側選擇商品') }}
+              </div>
+              <a-tabs v-else v-model:active-key="activeProductTab" type="card-gutter" class="product-customer-tabs">
+                <a-tab-pane v-for="item in basicForm.products" :key="item.productId">
+                  <template #title>
+                    <div class="flex items-center gap-1">
+                      <span>{{ item.productName }}</span>
+                      <a-badge v-if="item.customerIds.length" :count="item.customerIds.length" :dot-style="{ background: '#10b981' }" />
+                      <a-button type="text" size="mini" status="danger" class="ml-1 p-0!" @click.stop="handleRemoveProductFromBatch(item.productId)">
+                        <i class="ri-close-line text-[14px]" />
+                      </a-button>
+                    </div>
+                  </template>
+                  <div class="p-3">
+                    <div class="mb-3 flex items-center justify-between">
+                      <span class="text-xs text-gray-500">{{ item.categoryName }}</span>
+                      <span class="text-xs" :class="item.customerIds.length ? 'text-green-600' : 'text-gray-400'">
+                        {{
+                          item.customerIds.length
+                            ? t('selectedCustomersCount', '已選擇 {count} 位客戶', { count: item.customerIds.length })
+                            : t('noCustomerSelectedOptional', '尚未選擇客戶（將自動排除）')
+                        }}
+                      </span>
+                    </div>
+                    <InfiniteScrollList
+                      :ref="(el) => setCustomerListRef(item.productId, el)"
+                      :fetcher="fetchCustomersWithFilters"
+                      :item-formatter="formatCustomer"
+                      :filter-fn="filterCustomer"
+                      :filters="getCustomerFilters(item.categoryName)"
+                      :selected-values="getProductSelection(item.productId)?.customerIds || []"
+                      value-key="id"
+                      label-key="name"
+                      :limit="20"
+                      :search-placeholder="t('searchCustomer', '搜尋客戶...')"
+                      :empty-text="t('noMatchingCustomers', '沒有符合條件的客戶（需同時符合出貨星期與商品類別）')"
+                      max-height="350px"
+                      @toggle="(customer) => handleCustomerListToggle(item.productId, customer)"
+                    >
+                      <template #item="{ item: customer, selected }">
+                        <div class="flex flex-1 flex-col">
+                          <p class="text-sm font-medium">{{ customer.name }}</p>
+                          <p class="text-xs text-gray-500">{{ customer.typeLabel }} · {{ customer.paymentMethod }}</p>
+                          <p class="text-xs text-gray-400">{{ t('schedule', '排程') }}：{{ customer.deliveryDaysLabels || '—' }}</p>
+                        </div>
+                      </template>
+                    </InfiniteScrollList>
                   </div>
-                  <InfiniteScrollList
-                    :ref="(el) => setCustomerListRef(item.productId, el)"
-                    :fetcher="CustomersListGet"
-                    :item-formatter="formatCustomer"
-                    :filter-fn="filterCustomer"
-                    :filters="getCustomerFilters(item.categoryName)"
-                    :selected-values="getProductSelection(item.productId)?.customerIds || []"
-                    value-key="id"
-                    label-key="name"
-                    :limit="20"
-                    :search-placeholder="t('searchCustomer', '搜尋客戶...')"
-                    :empty-text="t('noMatchingCustomers', '沒有符合條件的客戶（需同時符合出貨星期與商品類別）')"
-                    max-height="350px"
-                    @toggle="(customer) => handleCustomerListToggle(item.productId, customer)"
+                </a-tab-pane>
+              </a-tabs>
+            </div>
+          </div>
+
+          <!-- 逐筆新增模式 -->
+          <div v-else class="flex gap-4">
+            <!-- 新增/編輯商品表單 -->
+            <div class="rounded border p-4 flex flex-col gap-4 min-w-1/2" :class="editingProductId ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'">
+              <div class="flex items-center justify-between mb-3">
+                <p class="text-sm font-medium">{{ editingProductId ? t('editProduct', '編輯商品') : t('addNewProduct', '新增商品') }}</p>
+                <a-button v-if="editingProductId" type="text" status="danger" @click="cancelEdit">
+                  {{ t('cancelEdit', '取消編輯') }}
+                </a-button>
+                <a-button v-if="editingProductId" type="text" :disabled="!singleModeProduct || !singleModeCustomers.length" @click="confirmEditProduct">
+                  <i class="ri-check-line mr-1" />
+                  {{ t('saveChanges', '儲存變更') }}
+                </a-button>
+                <a-button v-else type="text" :disabled="!singleModeProduct || !singleModeCustomers.length" @click="confirmAddSingleProduct">
+                  <i class="ri-add-line mr-1" />
+                  {{ t('addToList', '加入列表') }}
+                </a-button>
+              </div>
+              <!-- 選擇商品 -->
+              <div class="flex flex-col gap-1">
+                <p class="text-xs text-gray-500 mb-1">{{ t('selectProduct', '選擇商品') }} *</p>
+                <InfiniteSelect
+                  v-model="singleModeProduct"
+                  dataSource="products"
+                  :filters="{ status: 'ACTIVE' }"
+                  :placeholder="t('pleaseSelect', '請選擇')"
+                  type="outline"
+                  :disabled="!!editingProductId"
+                  allowClear
+                  @change="handleSingleModeProductChange"
+                />
+              </div>
+              <!-- 選擇客戶 -->
+              <div class="flex flex-col gap-1">
+                <p class="text-xs text-gray-500 mb-1">{{ t('selectCustomers', '選擇客戶') }}</p>
+                <InfiniteSelect
+                  :key="singleModeCustomerKey"
+                  v-model="singleModeCustomers"
+                  :fetcher="singleModeCustomerFetcher"
+                  :option-formatter="formatCustomerOption"
+                  :placeholder="canSelectCustomer ? t('pleaseSelect', '請選擇') : t('pleaseSelectWeekDayAndProduct', '請先選擇出貨星期與商品')"
+                  :disabled="!canSelectCustomer"
+                  type="outline"
+                  multiple
+                  allowClear
+                />
+              </div>
+            </div>
+
+            <!-- 已新增商品列表 -->
+            <a-form-item field="products" class="flex-1" :hide-label="true">
+              <div class="rounded border p-3 w-full">
+                <div class="flex items-center justify-between mb-2">
+                  <p class="text-sm font-medium">{{ t('addedProducts', '已新增商品') }}</p>
+                  <span class="text-xs text-gray-500">{{ basicForm.products.length }} {{ t('items', '項') }}</span>
+                </div>
+                <div v-if="basicForm.products.length" class="max-h-[200px] overflow-y-auto flex flex-col gap-1">
+                  <div
+                    v-for="item in basicForm.products"
+                    :key="item.productId"
+                    class="flex rounded-sm w-full items-center justify-between px-4 py-2 cursor-pointer bg-[#f2f3f5] hover:bg-gray-50"
+                    :class="{ 'bg-blue-50': editingProductId === item.productId }"
+                    @click="editProduct(item)"
                   >
-                    <template #item="{ item: customer, selected }">
-                      <div class="flex flex-1 flex-col">
-                        <p class="text-sm font-medium">{{ customer.name }}</p>
-                        <p class="text-xs text-gray-500">{{ customer.typeLabel }} · {{ customer.paymentMethod }}</p>
-                        <p class="text-xs text-gray-400">{{ t('schedule', '排程') }}：{{ customer.deliveryDaysLabels || '—' }}</p>
-                      </div>
-                    </template>
-                  </InfiniteScrollList>
-                </div>
-              </a-tab-pane>
-            </a-tabs>
-          </div>
-        </div>
-
-        <!-- 逐筆新增模式 -->
-        <div v-else class="flex gap-4">
-          <!-- 新增/編輯商品表單 -->
-          <div class="rounded border p-4 flex flex-col gap-4 min-w-1/2" :class="editingProductId ? 'bg-blue-50 border-blue-200' : 'bg-gray-50'">
-            <div class="flex items-center justify-between mb-3">
-              <p class="text-sm font-medium">{{ editingProductId ? t('editProduct', '編輯商品') : t('addNewProduct', '新增商品') }}</p>
-              <a-button v-if="editingProductId" type="text" status="danger" @click="cancelEdit">
-                {{ t('cancelEdit', '取消編輯') }}
-              </a-button>
-              <a-button v-if="editingProductId" type="text" :disabled="!singleModeProduct || !singleModeCustomers.length" @click="confirmEditProduct">
-                <i class="ri-check-line mr-1" />
-                {{ t('saveChanges', '儲存變更') }}
-              </a-button>
-              <a-button v-else type="text" :disabled="!singleModeProduct || !singleModeCustomers.length" @click="confirmAddSingleProduct">
-                <i class="ri-add-line mr-1" />
-                {{ t('addToList', '加入列表') }}
-              </a-button>
-            </div>
-            <!-- 選擇商品 -->
-            <div class="flex flex-col gap-1">
-              <p class="text-xs text-gray-500 mb-1">{{ t('selectProduct', '選擇商品') }} *</p>
-              <InfiniteSelect
-                v-model="singleModeProduct"
-                dataSource="products"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                type="outline"
-                :disabled="!!editingProductId"
-                allowClear
-                @change="handleSingleModeProductChange"
-              />
-            </div>
-            <!-- 選擇客戶 -->
-            <div class="flex flex-col gap-1">
-              <p class="text-xs text-gray-500 mb-1">{{ t('selectCustomers', '選擇客戶') }}</p>
-              <InfiniteSelect
-                :key="singleModeCustomerKey"
-                v-model="singleModeCustomers"
-                :fetcher="singleModeCustomerFetcher"
-                :option-formatter="formatCustomerOption"
-                :placeholder="canSelectCustomer ? t('pleaseSelect', '請選擇') : t('pleaseSelectWeekDayAndProduct', '請先選擇出貨星期與商品')"
-                :disabled="!canSelectCustomer"
-                type="outline"
-                multiple
-                allowClear
-              />
-            </div>
-          </div>
-
-          <!-- 已新增商品列表 -->
-          <a-form-item field="products" class="flex-1" :hide-label="true">
-            <div class="rounded border p-3 w-full">
-              <div class="flex items-center justify-between mb-2">
-                <p class="text-sm font-medium">{{ t('addedProducts', '已新增商品') }}</p>
-                <span class="text-xs text-gray-500">{{ basicForm.products.length }} {{ t('items', '項') }}</span>
-              </div>
-              <div v-if="basicForm.products.length" class="max-h-[200px] overflow-y-auto flex flex-col gap-1">
-                <div
-                  v-for="item in basicForm.products"
-                  :key="item.productId"
-                  class="flex rounded-sm w-full items-center justify-between px-4 py-2 cursor-pointer bg-[#f2f3f5] hover:bg-gray-50"
-                  :class="{ 'bg-blue-50': editingProductId === item.productId }"
-                  @click="editProduct(item)"
-                >
-                  <div class="flex-1">
-                    <p class="text-sm font-medium">{{ item.productName }}</p>
-                    <p class="text-xs text-gray-500">
-                      {{ item.customerIds.length }} {{ t('customers', '位客戶') }}
-                      <span v-if="item.customerIds.length">: {{ getCustomerNamesForProduct(item) }}</span>
-                    </p>
-                  </div>
-                  <div class="flex items-center gap-1">
-                    <a-button type="text" size="small" @click.stop="editProduct(item)">
-                      <i class="ri-edit-line text-blue-500" />
-                    </a-button>
-                    <a-button type="text" size="small" @click.stop="removeProduct(item.productId)">
-                      <i class="ri-delete-bin-line text-red-500" />
-                    </a-button>
+                    <div class="flex-1">
+                      <p class="text-sm font-medium">{{ item.productName }}</p>
+                      <p class="text-xs text-gray-500">
+                        {{ item.customerIds.length }} {{ t('customers', '位客戶') }}
+                        <span v-if="item.customerIds.length">: {{ getCustomerNamesForProduct(item) }}</span>
+                      </p>
+                    </div>
+                    <div class="flex items-center gap-1">
+                      <a-button type="text" size="small" @click.stop="editProduct(item)">
+                        <i class="ri-edit-line text-blue-500" />
+                      </a-button>
+                      <a-button type="text" size="small" @click.stop="removeProduct(item.productId)">
+                        <i class="ri-delete-bin-line text-red-500" />
+                      </a-button>
+                    </div>
                   </div>
                 </div>
+                <div v-else class="w-full flex justify-center py-4 text-gray-500">{{ t('notYetSelected', '尚未選擇') }}</div>
               </div>
-              <div v-else class="w-full flex justify-center py-4 text-gray-500">{{ t('notYetSelected', '尚未選擇') }}</div>
-            </div>
-          </a-form-item>
+            </a-form-item>
+          </div>
         </div>
       </a-form>
     </div>
@@ -227,6 +235,7 @@ import { DriverListGet } from '@/assets/API/Drivers';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { useI18n } from 'vue-i18n';
 import { useMainStore } from '@/stores/LoadingStore';
+import { CATEGORY_IDS } from '@/constants/categories';
 
 const mainStore = useMainStore();
 const props = defineProps({ modelValue: { type: Boolean, default: false } });
@@ -235,8 +244,16 @@ const emit = defineEmits(['update:modelValue', 'report-created']);
 const { t } = useI18n();
 const { weekDayOptions, paymentOptions, customerCategories, formatWeekDays } = useSelectOptions();
 
-const productCategoryFilters = computed(() => [{ label: t('all', '全部'), value: 'ALL' }, ...customerCategories.value.map((c) => ({ label: c.label, value: c.label }))]); //產品分類篩選選項
-const quickSelectCategories = computed(() => customerCategories.value.map((c) => c.label)); //快速選擇分類
+// 取得 customerCategories 中 label(code) 對應的 CATEGORY_IDS
+const getCategoryIdByCode = (code) => CATEGORY_IDS[code] ?? null;
+
+const productCategoryFilters = computed(() => [{ label: t('all', '全部'), value: 'ALL' }, ...customerCategories.value.map((c) => ({ label: c.text, value: getCategoryIdByCode(c.value) ?? c.text }))]); //產品分類篩選選項（value 使用 categoryId 以正確匹配 API 回傳）
+const quickSelectCategories = computed(() =>
+  customerCategories.value.map((c) => ({
+    text: c.text,
+    categoryId: getCategoryIdByCode(c.value),
+  })),
+); //快速選擇分類（含 categoryId 以正確過濾）
 const basicDataRef = ref(null);
 const isSubmitting = ref(false);
 const basicForm = ref({
@@ -299,7 +316,6 @@ const productsWithCustomers = computed(() => basicForm.value.products.filter((it
 const resetState = () => {
   basicForm.value = { driver: null, weekDays: [], products: [] };
   selectedCategory.value = 'ALL';
-  selectionMode.value = 'single';
   activeProductTab.value = null;
   singleModeProduct.value = null;
   singleModeCustomers.value = [];
@@ -359,10 +375,10 @@ const normalizeApiResponse = (response) => {
 /** 篩選相關  **/
 const filterProduct = (product, filters) => {
   if (filters.category && filters.category !== 'ALL') {
-    if (product.categoryName !== filters.category) return false;
+    if (product.categoryId !== filters.category) return false;
   }
   return true;
-}; //篩選商品
+}; //篩選商品（使用 categoryId 比對）
 const filterCustomer = (customer, filters) => {
   if (filters.deliveryDays?.length > 0) {
     const hasMatchingDay = customer.deliveryDays?.some((day) => filters.deliveryDays.includes(day));
@@ -378,6 +394,27 @@ const getCustomerFilters = (productCategory) => ({
   deliveryDays: [...basicForm.value.weekDays],
   productCategory,
 }); //取得客戶篩選條件
+
+/** API 包裝函數 - 增加固定篩選欄位 **/
+const fetchProductsWithFilters = async (params) => {
+  // ✅ 增加 status: 'ACTIVE' 固定篩選到 payload
+  return ProductListGet({
+    page: params.page,
+    limit: params.limit,
+    search: params.search,
+    status: 'ACTIVE',
+  });
+}; //商品列表 API 包裝 - 只顯示啟用的商品
+
+const fetchCustomersWithFilters = async (params) => {
+  // ✅ 增加 status: 'ACTIVE' 固定篩選到 payload
+  return CustomersListGet({
+    page: params.page,
+    limit: params.limit,
+    search: params.search,
+    status: 'ACTIVE',
+  });
+}; //客戶列表 API 包裝 - 只顯示啟用的客戶
 
 /** 查詢相關 **/
 const isProductSelected = (productId) => basicForm.value.products.some((item) => item.productId === productId); //判斷商品是否已選擇
@@ -468,9 +505,9 @@ const handleCustomerToggle = (productId, customerId) => {
 const handleCustomerListToggle = (productId, customer) => {
   handleCustomerToggle(productId, customer.id);
 }; //處理客戶列表切換
-const handleQuickSelectCategory = (categoryName) => {
+const handleQuickSelectCategory = (category) => {
   const allProducts = productListRef.value?.getAllLoadedItems() || [];
-  const categoryProducts = allProducts.filter((product) => product.categoryName === categoryName);
+  const categoryProducts = allProducts.filter((product) => product.categoryId === category.categoryId);
   const allSelected = categoryProducts.every((product) => isProductSelected(product.id));
   if (allSelected) {
     basicForm.value.products = basicForm.value.products.filter((item) => !categoryProducts.some((product) => product.id === item.productId));
@@ -637,6 +674,26 @@ const handleSubmit = async () => {
 const closeDialog = () => {
   emit('update:modelValue', false);
 }; //關閉對話框
+
+/** 監控出貨星期變更，自動過濾不符合的客戶 **/
+watch(
+  () => basicForm.value.weekDays,
+  (newWeekDays) => {
+    // 當出貨星期改變時，過濾每個商品下的客戶
+    // 只保留符合新出貨星期的客戶
+    basicForm.value.products = basicForm.value.products.map((product) => {
+      const filteredCustomerIds = product.customerIds.filter((customerId) => {
+        const customer = findCustomerFromRefs(customerId);
+        if (!customer) return false; // 客戶不存在，移除
+        // 檢查客戶的配送日期是否與新選擇的出貨星期有交集
+        const customerDays = customer.deliveryDays || [];
+        return customerDays.some((day) => newWeekDays.includes(day));
+      });
+      return { ...product, customerIds: filteredCustomerIds };
+    });
+  },
+  { deep: true },
+);
 
 watch(
   () => props.modelValue,

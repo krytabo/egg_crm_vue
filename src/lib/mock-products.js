@@ -1,8 +1,8 @@
 const mockProducts = [
-  // 桶裝水
-  { id: "water-1", category: "桶裝水", name: "清泉", spec: "20L", retailPrice: 150 },
-  { id: "water-2", category: "桶裝水", name: "純淨", spec: "20L", retailPrice: 145 },
-  { id: "water-3", category: "桶裝水", name: "山泉", spec: "12L", retailPrice: 110 },
+  // 飲水
+  { id: "water-1", category: "飲水", name: "清泉", spec: "20L", retailPrice: 150 },
+  { id: "water-2", category: "飲水", name: "純淨", spec: "20L", retailPrice: 145 },
+  { id: "water-3", category: "飲水", name: "山泉", spec: "12L", retailPrice: 110 },
   // 雞蛋
   { id: "egg-1", category: "雞蛋", name: "紅殼蛋", spec: "10入/盒", retailPrice: 90 },
   { id: "egg-2", category: "雞蛋", name: "白殼蛋", spec: "10入/盒", retailPrice: 85 },

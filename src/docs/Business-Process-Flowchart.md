@@ -24,7 +24,7 @@ flowchart TD
     
     CreatePotential --> FillBasicInfo[填寫基本資料:<br/>公司名稱、統編、地址等]
     FillBasicInfo --> AddContacts[新增聯絡人資訊<br/>可新增多位聯絡人]
-    AddContacts --> SetCategory[設定客戶類別:<br/>桶裝水/雞蛋/飲水機]
+    AddContacts --> SetCategory[設定客戶類別:<br/>飲水/雞蛋/飲水機]
     SetCategory --> SetPayment[設定收付方式與押金]
     SetPayment --> SetDelivery[設定預計出貨星期]
     SetDelivery --> SetCustomPrice[設定商品自訂價格<br/>可選]

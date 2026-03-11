@@ -61,10 +61,12 @@
         <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
           <template #default="{ row }">{{ row.updatedAt }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions')" :width="200" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions')" :width="200" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" :disabled="!row.isDeletable" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" :disabled="!row.isDeletable" @click="deleteData(row.id)">
+                <Trash2 class="size-4 text-rose-500" />
+              </button>
               <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
             </div>
           </template>
@@ -316,7 +318,7 @@ const _submitForm = async () => {
 }; //新增編輯儲存
 const saveData = debounce(_submitForm, 300, { leading: true, trailing: false }); //新增編輯儲存-防抖
 const deleteData = async (row) => {
-  if (!row?.id || !row.isDeletable) return;
+  // if (!row?.id || !row.isDeletable) return;
   await mainStore.SWAL_DeleteConfirm({
     onConfirm: async () => {
       mainStore.setLoading(true);

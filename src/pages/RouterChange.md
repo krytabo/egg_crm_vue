@@ -22,12 +22,12 @@
 | **Orders 訂單管理** | | |
 | src/pages/order-management/components/OrderManagementBase.vue | src/pages/Orders/DataList.vue | 訂單_基本頁面 |
 | src/pages/order-management/EggOrdersPage.vue | src/pages/Orders/EggPage.vue | 雞蛋訂單 |
-| src/pages/order-management/BottledWaterOrdersPage.vue | src/pages/Orders/WaterPage.vue | 桶裝水訂單 |
+| src/pages/order-management/BottledWaterOrdersPage.vue | src/pages/Orders/WaterPage.vue | 飲水訂單 |
 | src/pages/order-management/WaterDispenserOrdersPage.vue | src/pages/Orders/MachinePage.vue | 飲水機訂單 |
 | **Products 商品管理** | | |
 | src/pages/product-management/components/ProductManagementBase.vue | src/pages/Products/DataList.vue | 資料_基本頁面 |
 | src/pages/product-management/EggManagementPage.vue | src/pages/Products/EggPage.vue | 雞蛋資料 |
-| src/pages/product-management/BottledWaterOrdersPage.vue | src/pages/Products/WaterPage.vue | 桶裝水資料 |
+| src/pages/product-management/BottledWaterOrdersPage.vue | src/pages/Products/WaterPage.vue | 飲水資料 |
 | src/pages/product-management/WaterDispenserOrdersPage.vue | src/pages/Products/MachinePage.vue | 飲水機資料 |
 | **Settings 參數設定** | | |
 | src/pages/parameter-settings/PermissionSettingsPage.vue | src/pages/Settings/Permission.vue | 權限設定 |

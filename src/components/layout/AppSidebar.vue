@@ -2,7 +2,7 @@
 <template>
   <div class="sidebar-container">
     <div class="logo" v-if="!collapsed">CRM 管理系統</div>
-    <div class="logo h-[32px] bg-gray-500" v-if="collapsed" />
+    <div class="logo h-8 bg-gray-500" v-if="collapsed" />
     <a-menu :collapsed="collapsed" :selected-keys="[String(activeSidebarId)]" :default-open-keys="defaultOpenKeys" @menu-item-click="handleMenuItemClick">
       <template v-for="section in filteredMenuSections" :key="section.key">
         <a-menu-item v-if="section.items.length === 1" :key="section.items[0].id">
@@ -72,9 +72,9 @@ const menuSections = [
     label: '商品管理',
     remixIcon: 'ri-box-1-line',
     items: [
-      { id: 'products-water', label: '桶裝水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
       { id: 'products-eggs', label: '雞蛋資料', heroIcon: LucideEggIcon, role: 'PRODUCT' },
-      { id: 'products-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon, role: 'PRODUCT' },
+      { id: 'products-water', label: '飲水資料', heroIcon: LucideDropletIcon, role: 'PRODUCT' },
+      // { id: 'products-dispensers', label: '飲水機資料', heroIcon: LucideWavesIcon, role: 'PRODUCT' },
     ],
   },
   {
@@ -83,9 +83,9 @@ const menuSections = [
     remixIcon: 'ri-shopping-bag-3-line',
     items: [
       // { id: 'orders-all', label: '所有訂單', remixIcon: 'ri-list-check-2', role: 'ORDER' },
-      { id: 'orders-water', label: '桶裝水訂單', remixIcon: 'ri-shopping-basket-line', role: 'ORDER' },
-      { id: 'orders-eggs', label: '雞蛋訂單', remixIcon: 'ri-shopping-cart-line', role: 'ORDER' },
-      { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },
+      { id: 'orders-eggs', label: '雞蛋訂單', heroIcon: LucideEggIcon, role: 'ORDER' },
+      { id: 'orders-water', label: '飲水訂單', heroIcon: LucideDropletIcon, role: 'ORDER' },
+      // { id: 'orders-dispensers', label: '飲水機訂單', remixIcon: 'ri-file-list-3-line', role: 'ORDER' },
     ],
   },
   {

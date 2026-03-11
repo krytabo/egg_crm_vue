@@ -9,6 +9,7 @@
         <div class="flex items-center gap-3">
           <TinyInput v-model="filters.search" :placeholder="t('pleaseEnterKeyword', '請輸入關鍵字')" @keyup.enter="handleGlobalSearch" />
           <a-button status="danger" @click="clearFilter">{{ t('clearAllSearch', '清除篩選') }}</a-button>
+          <a-button @click="batchPrint"><Printer class="mr-1 size-4" />{{ t('batchPrint', '批次列印') }}</a-button>
           <a-button v-if="permissionStore.hasPermission('ORDER', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addOrder', '新增訂單') }}</a-button>
         </div>
       </template>
@@ -30,9 +31,9 @@
       </div>
 
       <!-- 訂單列表 -->
-      <!--<JsonViewer :value="basicDataList" boxed copyable />-->
-      <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id">
-        <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" width="220">
+      <CustomTinyGrid ref="orderGridRef" :data="basicDataList" :height="520" :border="true" row-key="id">
+        <CustomTinyGridColumn field="" type="selection" title="" :width="50" />
+        <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="220">
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-[#111827]">{{ t('orderNumber', '訂單編號') }}</span>
@@ -40,8 +41,7 @@
             </div>
           </template>
         </CustomTinyGridColumn>
-
-        <CustomTinyGridColumn v-if="isCustomer" field="targetName" :title="t('customer', '客戶')" width="220">
+        <CustomTinyGridColumn v-if="isCustomer" field="targetName" :title="t('customer', '客戶')" :width="220">
           <template #header>
             <div class="flex w-full flex-col gap-1">
               <span class="text-[16px] text-[#111827]">{{ t('customer', '客戶') }}</span>
@@ -58,7 +58,7 @@
             </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn v-if="isVendor" field="targetName" :title="t('vendor', '廠商')" width="220">
+        <CustomTinyGridColumn v-if="isVendor" field="targetName" :title="t('vendor', '廠商')" :width="220">
           <template #header>
             <div class="flex w-full flex-col gap-1">
               <span class="text-[16px] text-[#111827]">{{ t('vendor', '廠商') }}</span>
@@ -75,15 +75,13 @@
             </div>
           </template>
         </CustomTinyGridColumn>
-
-        <CustomTinyGridColumn field="contact" :title="t('contact', '聯絡人')" width="120" />
-        <CustomTinyGridColumn field="phone" :title="t('phone', '電話')" width="170" />
-        <CustomTinyGridColumn field="orderDate" :title="t('orderDate', '訂單日期')" width="140" />
-        <CustomTinyGridColumn field="shipDate" :title="t('shipDate', '出貨日期')" width="140" />
-        <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" width="100" />
-        <CustomTinyGridColumn field="shipMethod" :title="t('shipMethodLabel', '出貨方式')" width="100" />
-
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="150" align="center">
+        <CustomTinyGridColumn field="contact" :title="t('contact', '聯絡人')" :width="120" />
+        <CustomTinyGridColumn field="phone" :title="t('phone', '電話')" :width="170" />
+        <CustomTinyGridColumn field="orderDate" :title="t('orderDate', '訂單日期')" :width="140" />
+        <CustomTinyGridColumn field="shipDate" :title="t('shipDate', '出貨日期')" :width="140" />
+        <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" :width="100" />
+        <CustomTinyGridColumn field="shipMethod" :title="t('shipMethodLabel', '出貨方式')" :width="100" />
+        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="180" align="center">
           <template #header>
             <div class="flex flex-col gap-1 text-center">
               <span class="text-[16px] text-[#111827]">{{ t('status', '狀態') }}</span>
@@ -98,15 +96,14 @@
             <a-tag size="large" v-else>{{ row.statusLabel }}</a-tag>
           </template>
         </CustomTinyGridColumn>
-
-        <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" width="150" align="right" header-align="right">
+        <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="150" align="right" header-align="right">
           <template #default="{ row }">{{ formatCurrencyNumber(row.totalAmount) }}</template>
         </CustomTinyGridColumn>
-
-        <CustomTinyGridColumn :title="t('actions', '操作')" width="100" fixed="right" align="center" header-align="center">
+        <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="100" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
               <button v-if="permissionStore.hasPermission('ORDER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+              <button class="table-button" @click="printReport(row)"><Printer class="size-4 text-green-500" /></button>
               <button v-if="permissionStore.hasPermission('ORDER', 'UPDATE')" class="table-button" @click="editData(row)">
                 <Eye v-if="['DELIVERED', 'CANCELLED'].includes(row.status)" class="size-4" />
                 <SquarePen v-else class="size-4" />
@@ -115,8 +112,6 @@
           </template>
         </CustomTinyGridColumn>
       </CustomTinyGrid>
-
-      <!-- 分頁 -->
       <AppPagination
         class="md:w-auto"
         :current="pagination.page"
@@ -128,6 +123,9 @@
       />
     </CardContent>
   </Card>
+
+  <!-- 列印元件（視覺隱藏，保留在 DOM 供 vue-to-print 使用） -->
+  <OrderPrintSlip ref="orderPrintSlipRef" :orders="printOrders" />
 
   <!-- 訂單編輯彈窗 -->
   <a-modal v-model:visible="dialogVisible" :top="20" :width="1300" draggable :fullscreen="fullscreen" :mask-closable="false" :closable="false">
@@ -195,9 +193,6 @@
             <a-form-item v-if="basicForm.shipMethod === 'DRIVER_DELIVERY'" :label="t('driver', '司機')" field="driverId">
               <InfiniteSelect v-model="basicForm.driverId" dataSource="users" :placeholder="t('pleaseSelect', '請選擇')" :readonly="isReadOnly" allowClear />
             </a-form-item>
-            <a-form-item v-if="isEdite" :label="t('status', '狀態')" field="status">
-              <a-select v-model="basicForm.status" :options="editableStatusOptions" :disabled="isReadOnly" />
-            </a-form-item>
           </div>
 
           <!-- 備註與金額區塊 -->
@@ -237,64 +232,21 @@
         <div class="form-section col-span-2">
           <div class="section-header">
             <div class="section-title">{{ t('orderItems', '訂單明細') }}</div>
-            <div class="flex items-center gap-2">
-              <span v-if="!canModifyItems && !isReadOnly" class="text-sm text-amber-600">{{ t('itemsLockedHint', '此狀態下無法修改項目') }}</span>
-              <a-button v-if="canModifyItems && !isReadOnly" type="text" @click="addItem">
-                <template #icon><Plus class="size-4" /></template>
-                {{ t('addItem', '新增項目') }}
-              </a-button>
-            </div>
+
+            <a-form-item v-if="isEdite" :label="t('status', '狀態')" field="status" class="w-[300px]!">
+              <a-select v-model="basicForm.status" :options="editableStatusOptions" :disabled="isReadOnly" class="w-[300px]" />
+            </a-form-item>
           </div>
-          <a-table :data="basicForm.items" :pagination="false" size="small" :bordered="{ cell: true }" class="items-table">
-            <template #columns>
-              <a-table-column :title="t('product', '商品')" data-index="productId" :min-width="190" fixed="left">
-                <template #cell="{ record, rowIndex }">
-                  <a-form-item :field="`items[${rowIndex}].productId`" hide-label class="mb-0!">
-                    <InfiniteSelect
-                      v-model="record.productId"
-                      dataSource="products"
-                      :placeholder="t('pleaseSelect', '請選擇')"
-                      :readonly="!canModifyItems"
-                      @change="(product) => changeProduct(product, rowIndex)"
-                      :filters="{ categoryId: productCategoryId }"
-                    />
-                  </a-form-item>
-                </template>
-              </a-table-column>
-              <a-table-column :title="t('basePriceAmount', '建議單價')" data-index="basePriceAmount" :width="150" align="right">
-                <template #cell="{ record }">{{ formatNumber(record.basePriceAmount) }}</template>
-              </a-table-column>
-              <!--<a-table-column :title="t('規格', '規格')" data-index="unit" :width="120">
-                <template #cell="{ record }">
-                  <a-input v-model="record.unit" :readonly="!canModifyItems" size="small" />
-                </template>
-              </a-table-column>-->
-              <a-table-column :title="t('實際單價', '實際單價')" data-index="unitPrice" :width="150">
-                <template #cell="{ record }">
-                  <a-input-number v-model="record.unitPrice.amount" :min="0" :disabled="!canModifyItems" size="small" hide-button class="w-full" />
-                </template>
-              </a-table-column>
-              <a-table-column :title="t('quantity', '數量')" data-index="quantity" :width="100">
-                <template #cell="{ record, rowIndex }">
-                  <a-form-item :field="`items[${rowIndex}].quantity`" hide-label class="mb-0!">
-                    <a-input-number v-model="record.quantity" :min="0.001" :disabled="!canModifyItems" size="small" hide-button class="w-full" />
-                  </a-form-item>
-                </template>
-              </a-table-column>
-              <a-table-column :title="t('subtotal', '小計')" data-index="total" :width="100" align="right">
-                <template #cell="{ record }">
-                  <span class="font-medium text-emerald-600">{{ formatNumber(record.total) }}</span>
-                </template>
-              </a-table-column>
-              <a-table-column :title="t('actions', '操作')" :width="100" align="center" fixed="right">
-                <template #cell="{ rowIndex }">
-                  <a-button v-if="canModifyItems && !isReadOnly" type="text" status="danger" @click="removeItem(rowIndex)">
-                    <template #icon><Trash2 class="size-4" /></template>
-                  </a-button>
-                </template>
-              </a-table-column>
-            </template>
-          </a-table>
+          <!-- 商品選擇表格 -->
+          <ProductSelectionTable
+            ref="productSelectionTableRef"
+            v-model="basicForm.items"
+            showUnitPrice
+            :visible-columns="['name', 'unit', 'basePriceAmount', 'tags', 'primaryVendor', 'isPerishable']"
+            :target-object="basicForm.targetId"
+            :readonly="!canModifyItems || isReadOnly"
+            :category-id="props.categoryId"
+          />
         </div>
       </div>
     </a-form>
@@ -311,11 +263,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { OrderCreatePost, OrderDeleteById, OrderGetByID, OrderListGet, OrderUpdatePatch, OrderStatusUpdatePatch } from '@/assets/API/Order';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTable.vue';
+import OrderPrintSlip from '@/components/dialogs/OrderPrintSlip.vue';
+import { useVueToPrint } from 'vue-to-print';
 import { Button } from '@/components/ui/button';
 import { TinyButton, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
 import { Card, CardContent } from '@/components/ui/card';
@@ -324,7 +279,7 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
-import { SquarePen, Trash2, Expand, Shrink, Eye, Plus } from 'lucide-vue-next';
+import { SquarePen, Trash2, Expand, Shrink, Eye, ScrollText, Printer } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
@@ -340,6 +295,7 @@ const {
   shipMethodOptions,
   orderStatusOptions,
   orderStatusLabelMap,
+  orderStatusDisplayMap,
   targetTypeLabelMap,
   paymentMethodLabelMap,
   shipMethodLabelMap,
@@ -405,7 +361,7 @@ const defaultFilters = {
   targetType: '',
   orderDateFrom: '',
   orderDateTo: '',
-  categoryCode: 'all', // 商品種類篩選（僅在 showAllCategories 模式下使用）
+  categoryCode: 'all', //商品種類篩選
 };
 const STATUS_TRANSITIONS = {
   PENDING: ['PROCESSING', 'CANCELLED'],
@@ -466,7 +422,7 @@ const responseDataToList = (item = {}) => {
     discount: item.discount ?? 0,
     shippingFee: item.shippingFee ?? 0,
     status: statusKey,
-    statusLabel: item.status,
+    statusLabel: orderStatusDisplayMap.value[statusKey] || item.status, //英文 key → 前端顯示文字
     orderDate: item.orderDate,
     shipDate: item.shipDate,
     createdAt: formatDate(item.createdAt),
@@ -513,12 +469,29 @@ const clearHireDateFilter = async () => {
 }; //清除日期篩選
 
 /** 表單操作相關 **/
+const orderGridRef = ref(null); //列表 grid ref（用於取得勾選列）
+const orderPrintSlipRef = ref(null); //列印元件 ref
+const printOrders = ref([]); //待列印的訂單資料
+
+/** vue-to-print 列印設定 **/
+const { handlePrint } = useVueToPrint({
+  content: () => orderPrintSlipRef.value?.printContentRef, //取得子元件暴露的 DOM ref
+  documentTitle: '訂單出貨單',
+  /*pageStyle: `
+    @page { size: A4; margin: 0; }
+    body { margin: 0; }
+  `,*/
+  removeAfterPrint: true,
+});
+
 const dialogMode = ref('create');
 const fullscreen = ref(false);
 const dialogVisible = ref(false);
 const editingId = ref(null);
+const editingOrderProducts = ref([]);
 const originalStatus = ref(null);
 const basicFormRef = ref(null);
+const productSelectionTableRef = ref(null);
 const isSaving = ref(false);
 const initializeForm = () => ({
   targetType: 'CUSTOMER', //出貨對象類型 (CUSTOMER=客戶 / VENDOR=廠商 / TEMPORARY_CUSTOMER=臨時客戶)
@@ -642,29 +615,13 @@ const editData = async (row) => {
     const targetTypeValue = targetTypeLabelMap[orderData.targetType] || orderData.targetType || 'CUSTOMER';
     const paymentTermValue = paymentMethodLabelMap[orderData.paymentMethod] || orderData.paymentTerm || 'CASH';
     const shipMethodValue = shipMethodLabelMap[orderData.shipMethod] || orderData.shipMethod || 'PICKUP';
-
-    const items = (orderData.products || orderData.items || []).map((item, index) => {
-      const unitPriceAmount = Number(item.actualPrice ?? item.unitPrice?.amount ?? item.unitPriceAmount ?? 0);
-      const quantity = Number(item.quantity || 0);
-      const basePriceAmount = Number(item.retailPrice ?? item.basePriceAmount ?? item.product?.basePriceAmount ?? 0);
-      return {
-        id: item.id ?? index + 1,
-        productId: { id: item.productId, name: item.productName, ...item },
-        productName: item.productName || item.product?.name || '',
-        basePriceAmount,
-        unit: item.unit || item.product?.unit || '',
-        quantity,
-        unitPrice: { amount: unitPriceAmount, currency: item.unitPrice?.currency || 'TWD' },
-        total: unitPriceAmount * quantity,
-      };
-    });
-
+    editingOrderProducts.value = orderData.products || orderData.items || []; //暫存訂單商品資料，供 watch 使用
     basicForm.value = {
-      targetType: targetTypeValue, //出貨對象類型名稱
-      targetId: { id: orderData.targetId, name: orderData.targetName }, //出貨對象
+      targetType: targetTypeValue,
+      targetId: { id: orderData.targetId, name: orderData.targetName },
       temporaryCustomerName: orderData.temporaryCustomerName || '',
-      categoryId: orderData.categoryId || props.categoryId, //出貨類型ID
-      categoryCode: orderData.categoryCode || props.categoryCode || 'EGG', //商品種類代碼
+      categoryId: orderData.categoryId || props.categoryId,
+      categoryCode: orderData.categoryCode || props.categoryCode || 'EGG',
       orderDate: orderData.orderDate ? new Date(orderData.orderDate) : new Date(),
       expectedDeliveryDate: orderData.expectedDeliveryDate ? new Date(orderData.expectedDeliveryDate) : null,
       phone: orderData.phone || '',
@@ -673,7 +630,7 @@ const editData = async (row) => {
       shipMethod: shipMethodValue,
       shipDate: orderData.shipDate ? new Date(orderData.shipDate) : null,
       driverId: orderData.driverId || orderData.employeeId || '',
-      items,
+      items: [], // 先設為空，等商品加載完再設置
       discountAmount: Number(orderData.discount ?? orderData.discountAmount?.amount ?? 0),
       shippingAmount: Number(orderData.shippingFee ?? orderData.shippingAmount?.amount ?? 0),
       shippingAddress: orderData.shippingAddress || {},
@@ -809,7 +766,73 @@ const deleteData = async (id) => {
   });
 }; //刪除訂單
 
+/** 列印相關 **/
+const printReport = async (row) => {
+  mainStore.setLoading(true);
+  try {
+    const response = await OrderGetByID(row.id);
+    const orderData = response.data?.data || response.data;
+    printOrders.value = [orderData];
+    await nextTick(); //等 DOM 更新
+    await orderPrintSlipRef.value?.prepare?.(); //動態計算空白行數
+    handlePrint();
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    mainStore.setLoading(false);
+  }
+}; //單筆列印
+
+const batchPrint = async () => {
+  const selectedRows = orderGridRef.value?.getSelectRecords?.() ?? [];
+  if (!selectedRows.length) {
+    await mainStore.SWAL_Success(t('selectRowsFirst', '請先勾選要列印的訂單'), '', 'warning');
+    return;
+  }
+  mainStore.setLoading(true);
+  try {
+    const results = await Promise.all(selectedRows.map((row) => OrderGetByID(row.id)));
+    const ordersData = results.map((res) => res.data?.data || res.data);
+    printOrders.value = ordersData;
+    await nextTick(); //等 DOM 更新
+    await orderPrintSlipRef.value?.prepare?.(); //動態計算空白行數
+    handlePrint();
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    mainStore.setLoading(false);
+  }
+}; //批次列印
+
 onMounted(getAPI);
+watch(
+  () => dialogVisible.value,
+  async (newVal) => {
+    if (newVal && productSelectionTableRef.value) {
+      await productSelectionTableRef.value.loadProducts();
+      if (dialogMode.value === 'edit' && editingOrderProducts.value.length > 0) {
+        const items = editingOrderProducts.value.map((item) => {
+          const unitPriceAmount = Number(item.actualPrice ?? item.unitPrice?.amount ?? item.unitPriceAmount ?? 0);
+          const quantity = Number(item.quantity || 0);
+          const basePriceAmount = Number(item.retailPrice ?? item.basePriceAmount ?? item.product?.basePriceAmount ?? 0);
+
+          return {
+            productId: item.productId,
+            product: item.product || {},
+            unit: item.unit || item.product?.unit || '',
+            quantity,
+            basePriceAmount,
+            unitPrice: { amount: unitPriceAmount, currency: item.unitPrice?.currency || 'TWD' },
+            total: unitPriceAmount * quantity,
+          };
+        });
+
+        basicForm.value.items = items;
+        editingOrderProducts.value = [];
+      }
+    }
+  },
+); //當彈窗打開時加載商品列表
 watch(
   () => basicForm.value.items.map((item) => ({ unitPrice: item.unitPrice?.amount, quantity: item.quantity })),
   () => updateAllItemTotals(),

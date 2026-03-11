@@ -68,9 +68,15 @@
   "finalPrice": "最終價格",
   "suggestedRetailPrice": "建議售價",
 
-  "categoryBottledWater": "桶裝水",
-  "categoryEgg": "雞蛋",
-  "categoryDispenser": "飲水機",
+  "egg": "雞蛋",
+  "water": "飲水",
+  "bottledWater": "桶裝水",
+  "dispenser": "飲水機",
+  "orderEgg": "雞蛋訂單",
+  "orderWater": "飲水訂單",
+  "orderDispenser": "飲水機訂單",
+  "orderBottledWater": "桶裝水訂單",
+  "allOrders": "全部訂單",
 
   "paymentCash": "現金",
   "paymentMonthly": "月結",
@@ -103,13 +109,6 @@
   "statusInactive": "停用",
   "statusDeleted": "刪除",
 
-  "orderTabWater": "桶裝水",
-  "orderTabEgg": "雞蛋",
-  "orderTabDispenser": "飲水機",
-  "orderTitleWater": "桶裝水訂單",
-  "orderTitleEgg": "雞蛋訂單",
-  "orderTitleDispenser": "飲水機訂單",
-
   "unnamedCustomer": "未命名客戶",
   "unset": "未設定",
   "requiredFieldsMissing": "請填寫必要欄位",
@@ -123,7 +122,7 @@
   "confirmConvertText": "轉為正式客戶後，將從潛在客戶列表移除。",
   "convertSuccess": "已轉為正式客戶",
 
-  "bottledWaterOrders": "桶裝水訂單",
+  "bottledWaterOrders": "飲水訂單",
   "keyword": "關鍵字",
   "orderStatus": "訂單狀態",
   "orderNumber": "訂單編號",
@@ -228,5 +227,15 @@
   "systemQuantity": "帳面數量",
   "difference": "差異",
   "pleaseSelectDate": "請選擇日期",
-  "clearDate": "清除日期"
+  "clearDate": "清除日期",
+  "depositManagement": "儲值管理",
+  "depositProductSetting": "飲水商品儲值設定",
+  "addDeposit": "新增儲值",
+  "noDepositYet": "尚未設定儲值，點擊上方按鈕新增",
+  "depositNote": "儲值數量與金額可擇一填寫，訂單出貨時系統會先扣數量，扣完後再扣金額",
+  "depositQuantity": "儲值數量",
+  "depositAmount": "儲值金額",
+  "remainingQuantity": "剩餘數量",
+  "remainingDepositAmount": "剩餘金額",
+  "optional": "選填"
 }

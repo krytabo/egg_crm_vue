@@ -16,15 +16,15 @@ const dialogVisible = computed({
 
 /** 常數資料 **/
 const weekDays = ['星期一', '星期二', '星期三', '星期四', '星期五', '星期六', '星期日']
-const productCategories = ['全部', '桶裝水', '雞蛋', '飲水機']
+const productCategories = ['全部', '飲水', '雞蛋', '飲水機']
 const mockProducts = [
-  { id: 1, name: '清泉 20L', category: '桶裝水' },
-  { id: 2, name: '純淨 20L', category: '桶裝水' },
+  { id: 1, name: '清泉 20L', category: '飲水' },
+  { id: 2, name: '純淨 20L', category: '飲水' },
   { id: 3, name: '紅殼蛋 10入/盒', category: '雞蛋' },
   { id: 4, name: '白殼蛋 10入/盒', category: '雞蛋' },
   { id: 5, name: 'WD-2000 冷熱', category: '飲水機' },
-  { id: 6, name: '山泉 20L', category: '桶裝水' },
-  { id: 7, name: '礦泉 20L', category: '桶裝水' },
+  { id: 6, name: '山泉 20L', category: '飲水' },
+  { id: 7, name: '礦泉 20L', category: '飲水' },
   { id: 8, name: '土雞蛋 10入/盒', category: '雞蛋' },
   { id: 9, name: 'WD-3000 冰溫熱', category: '飲水機' },
   { id: 10, name: 'WD-1000 常溫', category: '飲水機' }
@@ -252,7 +252,7 @@ const handleSaveReport = () => {
               <p v-if="!filteredProducts.length" class="text-xs text-gray-500">沒有符合的商品</p>
             </div>
             <div class="flex flex-wrap gap-2 text-xs text-gray-600">
-              <TinyButton v-for="category in ['桶裝水', '雞蛋', '飲水機']" :key="category" size="small" type="text" @click="() => handleQuickSelectCategory(category)">
+              <TinyButton v-for="category in ['飲水', '雞蛋', '飲水機']" :key="category" size="small" type="text" @click="() => handleQuickSelectCategory(category)">
                 {{ category }}快速選取
               </TinyButton>
             </div>

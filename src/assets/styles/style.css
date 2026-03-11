@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@200&family=Noto+Sans+TC:wght@400;900&family=Paytone+One&family=Sigmar&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&display=swap');
 @import "tailwindcss";
+/*@import "tailwindcss" important;*/
 @import "./swal.css";
 @import "./globals.css";
 @import "./arco.css";
@@ -40,4 +41,8 @@ button {
 .toolbar-background {
     background: inherit !important;
     border: 0 !important;
+}
+
+body {
+    position: relative !important;
 }

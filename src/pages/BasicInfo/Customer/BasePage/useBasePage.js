@@ -1,6 +1,4 @@
-// src/pages/BasicInfo/Customer/BasePage/useBasePage.js
-// 客戶/潛在客戶管理 - 共用業務邏輯（Desktop / Mobile 共用）
-
+// src/pages/BasicInfo/Customer/BasePage/useBasePage.js 客戶/潛在客戶管理共用邏輯
 import { computed, reactive, ref, watch, toRaw } from 'vue';
 import { OrderListGet } from '@/assets/API/Order';
 import { CustomersListGet, CustomersCreatePost, CustomersUpdatePatch, CustomersDeleteById, CustomersGetByID, CustomersImportExcel } from '@/assets/API/Customers';
@@ -13,13 +11,8 @@ import { format } from 'date-fns';
 import { debounce } from 'lodash';
 import { mockProducts } from '@/lib/mock-products';
 import { orderStatusColors } from '@/lib/mock-orders';
+import { CATEGORY_IDS } from '@/constants/categories';
 
-/**
- * 客戶/潛在客戶管理共用邏輯
- * @param {Object} props - 元件 props（需包含 pageType）
- * @param {Function} t - i18n 翻譯函式
- * @param {Function} showMessage - 顯示訊息函式（Desktop/Mobile 各自實作）
- */
 export function useBasePage(props, t, showMessage = () => {}) {
   const mainStore = useMainStore();
   const timezoneStore = useTimezoneStore();
@@ -37,13 +30,14 @@ export function useBasePage(props, t, showMessage = () => {}) {
     buildLabelMap,
     buildSelectOptionsWithAll,
     formatWeekDays,
+    orderStatusLabelMap,
+    orderStatusDisplayMap,
   } = useSelectOptions();
 
-  // ===== 頁面類型判斷 =====
+  //頁面判斷相關
   const isProspect = computed(() => props.pageType === 'prospect');
   const defaultStatus = computed(() => (isProspect.value ? 'PROSPECT' : 'ACTIVE'));
 
-  // ===== 常數 =====
   const EMPTY_PLACEHOLDER = '未設定';
   const orderPageSizeOptions = [5, 10, 20];
   const FORM_TEMPLATES = {
@@ -61,10 +55,9 @@ export function useBasePage(props, t, showMessage = () => {}) {
     createdAt: 'createdAt',
     status: 'status',
   };
-
   const getDefaultMeta = () => ({ ...FORM_TEMPLATES.meta, status: props.pageType === 'prospect' ? 'PROSPECT' : 'ACTIVE' });
 
-  // ===== 選項相關 =====
+  //選項相關
   const typeLabelMap = computed(() => buildLabelMap(customerTypeOptions.value));
   const segmentLabelMap = computed(() => buildLabelMap(customerSegmentOptions.value));
   const sourceLabelMap = computed(() => buildLabelMap(customerSourceOptions.value));
@@ -73,8 +66,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const segmentFilterOptions = computed(() => buildSelectOptionsWithAll(customerSegmentOptions.value));
   const sourceFilterOptions = computed(() => buildSelectOptionsWithAll(customerSourceOptions.value));
   const statusFilterOptions = computed(() => customerStatusOptions.value);
-
-  // ===== 共用工具函式 =====
   const currency = (val) => formatCurrencyNumber(val);
   const getPrimaryContact = (customer) => customer.contacts?.find((c) => c.isPrimary) || customer.contacts?.[0];
   const findProductById = (productId) => mockProducts.find((item) => item.id === productId) || null;
@@ -89,34 +80,62 @@ export function useBasePage(props, t, showMessage = () => {}) {
   };
   const toggleArrayItem = (array, item) => (array.includes(item) ? array.filter((i) => i !== item) : [...array, item]);
 
-  // ===== 訂單資料轉換 =====
-  const orderResponseDataToList = (item = {}) => ({
-    id: item.id,
-    orderNumber: item.orderNumber,
-    targetType: item.targetType || '客戶',
-    targetName: item.targetName || item.customer?.name || EMPTY_PLACEHOLDER,
-    phone: item.phone || EMPTY_PLACEHOLDER,
-    contact: item.contact || EMPTY_PLACEHOLDER,
-    paymentMethod: item.paymentMethod || EMPTY_PLACEHOLDER,
-    shipMethod: item.shipMethod || EMPTY_PLACEHOLDER,
-    employeeName: item.employeeName || EMPTY_PLACEHOLDER,
-    totalAmount: item.totalAmount ?? item.totalAmount?.amount ?? 0,
-    discount: item.discount ?? 0,
-    shippingFee: item.shippingFee ?? 0,
-    status: item.status,
-    statusLabel: item.status,
-    orderDate: item.orderDate,
-    shipDate: item.shipDate,
-    createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
-    raw: item,
-  });
+  // 根據訂單類型或商品推導 categoryId
+  const inferCategoryId = (item = {}) => {
+    // 優先使用 API 返回的 categoryId
+    if (item.categoryId) return item.categoryId;
 
-  // ===== 篩選與查詢相關 =====
+    // 次選：根據 mock 數據中的 type 字段推導
+    if (item.type) {
+      const typeMap = {
+        egg: CATEGORY_IDS.EGG,
+        water: CATEGORY_IDS.WATER,
+        dispenser: CATEGORY_IDS.DISPENSER,
+      };
+      return typeMap[item.type] || null;
+    }
+
+    // 最後：根據商品分類推導（如果有 products 數據）
+    if (item.products && item.products.length > 0) {
+      const firstProduct = item.products[0];
+      // 假設首個商品包含 categoryId 字段
+      if (firstProduct.categoryId) return firstProduct.categoryId;
+    }
+
+    return null;
+  };
+
+  const orderResponseDataToList = (item = {}) => {
+    const statusKey = orderStatusLabelMap[item.status] || item.status; //後端中文 → 英文 key
+    return {
+      id: item.id,
+      orderNumber: item.orderNumber,
+      targetType: item.targetType || '客戶',
+      targetName: item.targetName || item.customer?.name || EMPTY_PLACEHOLDER,
+      phone: item.phone || EMPTY_PLACEHOLDER,
+      contact: item.contact || EMPTY_PLACEHOLDER,
+      paymentMethod: item.paymentMethod || EMPTY_PLACEHOLDER,
+      shipMethod: item.shipMethod || EMPTY_PLACEHOLDER,
+      employeeName: item.employeeName || EMPTY_PLACEHOLDER,
+      totalAmount: item.totalAmount ?? item.totalAmount?.amount ?? 0,
+      discount: item.discount ?? 0,
+      shippingFee: item.shippingFee ?? 0,
+      status: statusKey,
+      statusLabel: orderStatusDisplayMap.value[statusKey] || item.status, //英文 key → 前端顯示文字
+      orderDate: item.orderDate,
+      shipDate: item.shipDate,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+      products: item.products || [], //訂單商品明細
+      categoryId: inferCategoryId(item), // 商品分類 ID（用於訂單分類）
+      raw: item,
+    };
+  }; //訂單資料轉換
+
+  //篩選與查詢相關
   const globalSearch = ref('');
   const sortField = ref('createdAt');
   const sortDirection = ref('desc');
-
   const getDefaultFilters = () => ({
     type: 'all',
     segment: 'all',
@@ -125,9 +144,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     salesRepId: '',
     tags: '',
   });
-
   const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : '');
-
   const handleColumnSort = async ({ field, order }) => {
     if (!field) return;
     if (!order) {
@@ -139,14 +156,13 @@ export function useBasePage(props, t, showMessage = () => {}) {
     }
     await getAPI();
   };
-
   const clearGlobalSearch = async () => {
     if (!globalSearch.value) return;
     globalSearch.value = '';
     await handleGlobalSearch();
   };
 
-  // ===== 列表資料取得相關 =====
+  //列表資料取得相關
   const responseDataToList = (customer = {}) => {
     const customFields = customer.customFields || {};
     const contacts = (
@@ -203,7 +219,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
       raw: customer,
     };
   };
-
   const wrappedCustomersListGet = (params) => {
     const rawParams = toRaw(params);
     const processedParams = {};
@@ -250,23 +265,18 @@ export function useBasePage(props, t, showMessage = () => {}) {
 
   const totalCustomers = computed(() => pagination.total);
   const getAPI = () => getDefaultAPI();
-
   const clearFilter = async () => {
     globalSearch.value = '';
     clearFilterBase();
   };
-
-  // 監聽篩選條件變化
   watch(() => [filters.type, filters.segment, filters.source, filters.status], handleFiltersChange);
 
-  // ===== 匯入下載模板相關 =====
+  //匯入下載模板相關
   const fileInputRef = ref(null);
-
   const handleImportSelect = (value) => {
     if (value === 'Import') {
       fileInputRef.value?.click();
     } else if (value === 'Download') {
-      // 下載客戶資料模板
       const link = document.createElement('a');
       link.href = '/客戶資料模板.xlsx';
       link.download = '客戶資料模板.xlsx';
@@ -275,7 +285,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
       document.body.removeChild(link);
     }
   };
-
   const handleFileChange = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -295,7 +304,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     event.target.value = '';
   };
 
-  // ===== 新增編輯相關 =====
+  //新增編輯相關
   const dialogMode = ref('create');
   const dialogVisible = ref(false);
   const activeTab = ref('infoData');
@@ -305,32 +314,29 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const sameAsCompanyInfo = ref(false);
   const basicFormRef = ref(null);
   const basicFormRules = {};
-
   const isCreate = computed(() => dialogMode.value === 'create');
   const isEdite = computed(() => dialogMode.value === 'edit');
-
   const initializeForm = () => ({
     contactsForm: [{ ...FORM_TEMPLATES.contact }],
     companyForm: { ...FORM_TEMPLATES.company },
     otherForm: { ...FORM_TEMPLATES.other },
     metaForm: getDefaultMeta(),
   });
-
   const basicForm = ref(initializeForm());
   const categoriesForm = ref([]);
   const deliveryDaysForm = ref([]);
   const customPriceForm = ref([]);
-
+  const waterDepositsForm = ref([]); //儲值管理：API 開好後串接 waterBottleDeposits
   const resetForm = () => {
     basicForm.value = initializeForm();
     categoriesForm.value = [];
     deliveryDaysForm.value = [];
     customPriceForm.value = [];
+    waterDepositsForm.value = [];
     activeTab.value = 'infoData';
     basicFormRef.value?.clearValidate?.();
     sameAsCompanyInfo.value = false;
   };
-
   const fillFormFromRecord = (record = {}) => {
     basicForm.value.contactsForm = (record.contacts?.length ? record.contacts : [{ isPrimary: true, name: '', phone: '', address: '', email: '' }]).map((contact, index) => ({
       id: contact.id ?? index + 1,
@@ -348,11 +354,11 @@ export function useBasePage(props, t, showMessage = () => {}) {
       taxId: record.taxId || '',
       registeredDate: record.registeredDate || '',
     };
-    // 付款方式轉換（兼容舊資料中文值）
+
+    //付款方式轉換
     const paymentMethodMap = { 現金: 'CASH', 月結: 'MONTHLY', 預付: 'PREPAID' };
     const rawPaymentMethod = record.paymentMethod || 'MONTHLY';
     const normalizedPaymentMethod = paymentMethodMap[rawPaymentMethod] || rawPaymentMethod;
-
     basicForm.value.otherForm = {
       paymentMethod: normalizedPaymentMethod,
       deposit: Number(record.deposit ?? 0),
@@ -368,8 +374,9 @@ export function useBasePage(props, t, showMessage = () => {}) {
       tags: Array.isArray(record.tags) ? record.tags.join(',') : record.tags || '',
       status: record.status || FORM_TEMPLATES.meta.status,
     };
-    // 客戶類別轉換（兼容舊資料中文值）
-    const categoryMap = { 桶裝水: 'BOTTLED_WATER', 雞蛋: 'EGG', 飲水機: 'DISPENSER' };
+
+    //客戶類別轉換
+    const categoryMap = { 飲水: 'BOTTLED_WATER', 桶裝水: 'BOTTLED_WATER', 雞蛋: 'EGG', 飲水機: 'DISPENSER' };
     const rawCategories = record.categories || [];
     categoriesForm.value = rawCategories.map((cat) => categoryMap[cat] || cat);
     deliveryDaysForm.value = record.deliveryDays || [];
@@ -386,8 +393,19 @@ export function useBasePage(props, t, showMessage = () => {}) {
         adjustment,
       };
     });
-  };
 
+    // 儲值管理（API 開好後會回傳 waterBottleDeposits）
+    waterDepositsForm.value = (record.waterBottleDeposits || []).map((item, index) => ({
+      id: item.id ?? index + 1,
+      productId: item.productId || '',
+      productName: item.productName || '',
+      unit: item.unit || '',
+      quantity: item.quantity ?? null,
+      amount: item.amount ?? null,
+      remainingQuantity: item.remainingQuantity ?? null, //系統維護，唯讀
+      remainingAmount: item.remainingAmount ?? null,     //系統維護，唯讀
+    }));
+  };
   const handleInvoiceSameAsCompany = (checked) => {
     sameAsCompanyInfo.value = checked;
     if (!checked) return;
@@ -396,7 +414,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
     otherForm.invoiceTitle = companyForm.companyName || '';
     otherForm.invoiceTaxId = companyForm.taxId || '';
   };
-
   const getData = async (id) => {
     if (!id) return;
     detailLoading.value = true;
@@ -411,14 +428,12 @@ export function useBasePage(props, t, showMessage = () => {}) {
       detailLoading.value = false;
     }
   };
-
   const openCreateDialog = () => {
     dialogMode.value = 'create';
     editingCustomerId.value = null;
     resetForm();
     dialogVisible.value = true;
   };
-
   const editData = (customer) => {
     dialogMode.value = 'edit';
     editingCustomerId.value = customer.id;
@@ -427,13 +442,11 @@ export function useBasePage(props, t, showMessage = () => {}) {
     dialogVisible.value = true;
     getData(customer.id);
   };
-
   const closeDialog = () => {
     isSaving.value = false;
     dialogVisible.value = false;
     basicFormRef.value?.clearValidate?.();
   };
-
   const deleteData = async (id) => {
     if (!id) return;
     await mainStore.SWAL_DeleteConfirm({
@@ -453,12 +466,11 @@ export function useBasePage(props, t, showMessage = () => {}) {
     });
   };
 
-  // 聯絡人操作
+  //聯絡人操作
   const addContact = () => {
     const nextItem = { ...FORM_TEMPLATES.contact, isPrimary: false, id: Date.now() };
     basicForm.value.contactsForm.push(nextItem);
   };
-
   const removeContact = (index) => {
     if (basicForm.value.contactsForm.length === 1) return;
     basicForm.value.contactsForm = basicForm.value.contactsForm.filter((_, i) => i !== index);
@@ -466,19 +478,17 @@ export function useBasePage(props, t, showMessage = () => {}) {
       basicForm.value.contactsForm[0].isPrimary = true;
     }
   };
-
   const setPrimaryContact = (index) => {
     basicForm.value.contactsForm = basicForm.value.contactsForm.map((contact, i) => ({ ...contact, isPrimary: i === index }));
   };
 
-  // 客製價格操作
+  //客製價格操作
   const changeProduct = (product, index) => {
     if (!product) return;
     const item = customPriceForm.value[index];
     if (!item) return;
     item.basePriceAmount = Number(product.basePriceAmount) || 0;
   };
-
   const addCustomPrice = () => {
     customPriceForm.value.push({
       id: Date.now(),
@@ -488,11 +498,33 @@ export function useBasePage(props, t, showMessage = () => {}) {
       total: 0,
     });
   };
-
   const removeCustomPrice = (id) => {
     customPriceForm.value = customPriceForm.value.filter((item) => item.id !== id);
   };
 
+  /** 儲值管理相關操作 **/
+  const addWaterDeposit = () => {
+    waterDepositsForm.value.push({
+      id: Date.now(),
+      productId: '',
+      productName: '',
+      unit: '',
+      quantity: null,
+      amount: null,
+      remainingQuantity: null,
+      remainingAmount: null,
+    });
+  };
+  const removeWaterDeposit = (id) => {
+    waterDepositsForm.value = waterDepositsForm.value.filter((item) => item.id !== id);
+  };
+  const changeDepositProduct = (product, index) => {
+    if (!product) return;
+    const item = waterDepositsForm.value[index];
+    if (!item) return;
+    item.productName = product.name || '';
+    item.unit = product.unit || '';
+  };
   const preparePayload = () => {
     const formContacts = basicForm.value.contactsForm.length ? basicForm.value.contactsForm : [{ ...FORM_TEMPLATES.contact }];
     const primaryContact = formContacts.find((contact) => contact.isPrimary) || formContacts[0];
@@ -504,6 +536,16 @@ export function useBasePage(props, t, showMessage = () => {}) {
       .map((item) => ({
         productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
         price: (Number(item.basePriceAmount) || 0) + (Number(item.adjustment) || 0),
+      }))
+      .filter((item) => item.productId);
+
+    // 儲值管理：TODO API 開好後確認欄位名稱是否與後端一致
+    const processedWaterDeposits = waterDepositsForm.value
+      .filter((item) => item.productId)
+      .map((item) => ({
+        productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
+        quantity: item.quantity !== null && item.quantity !== '' ? Number(item.quantity) : undefined,
+        amount: item.amount !== null && item.amount !== '' ? Number(item.amount) : undefined,
       }))
       .filter((item) => item.productId);
 
@@ -524,14 +566,13 @@ export function useBasePage(props, t, showMessage = () => {}) {
       paymentTerm: otherForm.paymentMethod, //收付方式
       customFields: {
         contacts: formContacts,
-        // categories: categoriesForm.value,
-        // paymentMethod: otherForm.paymentMethod,
         deposit: Number(otherForm.deposit || 0),
         invoiceTitle: otherForm.invoiceTitle,
         invoiceTaxId: otherForm.invoiceTaxId,
         customPrices: processedCustomPrices,
         registeredDate: companyForm.registeredDate,
         companyAddress: companyForm.companyAddress,
+        waterBottleDeposits: processedWaterDeposits, //TODO API 開好後確認欄位路徑
       },
     };
     const tagValues = parseTagsInput(metaForm.tags);
@@ -544,7 +585,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
     }
     return payload;
   };
-
   const _submitForm = async () => {
     const validateResult = await basicFormRef.value?.validate();
     if (validateResult) return false;
@@ -561,50 +601,94 @@ export function useBasePage(props, t, showMessage = () => {}) {
       await mainStore.SWAL_Error(error);
     }
   };
-
   const saveData = debounce(_submitForm, 300, { leading: true, trailing: false });
 
-  // ===== 訂單相關（僅客戶頁面使用） =====
+  //訂單相關
   const customerData = ref(false);
   const drawerVisible = ref(false);
   const drawerCustomer = ref(null);
   const orderList = ref([]);
   const orderPagination = reactive({ page: 1, limit: 20, total: 0 });
+  const selectedOrderCategory = ref('all'); //選中的訂單分類：all 或 CATEGORY_IDS 的值
+
+  // 訂單分類配置 - 使用 CATEGORY_IDS
+  const orderCategories = computed(() => [
+    {
+      key: 'all',
+      label: t('allOrders', '全部訂單'),
+    },
+    {
+      key: CATEGORY_IDS.EGG,
+      label: t('orderEgg', '雞蛋訂單'),
+    },
+    {
+      key: CATEGORY_IDS.WATER,
+      label: t('orderWater', '飲水訂單'),
+    },
+  ]);
 
   const openCustomerData = () => (customerData.value = !customerData.value);
 
   const openDrawer = async (customer) => {
     drawerCustomer.value = customer;
     orderPagination.page = 1;
-    await loadCustomerOrders(customer.id);
+    selectedOrderCategory.value = 'all'; // 重置為全部
+    await loadCustomerOrders(customer.id, 'all');
     drawerVisible.value = true;
   };
 
-  const loadCustomerOrders = async (customerId) => {
+  // 根據 categoryId 構建 API 參數
+  const buildOrderListParams = (customerId, categoryId = 'all') => {
+    const params = {
+      customerId,
+      page: orderPagination.page,
+      limit: orderPagination.limit,
+    };
+
+    // 只有不是「全部」時才傳遞 categoryId
+    if (categoryId !== 'all') {
+      params.categoryId = categoryId;
+    }
+
+    return params;
+  };
+
+  const loadCustomerOrders = async (customerId, categoryId = 'all') => {
     mainStore.setLoading(true);
-    const response = await OrderListGet({ customerId, page: orderPagination.page, limit: orderPagination.limit });
+    const params = buildOrderListParams(customerId, categoryId);
+    const response = await OrderListGet(params);
     const rawData = response?.data?.data?.data ?? [];
     const metaInfo = response?.data?.data?.pagination ?? {};
+
+    // 訂單數據轉換
     orderList.value = Array.isArray(rawData) ? rawData.map(orderResponseDataToList) : [];
+
+    // 更新分頁信息
     orderPagination.total = metaInfo.total ?? orderList.value.length;
     orderPagination.page = metaInfo.page ?? orderPagination.page;
+
     mainStore.setLoading(false);
   };
 
   const handleOrderPageChange = async (page) => {
     orderPagination.page = page;
-    await loadCustomerOrders(drawerCustomer.value.id);
+    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
   };
 
   const handleOrderPageSizeChange = async (size) => {
     orderPagination.limit = Number(size);
     orderPagination.page = 1;
-    await loadCustomerOrders(drawerCustomer.value.id);
+    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
   };
 
-  // ===== Mock 假資料產生（開發用） =====
-  const randomPhone = () => `09${Math.floor(Math.random() * 90000000 + 10000000)}`;
+  const handleOrderCategoryChange = async (category) => {
+    selectedOrderCategory.value = category;
+    orderPagination.page = 1;
+    await loadCustomerOrders(drawerCustomer.value.id, category);
+  };
 
+  //假資料產生
+  const randomPhone = () => `09${Math.floor(Math.random() * 90000000 + 10000000)}`;
   const generateFakeCustomer = () => {
     const seed = Date.now();
     basicForm.value.contactsForm = [
@@ -637,17 +721,16 @@ export function useBasePage(props, t, showMessage = () => {}) {
   };
 
   return {
-    // 頁面類型
+    //頁面類型
     isProspect,
     defaultStatus,
 
-    // 常數
     EMPTY_PLACEHOLDER,
     orderPageSizeOptions,
     FORM_TEMPLATES,
     orderStatusColors,
 
-    // 選項
+    //選項
     customerCategories,
     paymentOptions,
     customerTypeOptions,
@@ -665,7 +748,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
     sourceFilterOptions,
     statusFilterOptions,
 
-    // 工具函式
     currency,
     getPrimaryContact,
     findProductById,
@@ -673,7 +755,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     formatWeekDays,
     toggleArrayItem,
 
-    // 篩選相關
+    //篩選相關
     globalSearch,
     sortField,
     sortDirection,
@@ -685,7 +767,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     handleGlobalSearch,
     handleFiltersChange,
 
-    // 列表相關
+    //列表相關
     basicDataList,
     pagination,
     pageSizeOptions,
@@ -694,12 +776,12 @@ export function useBasePage(props, t, showMessage = () => {}) {
     CurrentChange,
     SizeChange,
 
-    // 匯入相關
+    //匯入相關
     fileInputRef,
     handleImportSelect,
     handleFileChange,
 
-    // 新增編輯相關
+    //新增編輯相關
     dialogMode,
     dialogVisible,
     activeTab,
@@ -723,29 +805,38 @@ export function useBasePage(props, t, showMessage = () => {}) {
     saveData,
     handleInvoiceSameAsCompany,
 
-    // 聯絡人操作
+    //聯絡人操作
     addContact,
     removeContact,
     setPrimaryContact,
 
-    // 客製價格操作
+    //客製價格操作
     changeProduct,
     addCustomPrice,
     removeCustomPrice,
 
-    // 訂單相關
+    //儲值管理操作
+    waterDepositsForm,
+    addWaterDeposit,
+    removeWaterDeposit,
+    changeDepositProduct,
+
+    //訂單相關
     customerData,
     drawerVisible,
     drawerCustomer,
     orderList,
     orderPagination,
+    selectedOrderCategory,
+    orderCategories,
     openCustomerData,
     openDrawer,
     loadCustomerOrders,
     handleOrderPageChange,
     handleOrderPageSizeChange,
+    handleOrderCategoryChange,
 
-    // Mock 資料
+    //假資料
     generateFakeCustomer,
   };
 }

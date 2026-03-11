@@ -103,10 +103,31 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     if (!Array.isArray(items)) items = [];
     calculateSummary(items);
   };
+
+  // 初始化日期篩選為當月
+  const getInitialMonthDates = () => {
+    const now = new Date();
+    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    
+    const formatDate = (d) => {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+    
+    return {
+      reportDateFrom: formatDate(firstDay),
+      reportDateTo: formatDate(lastDay),
+    };
+  };
+
+  const { reportDateFrom, reportDateTo } = getInitialMonthDates();
   const defaultFilters = {
     driverId: '',
-    reportDateFrom: '',
-    reportDateTo: '',
+    reportDateFrom,
+    reportDateTo,
     status: '',
   };
   const wrappedDeliveryReportListGet = (params) => {

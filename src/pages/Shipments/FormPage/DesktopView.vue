@@ -24,7 +24,7 @@
       </div>
     </CardHeader>
 
-    <CardContent class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <!-- 報表資訊區塊 -->
       <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
         <AForm autoLabelWidth :labelAlign="'left'">
@@ -39,15 +39,7 @@
 
       <!-- 商品列表 -->
       <CustomTinyGrid :data="editedProducts" :height="systemStore.tableHeight" row-key="rowKey" :edit-config="{ trigger: 'click', mode: 'cell', showStatus: true }" :row-span="rowSpanConfig">
-        <CustomTinyGridColumn field="productName" :title="t('productName', '商品名稱')" min-width="250" fixed="left">
-          <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <a-tag :color="getProductCategoryColor(row.productCategory)" size="small">{{ row.productCategory || '—' }}</a-tag>
-              {{ row.productName }}
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="200">
+        <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="200" fixed="left">
           <template #default="{ row, rowIndex }">
             <InfiniteSelect
               v-model="row.customerId"
@@ -61,24 +53,32 @@
             />
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" width="120" align="right">
-          <template #default="{ row, rowIndex }">
-            <TinyInput type="number" v-model="row.quantity" min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
+        <CustomTinyGridColumn field="productName" :title="t('productName', '商品名稱')" min-width="250">
+          <template #default="{ row }">
+            <div class="flex items-center gap-2">
+              <a-tag :color="getProductCategoryColor(row.productCategory)" size="small">{{ row.productCategory || '—' }}</a-tag>
+              {{ row.productName }}
+            </div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="unitPrice" :title="t('unitPrice', '單價')" width="120" align="right">
+        <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" :width="150" align="right">
           <template #default="{ row, rowIndex }">
-            <TinyInput type="number" v-model="row.unitPrice" min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
+            <TinyCustomField type="number" v-model="row.quantity" :min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="amount" :title="t('amount', '金額')" width="150" align="right">
+        <CustomTinyGridColumn field="unitPrice" :title="t('unitPrice', '單價')" :width="180" align="right">
+          <template #default="{ row, rowIndex }">
+            <TinyCustomField type="number" v-model="row.unitPrice" :min="0" :precision="1" thousands :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
+          </template>
+        </CustomTinyGridColumn>
+        <CustomTinyGridColumn field="amount" :title="t('amount', '金額')" :width="150" align="right">
           <template #default="{ row }">
             <span class="text-gray-600">NT$ {{ formatNumber(row.amount) }}</span>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="actualAmount" :title="t('actualPayment', '實際收付')" width="150" align="right">
+        <CustomTinyGridColumn field="actualAmount" :title="t('actualPayment', '實際收付')" :width="180" align="right">
           <template #default="{ row }">
-            <TinyInput type="number" v-model="row.actualAmount" min="0" :displayOnly="isReadOnly" />
+            <TinyCustomField type="number" v-model="row.actualAmount" :min="0" :precision="1" :displayOnly="isReadOnly" />
           </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" width="150">
@@ -132,7 +132,7 @@
           </div>
         </div>
       </div>
-    </CardContent>
+    </div>
   </Card>
 
   <!-- 新增商品彈窗 -->
@@ -140,22 +140,22 @@
     <AForm layout="vertical">
       <div class="grid grid-cols-2 gap-4">
         <AFormItem :label="t('selectProduct', '選擇商品')" required>
-          <InfiniteSelect v-model="selectedProduct" dataSource="products" :placeholder="t('pleaseSelectProduct', '請選擇商品')" type="outline" />
+          <InfiniteSelect v-model="selectedProduct" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelectProduct', '請選擇商品')" type="outline" />
         </AFormItem>
         <AFormItem :label="t('selectCustomer', '選擇客戶')" required>
           <InfiniteSelect v-model="selectedCustomer" dataSource="customers" :placeholder="t('pleaseSelectCustomer', '請選擇客戶')" type="outline" :filters="{ deliveryDays: basicForm.deliveryDays }" />
         </AFormItem>
         <AFormItem :label="t('quantity', '數量')">
-          <TinyInput type="number" v-model="newProductQuantity" min="0" />
+          <TinyCustomField type="number" v-model="newProductQuantity" :min="0" />
         </AFormItem>
         <AFormItem :label="t('unitPrice', '單價')">
-          <TinyInput type="number" v-model="newProductUnitPrice" min="0" />
+          <TinyCustomField type="number" v-model="newProductUnitPrice" :min="0" :precision="1" />
         </AFormItem>
         <AFormItem :label="t('paymentMethod', '付款方式')">
-          <TinySelect v-model="newProductPaymentMethod" :options="paymentOptions" />
+          <TinyCustomField type="select" v-model="newProductPaymentMethod" :options="paymentOptions" />
         </AFormItem>
         <AFormItem :label="t('note', '備註')">
-          <TinyInput v-model="newProductNote" :placeholder="t('optional', '選填')" />
+          <TinyCustomField type="input" v-model="newProductNote" :placeholder="t('optional', '選填')" />
         </AFormItem>
       </div>
     </AForm>
@@ -192,6 +192,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TinyCheckboxGroup, TinyInput, TinySelect } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import TinyCustomField from '@/components/Form/TinyCustomField.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import { useSystemStore } from '@/stores/system';
 import { useI18n } from 'vue-i18n';

@@ -1,14 +1,13 @@
 // src/composables/useSelectOptions.js
-// 共用選項管理 - 統一管理前端自定義的下拉選單選項
 import { computed } from 'vue';
 import { useI18n } from 'vue-i18n';
 
 export function useSelectOptions() {
   const { t } = useI18n();
   const customerCategories = computed(() => [
-    { label: 'BOTTLED_WATER', text: t('categoryBottledWater', '桶裝水') },
-    { label: 'EGG', text: t('categoryEgg', '雞蛋') },
-    { label: 'DISPENSER', text: t('categoryDispenser', '飲水機') },
+    { label: 'BOTTLED_WATER', text: t('water', '飲水'), value: 'WATER' },
+    { label: 'EGG', text: t('egg', '雞蛋'), value: 'EGG' },
+    // { label: 'DISPENSER', text: t('dispenser', '飲水機') },
   ]); //客戶類別（label 為存儲值，text 為顯示文字）
   const paymentOptions = computed(() => [
     { label: t('cash', '現金'), value: 'CASH' },
@@ -39,9 +38,9 @@ export function useSelectOptions() {
     { label: t('statusDeleted', '已刪除'), value: 'DELETED' },
   ]); //客戶狀態
   const orderTypeTabs = computed(() => [
-    { key: 'water', tabLabel: t('orderTabWater', '桶裝水'), title: t('orderTitleWater', '桶裝水訂單') },
-    { key: 'egg', tabLabel: t('orderTabEgg', '雞蛋'), title: t('orderTitleEgg', '雞蛋訂單') },
-    { key: 'dispenser', tabLabel: t('orderTabDispenser', '飲水機'), title: t('orderTitleDispenser', '飲水機訂單') },
+    { key: 'water', tabLabel: t('water', '飲水'), title: t('orderWater', '飲水訂單') },
+    { key: 'egg', tabLabel: t('egg', '雞蛋'), title: t('orderEgg', '雞蛋訂單') },
+    { key: 'dispenser', tabLabel: t('dispenser', '飲水機'), title: t('orderDispenser', '飲水機訂單') },
   ]); //訂單類型分頁
   const weekDayOptions = computed(() => [
     { label: 1, text: t('weekdayMon', '星期一') },
@@ -53,7 +52,7 @@ export function useSelectOptions() {
     { label: 7, text: t('weekdaySun', '星期日') },
   ]); //出貨星期(label=數字值, text=顯示文字)
   const categoryColors = {
-    桶裝水: 'blue',
+    飲水: 'blue',
     雞蛋: 'orange',
     飲水機: 'green',
   }; //產品類別顏色 (用於比對來源資料)
@@ -63,7 +62,6 @@ export function useSelectOptions() {
     DELETED: 'red',
   }; //狀態顏色
 
-  /** 工具函式 **/
   const buildLabelMap = (options) => {
     return options.reduce((map, option) => {
       map[option.value] = option.label;
@@ -144,7 +142,7 @@ export function useSelectOptions() {
   ]); //出貨方式
   const orderStatusOptions = computed(() => [
     { label: t('pending', '待出貨'), value: 'PENDING' },
-    { label: t('processing', '處理中'), value: 'PROCESSING' },
+    { label: t('shippedUnpaid', '已出貨-未收款'), value: 'PROCESSING' },
     { label: t('delivered', '已完成'), value: 'DELIVERED' },
     { label: t('cancelled', '取消'), value: 'CANCELLED' },
   ]); //訂單狀態
@@ -152,10 +150,18 @@ export function useSelectOptions() {
   /** 訂單狀態轉換 Map **/
   const orderStatusLabelMap = {
     待出貨: 'PENDING',
-    處理中: 'PROCESSING',
+    處理中: 'PROCESSING', //後端傳來的中文，不可改動
     已完成: 'DELIVERED',
     取消: 'CANCELLED',
-  }; //後端中文狀態 → 前端 key
+  }; //後端中文狀態 → 前端英文 key
+
+  /** 英文 key → 前端顯示文字（用於 statusLabel 顯示） **/
+  const orderStatusDisplayMap = computed(() => ({
+    PENDING: t('pending', '待出貨'),
+    PROCESSING: t('shippedUnpaid', '已出貨-未收款'), //後端傳「處理中」，前端顯示「已出貨-未收款」
+    DELIVERED: t('delivered', '已完成'),
+    CANCELLED: t('cancelled', '取消'),
+  })); //英文 key → 前端顯示文字
   const targetTypeLabelMap = {
     客戶: 'CUSTOMER',
     廠商: 'VENDOR',
@@ -173,7 +179,7 @@ export function useSelectOptions() {
   }; //出貨方式中文 → 英文
 
   return {
-    // 選項
+    //選項
     customerCategories,
     paymentOptions,
     customerTypeOptions,
@@ -184,7 +190,8 @@ export function useSelectOptions() {
     weekDayOptions,
     categoryColors,
     statusColorMap,
-    // 權限相關選項
+
+    //權限相關選項
     permissionResourceOptions,
     permissionResourceLabelMap,
     permissionActionOptions,
@@ -192,19 +199,24 @@ export function useSelectOptions() {
     permissionActionLabelMap,
     permissionActionShortLabelMap,
     permissionOwnOnlyOptions,
-    // 角色相關選項
+
+    //角色相關選項
     roleTypeOptions,
-    // 訂單相關選項
+
+    //訂單相關選項
     targetTypeOptions,
     orderPaymentTermOptions,
     shipMethodOptions,
     orderStatusOptions,
-    // 訂單狀態轉換 Map
+
+    //訂單狀態轉換 Map
     orderStatusLabelMap,
+    orderStatusDisplayMap,
     targetTypeLabelMap,
     paymentMethodLabelMap,
     shipMethodLabelMap,
-    // 工具函式
+
+    //工具函式
     buildLabelMap,
     buildSelectOptionsWithAll,
     getWeekDayText,

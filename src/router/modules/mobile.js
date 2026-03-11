@@ -82,7 +82,7 @@ const mobileChildren = [
     path: 'products/water',
     name: 'm-products-water',
     component: () => import('@/pages/Products/WaterPage.vue'),
-    meta: { requiresAuth: true, sidebarId: 'products-water', title: '桶裝水資料' },
+    meta: { requiresAuth: true, sidebarId: 'products-water', title: '飲水資料' },
   },
   {
     path: 'products/eggs',
@@ -102,7 +102,7 @@ const mobileChildren = [
     path: 'orders/water',
     name: 'm-orders-water',
     component: () => import('@/pages/Orders/WaterPage.vue'),
-    meta: { requiresAuth: true, sidebarId: 'orders-water', title: '桶裝水訂單', language: 'Customer' },
+    meta: { requiresAuth: true, sidebarId: 'orders-water', title: '飲水訂單', language: 'Customer' },
   },
   {
     path: 'orders/eggs',

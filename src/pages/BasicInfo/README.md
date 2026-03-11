@@ -99,7 +99,12 @@ BasicInfo/
 
 #### 5. 查看客戶訂單記錄
 1. 在列表中點擊客戶名稱或「詳細」按鈕
-2. 可查看該客戶的歷史訂單記錄
+2. 系統開啟客戶詳細抽屜，可透過頁籤查看不同類型的歷史訂單：
+   - **全部訂單**：顯示所有類別訂單（由 API 回傳，不傳遞 `categoryId`）
+   - **飲水訂單**：傳遞 `categoryId: CATEGORY_IDS.WATER` 給 `OrderListGet` API
+   - **雞蛋訂單**：傳遞 `categoryId: CATEGORY_IDS.EGG` 給 `OrderListGet` API
+3. 點擊訂單列可展開查看該筆訂單的商品明細（使用 CustomTinyGrid 顯示）
+4. 訂單狀態顯示使用與訂單管理頁相同的映射規則（`PROCESSING` 顯示為「已出貨-未收款」）
 
 ---
 

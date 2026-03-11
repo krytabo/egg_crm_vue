@@ -72,7 +72,7 @@ const appChildren = [
     path: 'products/water',
     name: 'products-water',
     component: () => import('@/pages/Products/WaterPage.vue'),
-    meta: { requiresAuth: true, sidebarId: 'products-water', title: '桶裝水資料' },
+    meta: { requiresAuth: true, sidebarId: 'products-water', title: '飲水資料' },
   },
   {
     path: 'products/eggs',
@@ -98,7 +98,7 @@ const appChildren = [
     path: 'orders/water',
     name: 'orders-water',
     component: () => import('@/pages/Orders/WaterPage.vue'),
-    meta: { requiresAuth: true, sidebarId: 'orders-water', title: '桶裝水訂單', language: 'Customer' },
+    meta: { requiresAuth: true, sidebarId: 'orders-water', title: '飲水訂單', language: 'Customer' },
   },
   {
     path: 'orders/eggs',
@@ -140,6 +140,12 @@ const appChildren = [
     name: 'finance-billing',
     component: () => import('@/pages/Finance/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'finance-billing', title: '帳務管理' },
+  },
+  {
+    path: '/manual',
+    name: 'manual',
+    component: () => import('@/pages/OperationManualPage.vue'),
+    meta: { requiresAuth: true, title: '操作手冊', sidebarId: 'manual' },
   },
 ];
 

@@ -39,7 +39,9 @@
       <slot v-bind="slotProps" />
     </template>
 
-    <template #header="slotProps">
+    <!-- type 為內建特殊欄位時（selection/checkbox/radio/seq/expand），
+         不覆蓋 #header，讓 TinyGrid 自己渲染全選 checkbox 等內建 header -->
+    <template v-if="!isBuiltinType" #header="slotProps">
       <div class="custom-grid-header">
         <div class="header-content" @keyup.capture="handleHeaderKeyup">
           <slot name="header" v-bind="slotProps">
@@ -204,7 +206,7 @@ const props = defineProps({
   type: {
     type: String,
     default: null,
-    validator: (value) => [null, "seq", "radio", "checkbox", "expand", "html"].includes(value)
+    validator: (value) => [null, "selection", "seq", "radio", "checkbox", "expand", "html"].includes(value)
   },
 
   // 樹節點
@@ -250,6 +252,7 @@ const props = defineProps({
   }
 });
 const isHidden = computed(() => props.hidden.includes(props.field)); //計算是否隱藏
+const isBuiltinType = computed(() => ['selection', 'checkbox', 'radio', 'seq', 'expand'].includes(props.type)); //內建特殊欄位不覆蓋 header
 const effectiveSortField = computed(() => props.sortField || props.field); //實際排序欄位
 const sortIconName = computed(() => {
   if (!props.sortable) return "sort";

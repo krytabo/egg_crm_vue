@@ -1,13 +1,13 @@
 //src/stores/loadingStore.js
-import { defineStore } from "pinia";
-import Swal from "sweetalert2";
-import i18n from "@/assets/Language/i18n.js";
+import { defineStore } from 'pinia';
+import Swal from 'sweetalert2';
+import i18n from '@/assets/Language/i18n.js';
 
-export const useLoadingStore = defineStore("loadingStore", {
+export const useLoadingStore = defineStore('loadingStore', {
   state: () => ({
     fullLoading: false,
     componentLoading: false,
-    customLoadingMessage: null
+    customLoadingMessage: null,
   }),
   actions: {
     setFullLoading(status) {
@@ -15,22 +15,22 @@ export const useLoadingStore = defineStore("loadingStore", {
     },
     setComponentLoading(status) {
       this.componentLoading = status;
-    }
-  }
+    },
+  },
 });
 
-export const useMainStore = defineStore("main", {
+export const useMainStore = defineStore('main', {
   state: () => ({
     loading: false,
     syncState: false,
     showProgress: false,
     progressNumber: 0,
-    customLoadingMessage: null
+    customLoadingMessage: null,
   }),
   getters: {
     loadingMessage: (state) => {
-      return state.customLoadingMessage || i18n.global.t("loadingPleaseWait");
-    }
+      return state.customLoadingMessage || i18n.global.t('loadingPleaseWait');
+    },
   },
   actions: {
     /** Loading相關 **/
@@ -54,31 +54,31 @@ export const useMainStore = defineStore("main", {
     },
 
     /** Alert相關 **/
-    async SWAL_Success(customTitle, customMessage = "", customIcon = "success") {
+    async SWAL_Success(customTitle, customMessage = '', customIcon = 'success') {
       await Swal.fire({
-        title: customTitle || i18n.global.t("swal.saveCompleted"),
+        title: customTitle || i18n.global.t('swal.saveCompleted'),
         text: customMessage,
         icon: customIcon,
         allowOutsideClick: false,
-        confirmButtonText: i18n.global.t("swal.confirm"),
+        confirmButtonText: i18n.global.t('swal.confirm'),
         showCancelButton: false,
-        confirmButtonColor: "#165DFF"
+        confirmButtonColor: '#165DFF',
       });
     },
-    async SWAL_Success_html(customTitle, customMessage, customIcon = "success") {
+    async SWAL_Success_html(customTitle, customMessage, customIcon = 'success') {
       await Swal.fire({
-        title: customTitle || i18n.global.t("swal.saveCompleted"),
+        title: customTitle || i18n.global.t('swal.saveCompleted'),
         html: customMessage || null,
         icon: customIcon,
         allowOutsideClick: false,
-        confirmButtonText: i18n.global.t("swal.confirm"),
+        confirmButtonText: i18n.global.t('swal.confirm'),
         showCancelButton: false,
-        confirmButtonColor: "#165DFF"
+        confirmButtonColor: '#165DFF',
       });
     },
-    async SWAL_Error(error, customTitle, customIcon = "error") {
-      const fallbackMessage = i18n.global.t("swal.noDataFound") || "發生未知錯誤";
-      let errorMessage = "";
+    async SWAL_Error(error, customTitle, customIcon = 'error') {
+      const fallbackMessage = i18n.global.t('swal.noDataFound') || '發生未知錯誤';
+      let errorMessage = '';
       // error?.response?.data?.message || error?.message || fallback;
 
       const normalizeErrorList = (errors) => {
@@ -86,8 +86,8 @@ export const useMainStore = defineStore("main", {
         return errors
           .map((item) => {
             if (!item) return null;
-            if (typeof item === "string") return item;
-            if (typeof item === "object") {
+            if (typeof item === 'string') return item;
+            if (typeof item === 'object') {
               if (item.message) return item.message;
               if (item.code) return item.code;
               return JSON.stringify(item);
@@ -99,18 +99,18 @@ export const useMainStore = defineStore("main", {
 
       try {
         if (error) {
-          if (typeof error === "string") {
+          if (typeof error === 'string') {
             errorMessage = error;
           } else if (error?.response?.data) {
             const { data } = error.response;
             const normalizedErrors = normalizeErrorList(data.errors);
             if (normalizedErrors.length) {
-              errorMessage = normalizedErrors.join("\n");
+              errorMessage = normalizedErrors.join('\n');
             } else if (data.detail) {
               errorMessage = data.detail;
             } else if (data.message) {
               errorMessage = data.message;
-            } else if (typeof data === "string") {
+            } else if (typeof data === 'string') {
               errorMessage = data;
             }
           } else if (error?.message) {
@@ -126,31 +126,31 @@ export const useMainStore = defineStore("main", {
           errorMessage = fallbackMessage;
         }
       } catch (e) {
-        console.error("Error parsing error message:", e);
+        console.error('Error parsing error message:', e);
         errorMessage = fallbackMessage;
       }
 
       await Swal.fire({
-        title: customTitle || i18n.global.t("swal.errorOccurred"),
+        title: customTitle || i18n.global.t('swal.errorOccurred'),
         text: errorMessage,
         icon: customIcon,
         allowOutsideClick: false,
-        confirmButtonText: i18n.global.t("swal.confirm"),
+        confirmButtonText: i18n.global.t('swal.confirm'),
         showCancelButton: false,
-        confirmButtonColor: "#165DFF"
+        confirmButtonColor: '#165DFF',
       });
     },
     async SWAL_Confirm({
       title,
       text,
       html,
-      icon = "warning",
+      icon = 'warning',
       confirmButtonText,
       cancelButtonText,
       denyButtonText,
-      confirmButtonColor = "#F53F3F",
-      cancelButtonColor = "#f2f3f5",
-      denyButtonColor = "#6c757d",
+      confirmButtonColor = '#F53F3F',
+      cancelButtonColor = '#f2f3f5',
+      denyButtonColor = '#6c757d',
       onConfirm,
       onCancel,
       onDeny,
@@ -158,11 +158,11 @@ export const useMainStore = defineStore("main", {
       showCancelButton = true,
       showDenyButton = false,
       preConfirm,
-      reverseButtons = false
+      reverseButtons = false,
     }) {
       const result = await Swal.fire({
         customClass: {
-          cancelButton: "bg-[#f2f3f5] text-black!"
+          cancelButton: 'bg-[#f2f3f5] text-black!',
         },
         title: title || null,
         text: text || null,
@@ -174,12 +174,12 @@ export const useMainStore = defineStore("main", {
         confirmButtonColor,
         cancelButtonColor,
         denyButtonColor,
-        confirmButtonText: confirmButtonText || i18n.global.t("swal.confirm"),
-        cancelButtonText: cancelButtonText || i18n.global.t("swal.cancel"),
-        denyButtonText: denyButtonText || i18n.global.t("swal.deny", "拒絕"),
+        confirmButtonText: confirmButtonText || i18n.global.t('swal.confirm'),
+        cancelButtonText: cancelButtonText || i18n.global.t('swal.cancel'),
+        denyButtonText: denyButtonText || i18n.global.t('swal.deny', '拒絕'),
         preConfirm: preConfirm || null,
         allowEscapeKey: false,
-        reverseButtons
+        reverseButtons,
       });
 
       if (result.isConfirmed && onConfirm) {
@@ -218,17 +218,17 @@ export const useMainStore = defineStore("main", {
 
       return result;
     }, //通用的確認對話框
-    async SWAL_DeleteConfirm({ title, text, onConfirm, confirmButtonText, cancelButtonText, showLoading = true }) {
+    async SWAL_DeleteConfirm({ title, text, onConfirm, confirmButtonText, cancelButtonText, showLoading = true } = {}) {
       return this.SWAL_Confirm({
-        title: title || i18n.global.t("swal.aboutToDelete"),
-        text: text || i18n.global.t("swal.dataCannotBeRecovered"),
-        icon: "warning",
-        confirmButtonColor: "#F53F3F",
-        confirmButtonText: confirmButtonText || i18n.global.t("swal.confirm"),
-        cancelButtonText: cancelButtonText || i18n.global.t("swal.cancel"),
+        title: title || i18n.global.t('swal.aboutToDelete'),
+        text: text || i18n.global.t('swal.dataCannotBeRecovered'),
+        icon: 'warning',
+        confirmButtonColor: '#F53F3F',
+        confirmButtonText: confirmButtonText || i18n.global.t('swal.confirm'),
+        cancelButtonText: cancelButtonText || i18n.global.t('swal.cancel'),
         onConfirm,
-        showLoading
+        showLoading,
       });
-    } //刪除確認對話框
-  }
+    }, //刪除確認對話框
+  },
 });

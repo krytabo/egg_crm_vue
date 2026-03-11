@@ -1,10 +1,10 @@
-<!-- src/pages/Orders/WaterPage.vue 桶裝水訂單 -->
+<!-- src/pages/Orders/WaterPage.vue 飲水訂單 -->
 <template>
   <template v-if="displayMode === 'mobile'">
-    <MobileView :pageTitle="t('bottledWaterOrders', '桶裝水訂單')" :categoryId="CATEGORY_IDS.WATER" :categoryCode="CATEGORY_CODES.WATER" />
+    <MobileView :pageTitle="t('orderWater', '飲水訂單')" :categoryId="CATEGORY_IDS.WATER" :categoryCode="CATEGORY_CODES.WATER" />
   </template>
   <template v-else>
-    <DataList pageTitle="bottledWaterOrders" :categoryId="CATEGORY_IDS.WATER" :categoryCode="CATEGORY_CODES.WATER" />
+    <DataList pageTitle="orderWater" :categoryId="CATEGORY_IDS.WATER" :categoryCode="CATEGORY_CODES.WATER" />
   </template>
 </template>
 
