@@ -11,6 +11,10 @@
           <template #icon><icon-plus /></template>
           {{ t('addRepair', '新增維修') }}
         </a-button>
+        <a-button v-if="activeTab === 'insurance'" type="primary" size="small" @click="openInsuranceDialog()">
+          <template #icon><icon-plus /></template>
+          {{ t('addInsurance', '新增保險') }}
+        </a-button>
       </template>
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--        保養記錄 Tab        -->
@@ -122,6 +126,54 @@
           <a-pagination :current="tripPagination.page" :page-size="tripPagination.limit" :total="tripPagination.total" show-total @change="onTripPageChange" />
         </div>
       </a-tab-pane>
+
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <!--        保險記錄 Tab        -->
+      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+      <a-tab-pane key="insurance" :title="t('insuranceHistory', '保險記錄')">
+        <a-table :data="insuranceList" :loading="insuranceLoading" :pagination="false" size="small" :bordered="{ cell: true }">
+          <template #columns>
+            <a-table-column :title="t('insurer', '保險公司')" data-index="insurer" :width="120" />
+            <a-table-column :title="t('policyNumber', '保單號碼')" data-index="policyNumber" :width="140">
+              <template #cell="{ record }">{{ record.policyNumber || '-' }}</template>
+            </a-table-column>
+            <a-table-column :title="t('insuranceType', '保險類型')" data-index="insuranceType" :width="110">
+              <template #cell="{ record }">
+                <a-tag>{{ insuranceTypeMap[record.insuranceType] || record.insuranceType || '-' }}</a-tag>
+              </template>
+            </a-table-column>
+            <a-table-column :title="t('amount', '保費金額')" data-index="amount" :width="100" align="right">
+              <template #cell="{ record }"> ${{ formatNumber(record.amount) }} </template>
+            </a-table-column>
+            <a-table-column :title="t('startDate', '生效日期')" data-index="startDate" :width="110">
+              <template #cell="{ record }">{{ formatDate(record.startDate) || '-' }}</template>
+            </a-table-column>
+            <a-table-column :title="t('expiryDate', '到期日期')" data-index="expiryDate" :width="110">
+              <template #cell="{ record }">
+                <span :class="isExpiringSoon(record.expiryDate) ? 'text-red-500 font-semibold' : ''">
+                  {{ formatDate(record.expiryDate) || '-' }}
+                </span>
+              </template>
+            </a-table-column>
+            <a-table-column :title="t('status', '狀態')" data-index="status" :width="90">
+              <template #cell="{ record }">
+                <a-tag :color="insuranceStatusColorMap[record.status]">{{ insuranceStatusMap[record.status] || record.status }}</a-tag>
+              </template>
+            </a-table-column>
+            <a-table-column :title="t('actions', '操作')" :width="80" align="center">
+              <template #cell="{ record }">
+                <a-button-group size="mini">
+                  <a-button @click="openInsuranceDialog(record)"><icon-edit /></a-button>
+                  <a-button status="danger" @click="deleteInsurance(record.insuranceId)"><icon-delete /></a-button>
+                </a-button-group>
+              </template>
+            </a-table-column>
+          </template>
+        </a-table>
+        <div class="mt-4 flex justify-end">
+          <a-pagination :current="insurancePagination.page" :page-size="insurancePagination.limit" :total="insurancePagination.total" show-total @change="onInsurancePageChange" />
+        </div>
+      </a-tab-pane>
     </a-tabs>
   </a-drawer>
 
@@ -217,6 +269,43 @@
       <a-button type="primary" :loading="repairSaving" @click="saveRepair">{{ t('save', '儲存') }}</a-button>
     </template>
   </a-modal>
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--      保險記錄彈窗          -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <a-modal v-model:visible="insuranceDialogVisible" :title="insuranceForm.insuranceId ? t('editInsurance', '編輯保險記錄') : t('addInsurance', '新增保險記錄')" :width="600" :mask-closable="false">
+    <a-form ref="insuranceFormRef" :model="insuranceForm" :rules="insuranceFormRules" layout="vertical">
+      <div class="grid grid-cols-2 gap-4">
+        <a-form-item :label="t('insurer', '保險公司')" field="insurer" class="col-span-2">
+          <CustomField v-model="insuranceForm.insurer" type="input" />
+        </a-form-item>
+        <a-form-item :label="t('policyNumber', '保單號碼')" field="policyNumber">
+          <CustomField v-model="insuranceForm.policyNumber" type="input" />
+        </a-form-item>
+        <a-form-item :label="t('insuranceType', '保險類型')" field="insuranceType">
+          <a-select v-model="insuranceForm.insuranceType" :placeholder="t('optional', '選填')" allow-clear>
+            <a-option v-for="opt in insuranceTypeOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</a-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item :label="t('startDate', '生效日期')" field="startDate">
+          <CustomField v-model="insuranceForm.startDate" type="date-picker" />
+        </a-form-item>
+        <a-form-item :label="t('expiryDate', '到期日期')" field="expiryDate">
+          <CustomField v-model="insuranceForm.expiryDate" type="date-picker" />
+        </a-form-item>
+        <a-form-item :label="t('amount', '保費金額')" field="amount" class="col-span-2">
+          <CustomField v-model="insuranceForm.amount" type="number" :min="0" thousands />
+        </a-form-item>
+        <a-form-item :label="t('notes', '備註')" field="notes" class="col-span-2">
+          <CustomField v-model="insuranceForm.notes" type="textarea" />
+        </a-form-item>
+      </div>
+    </a-form>
+    <template #footer>
+      <a-button @click="insuranceDialogVisible = false">{{ t('cancel', '取消') }}</a-button>
+      <a-button type="primary" :loading="insuranceSaving" @click="saveInsurance">{{ t('save', '儲存') }}</a-button>
+    </template>
+  </a-modal>
 </template>
 
 <script setup>
@@ -234,7 +323,12 @@ import {
   VehicleRepairUpdatePut,
   VehicleRepairDeleteById,
   VehicleTripHistoryGet,
+  VehicleInsuranceHistoryGet,
+  VehicleInsuranceCreatePost,
+  VehicleInsuranceUpdatePatch,
+  VehicleInsuranceDeleteById,
 } from '@/assets/API/Vehicle';
+import CustomField from '@/components/Form/CustomField.vue';
 
 const { t } = useI18n();
 const mainStore = useMainStore();
@@ -258,10 +352,12 @@ watch(
       maintenancePagination.value = { page: 1, limit: 20, total: 0 };
       repairPagination.value = { page: 1, limit: 20, total: 0 };
       tripPagination.value = { page: 1, limit: 20, total: 0 };
+      insurancePagination.value = { page: 1, limit: 20, total: 0 };
       // 載入資料
       fetchMaintenanceHistory();
       fetchRepairHistory();
       fetchTripHistory();
+      fetchInsuranceHistory();
     }
   },
 );
@@ -358,6 +454,26 @@ const orderStatusColorMap = {
   DELIVERED: 'green',
   CANCELLED: 'red',
   RETURNED: 'magenta',
+};
+
+const insuranceTypeOptions = [
+  { label: t('insuranceTypeThirdParty', '第三責任險'), value: 'THIRD_PARTY' },
+  { label: t('insuranceTypeComprehensive', '全險'), value: 'COMPREHENSIVE' },
+  { label: t('insuranceTypeOther', '其他'), value: 'OTHER' },
+];
+const insuranceTypeMap = Object.fromEntries(insuranceTypeOptions.map((o) => [o.value, o.label]));
+
+const insuranceStatusMap = {
+  ACTIVE: t('insuranceStatusActive', '有效'),
+  EXPIRED: t('insuranceStatusExpired', '已到期'),
+  CANCELLED: t('insuranceStatusCancelled', '已取消'),
+};
+const insuranceStatusColorMap = { ACTIVE: 'green', EXPIRED: 'red', CANCELLED: 'gray' };
+
+const isExpiringSoon = (expiryDate) => {
+  if (!expiryDate) return false;
+  const diff = new Date(expiryDate) - new Date();
+  return diff > 0 && diff <= 30 * 24 * 60 * 60 * 1000; // 30 天內到期
 };
 
 /** 保養記錄 **/
@@ -642,5 +758,123 @@ const fetchTripHistory = async () => {
 const onTripPageChange = (page) => {
   tripPagination.value.page = page;
   fetchTripHistory();
+};
+
+/** 保險記錄 **/
+const insuranceList = ref([]);
+const insuranceLoading = ref(false);
+const insurancePagination = ref({ page: 1, limit: 20, total: 0 });
+const insuranceDialogVisible = ref(false);
+const insuranceSaving = ref(false);
+const insuranceFormRef = ref(null);
+const insuranceForm = ref({
+  insuranceId: null, //記錄 ID
+  insurer: '', //保險公司名稱
+  policyNumber: '', //保單號碼
+  insuranceType: null, //保險類型
+  startDate: null, //生效日期
+  expiryDate: null, //到期日期
+  amount: 0, //保費金額
+  notes: '', //備註
+});
+const insuranceFormRules = {
+  insurer: [{ required: true, message: t('required', '此欄位必填') }],
+  startDate: [{ required: true, message: t('required', '此欄位必填') }],
+  expiryDate: [{ required: true, message: t('required', '此欄位必填') }],
+  amount: [{ required: true, message: t('required', '此欄位必填') }],
+};
+
+const fetchInsuranceHistory = async () => {
+  if (!props.vehicle?.id) return;
+  insuranceLoading.value = true;
+  try {
+    const { page, limit } = insurancePagination.value;
+    const res = await VehicleInsuranceHistoryGet(props.vehicle.id, { page, limit });
+    const responseData = res.data?.data || {};
+    insuranceList.value = responseData.data || [];
+    insurancePagination.value.total = responseData.meta?.total || responseData.total || 0;
+  } catch (error) {
+    console.error('Failed to fetch insurance history:', error);
+    insuranceList.value = [];
+  } finally {
+    insuranceLoading.value = false;
+  }
+};
+
+const onInsurancePageChange = (page) => {
+  insurancePagination.value.page = page;
+  fetchInsuranceHistory();
+};
+
+const openInsuranceDialog = (record = null) => {
+  if (record) {
+    insuranceForm.value = {
+      insuranceId: record.insuranceId,
+      insurer: record.insurer,
+      policyNumber: record.policyNumber || '',
+      insuranceType: record.insuranceType || null,
+      startDate: record.startDate,
+      expiryDate: record.expiryDate,
+      amount: Number(record.amount) || 0,
+      notes: record.notes || '',
+    };
+  } else {
+    insuranceForm.value = {
+      insuranceId: null,
+      insurer: '',
+      policyNumber: '',
+      insuranceType: null,
+      startDate: null,
+      expiryDate: null,
+      amount: 0,
+      notes: '',
+    };
+  }
+  insuranceDialogVisible.value = true;
+};
+
+const saveInsurance = async () => {
+  const valid = await insuranceFormRef.value?.validate();
+  if (valid) return;
+
+  insuranceSaving.value = true;
+  try {
+    const payload = {
+      insurer: insuranceForm.value.insurer,
+      policyNumber: insuranceForm.value.policyNumber || undefined,
+      insuranceType: insuranceForm.value.insuranceType || undefined,
+      startDate: insuranceForm.value.startDate,
+      expiryDate: insuranceForm.value.expiryDate,
+      amount: insuranceForm.value.amount,
+      notes: insuranceForm.value.notes || undefined,
+    };
+
+    if (insuranceForm.value.insuranceId) {
+      await VehicleInsuranceUpdatePatch(props.vehicle.id, insuranceForm.value.insuranceId, payload);
+    } else {
+      await VehicleInsuranceCreatePost(props.vehicle.id, payload);
+    }
+    await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
+    insuranceDialogVisible.value = false;
+    await fetchInsuranceHistory();
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    insuranceSaving.value = false;
+  }
+};
+
+const deleteInsurance = async (insuranceId) => {
+  await mainStore.SWAL_DeleteConfirm({
+    onConfirm: async () => {
+      try {
+        await VehicleInsuranceDeleteById(props.vehicle.id, insuranceId);
+        await mainStore.SWAL_Success(t('deleteSuccess', '刪除成功'));
+        await fetchInsuranceHistory();
+      } catch (error) {
+        await mainStore.SWAL_Error(error);
+      }
+    },
+  });
 };
 </script>

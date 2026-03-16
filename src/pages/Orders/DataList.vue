@@ -10,6 +10,7 @@
           <TinyInput v-model="filters.search" :placeholder="t('pleaseEnterKeyword', '請輸入關鍵字')" @keyup.enter="handleGlobalSearch" />
           <a-button status="danger" @click="clearFilter">{{ t('clearAllSearch', '清除篩選') }}</a-button>
           <a-button @click="batchPrint"><Printer class="mr-1 size-4" />{{ t('batchPrint', '批次列印') }}</a-button>
+          <a-button v-if="categoryCode" @click="batchPrintTriplicate"><Printer class="mr-1 size-4" />{{ t('batchTriplicate', '批次三聯單') }}</a-button>
           <a-button v-if="permissionStore.hasPermission('ORDER', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addOrder', '新增訂單') }}</a-button>
         </div>
       </template>
@@ -99,11 +100,12 @@
         <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="150" align="right" header-align="right">
           <template #default="{ row }">{{ formatCurrencyNumber(row.totalAmount) }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="100" fixed="right" align="center" header-align="center">
+        <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center" header-align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
               <button v-if="permissionStore.hasPermission('ORDER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
               <button class="table-button" @click="printReport(row)"><Printer class="size-4 text-green-500" /></button>
+              <button v-if="categoryCode" class="table-button" :title="t('printTriplicate', '列印三聯單')" @click="printTriplicate(row)"><ScrollText class="size-4 text-blue-500" /></button>
               <button v-if="permissionStore.hasPermission('ORDER', 'UPDATE')" class="table-button" @click="editData(row)">
                 <Eye v-if="['DELIVERED', 'CANCELLED'].includes(row.status)" class="size-4" />
                 <SquarePen v-else class="size-4" />
@@ -124,8 +126,12 @@
     </CardContent>
   </Card>
 
-  <!-- 列印元件（視覺隱藏，保留在 DOM 供 vue-to-print 使用） -->
+  <!-- 列印訂單 -->
   <OrderPrintSlip ref="orderPrintSlipRef" :orders="printOrders" />
+
+  <!--三聯單-->
+  <WaterTriplicateSlip ref="waterTriplicateRef" :orders="triplicateOrders" />
+  <EggTriplicateSlip ref="eggTriplicateRef" :orders="triplicateOrders" />
 
   <!-- 訂單編輯彈窗 -->
   <a-modal v-model:visible="dialogVisible" :top="20" :width="1300" draggable :fullscreen="fullscreen" :mask-closable="false" :closable="false">
@@ -270,6 +276,8 @@ import CustomField from '@/components/Form/CustomField.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTable.vue';
 import OrderPrintSlip from '@/components/dialogs/OrderPrintSlip.vue';
+import WaterTriplicateSlip from '@/components/dialogs/WaterTriplicateSlip.vue';
+import EggTriplicateSlip from '@/components/dialogs/EggTriplicateSlip.vue';
 import { useVueToPrint } from 'vue-to-print';
 import { Button } from '@/components/ui/button';
 import { TinyButton, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
@@ -481,6 +489,26 @@ const { handlePrint } = useVueToPrint({
     @page { size: A4; margin: 0; }
     body { margin: 0; }
   `,*/
+  removeAfterPrint: true,
+});
+
+/** 三聯單列印設定 **/
+const waterTriplicateRef = ref(null);
+const eggTriplicateRef = ref(null);
+const triplicateOrders = ref([]);
+const triplicatePageStyle = `@page { size: 241mm 140mm; margin: 0; } body { margin: 0; }`;
+
+const { handlePrint: handleWaterTriplicatePrint } = useVueToPrint({
+  content: () => waterTriplicateRef.value?.printContentRef,
+  documentTitle: '飲水送貨三聯單',
+  pageStyle: triplicatePageStyle,
+  removeAfterPrint: true,
+  suppressErrors: true, // 不等待圖片/資源載入，直接列印
+});
+const { handlePrint: handleEggTriplicatePrint } = useVueToPrint({
+  content: () => eggTriplicateRef.value?.printContentRef,
+  documentTitle: '雞蛋出貨三聯單',
+  pageStyle: triplicatePageStyle,
   removeAfterPrint: true,
 });
 
@@ -803,6 +831,42 @@ const batchPrint = async () => {
     mainStore.setLoading(false);
   }
 }; //批次列印
+
+/** 三聯單列印相關 **/
+const printTriplicate = async (row) => {
+  mainStore.setLoading(true);
+  try {
+    const response = await OrderGetByID(row.id);
+    triplicateOrders.value = [response.data?.data || response.data];
+    await nextTick();
+    if (props.categoryCode === 'WATER') handleWaterTriplicatePrint();
+    else handleEggTriplicatePrint();
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    mainStore.setLoading(false);
+  }
+}; //單筆三聯單
+
+const batchPrintTriplicate = async () => {
+  const selectedRows = orderGridRef.value?.getSelectRecords?.() ?? [];
+  if (!selectedRows.length) {
+    await mainStore.SWAL_Success(t('selectRowsFirst', '請先勾選要列印的訂單'), '', 'warning');
+    return;
+  }
+  mainStore.setLoading(true);
+  try {
+    const results = await Promise.all(selectedRows.map((row) => OrderGetByID(row.id)));
+    triplicateOrders.value = results.map((res) => res.data?.data || res.data);
+    await nextTick();
+    if (props.categoryCode === 'WATER') handleWaterTriplicatePrint();
+    else handleEggTriplicatePrint();
+  } catch (error) {
+    await mainStore.SWAL_Error(error);
+  } finally {
+    mainStore.setLoading(false);
+  }
+}; //批次三聯單
 
 onMounted(getAPI);
 watch(

@@ -25,3 +25,9 @@ export const VehicleRepairDeleteById = (vehicleId, repairId) => dataList.delete(
 
 //行程記錄
 export const VehicleTripHistoryGet = (id, params) => dataList.get(`/vehicles/${id}/trips`, { params }); //取得行程記錄
+
+//保險紀錄
+export const VehicleInsuranceHistoryGet = (id, params) => dataList.get(`/vehicles/${id}/insurance`, { params }); //取得保險紀錄
+export const VehicleInsuranceCreatePost = (id, data) => dataList.post(`/vehicles/${id}/insurance`, data); //新增保險紀錄
+export const VehicleInsuranceUpdatePatch = (vehicleId, insuranceId, data) => dataList.patch(`/vehicles/${vehicleId}/insurance/${insuranceId}`, data); //更新保險紀錄
+export const VehicleInsuranceDeleteById = (vehicleId, insuranceId) => dataList.delete(`/vehicles/${vehicleId}/insurance/${insuranceId}`); //刪除保險紀錄

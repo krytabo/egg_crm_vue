@@ -329,6 +329,7 @@
             <CustomField v-model="basicForm.reorderPoint" type="number" placeholder="0" :min="0" allowClear />
           </AFormItem>
           <AFormItem :label="t('vendorId', '供應商 ID')">
+            <!--<JsonViewer :value="basicForm.primaryVendorId" boxed copyable />-->
             <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear />
           </AFormItem>
           <AFormItem :label="t('tags', '標籤')">
@@ -417,6 +418,8 @@ const statusColorMap = {
   INACTIVE: 'orange',
   DELETED: 'red',
 }; //狀態顏色對應
+
+/** 假資料相關 **/
 const fakeDataPresets = {
   eggs: {
     name: '新鮮雞蛋 (30顆裝)',
@@ -432,7 +435,7 @@ const fakeDataPresets = {
     tags: '新鮮,農場直送,優質',
     isPerishable: true,
   },
-  bottledWater: {
+  /*bottledWater: {
     name: '悅氏礦泉水 20L',
     unit: '桶',
     description: '悅氏品牌礦泉水，20公升桶裝，採用天然山泉水源',
@@ -445,7 +448,65 @@ const fakeDataPresets = {
     reorderPoint: '100',
     tags: '悅氏,礦泉水,20L,飲水',
     isPerishable: true,
-  },
+  },*/
+  bottledWater: Array.from({ length: 20 }, (_, i) => {
+    const brands = ['悅氏', '泰山', '台鹽', '波爾', '統一', '華晶', '阿爾卑斯'];
+    const volumes = ['600ml', '1500ml', '5L', '10L', '20L'];
+    const brand = brands[i % brands.length];
+    const volume = volumes[i % volumes.length];
+
+    // 隨機數值計算
+    const cost = Math.floor(Math.random() * (80 - 30 + 1)) + 30;
+    return {
+      name: `${brand}天然礦泉水 ${volume} (批次${i + 1})`,
+      categoryId: 'e106af10-17d4-4f4d-9ccf-8dfd5fbfe0b6', // 固定
+      productTypeCode: 'FINISHED_GOOD',
+      unit: volume.includes('ml') ? '箱' : '桶',
+      description: `${brand}品牌，優質水源，${volume}純淨包裝，符合國家飲用水標準。`,
+      basePrice: Number(cost + 30),
+      wholesalePrice: Number(cost + 15),
+      cashPrice: Number(cost + 20),
+      costPrice: Number(cost),
+      minStock: Number(Math.floor(Math.random() * 50) + 10), // 10~60
+      maxStock: Number(Math.floor(Math.random() * 500) + 500), // 500~1000
+      reorderPoint: Number(Math.floor(Math.random() * 50) + 70), // 70~120
+      primaryVendorId: {
+        id: 'dffa4756-a8f2-44d3-a382-b9f000272b41',
+        businessId: 10,
+        code: 'VENDOR-002',
+        name: '悅氏礦泉水股份有限公司',
+        categoryId: 'e106af10-17d4-4f4d-9ccf-8dfd5fbfe0b6',
+        status: 'ACTIVE',
+        contactPerson: '李經理',
+        email: 'sales@yueshi.com.tw',
+        phone: '+886-3-98765432',
+        companyPhone: null,
+        contactInfo: {
+          fax: '+886-3-98765433',
+          email: 'sales@yueshi.com.tw',
+          phone: '+886-3-98765432',
+          mobile: '+886-912-345678',
+        },
+        fullAddress: '桃園市大園區工業路88號',
+        isActive: true,
+        taxId: null,
+        businessRegistration: null,
+        paymentTerms: 15,
+        bankAccountName: null,
+        bankAccountNumber: null,
+        bankName: null,
+        branchName: null,
+        notes: '知名礦泉水品牌，全省配送，品質穩定',
+        tags: ['知名品牌', '全省配送', 'ISO認證'],
+        deliveryDays: null,
+        createdAt: '2026-01-30T10:57:54.884Z',
+        updatedAt: '2026-02-06T18:06:46.995Z',
+      }, // 固定
+      tags: `${brand},礦泉水,${volume},飲水`,
+      isPerishable: true,
+      status: 'ACTIVE',
+    };
+  }),
   waterDispenser: {
     name: 'Panasonic 智能溫控飲水機 TK-AS44',
     unit: '台',
@@ -461,6 +522,40 @@ const fakeDataPresets = {
     isPerishable: false,
   },
 }; //假資料預設值
+const applyFakeFormValues = (preset = {}) => {
+  Object.entries(preset).forEach(([key, value]) => {
+    if (!Object.prototype.hasOwnProperty.call(basicForm.value, key)) return;
+    if (key === 'isPerishable') {
+      basicForm.value.isPerishable = Boolean(value);
+    } else if (key === 'tags') {
+      basicForm.value.tags = String(value);
+    } else {
+      basicForm.value[key] = value;
+    }
+  });
+}; //套用假資料到表單
+const generateFakeData = () => {
+  let preset = fakeDataPresets[props.fakeDataType];
+  if (!preset) return;
+
+  // 關鍵改動：如果是陣列，隨機抽一個
+  if (Array.isArray(preset)) {
+    const randomIndex = Math.floor(Math.random() * preset.length);
+    preset = preset[randomIndex];
+  }
+
+  applyFakeFormValues(preset);
+
+  basicFormRef.value?.clearValidate?.();
+  mainStore.SWAL_Success(t('fakeDataApplied', { category: props.categoryLabel }, '已套用隨機範例資料'));
+};
+/*const generateFakeData = () => {
+  const preset = fakeDataPresets[props.fakeDataType];
+  if (!preset) return;
+  applyFakeFormValues(preset);
+  basicFormRef.value?.clearValidate?.();
+  mainStore.SWAL_Success(t('fakeDataApplied', { category: props.categoryLabel }, '已套用範例資料'));
+};*/ //產生假資料
 
 /** 選項相關 **/
 const statusOptions = [
@@ -697,25 +792,6 @@ const resetForm = () => {
   basicForm.value = initializeForm();
   basicFormRef.value?.clearValidate?.();
 }; //重設表單
-const applyFakeFormValues = (preset = {}) => {
-  Object.entries(preset).forEach(([key, value]) => {
-    if (!Object.prototype.hasOwnProperty.call(basicForm.value, key)) return;
-    if (key === 'isPerishable') {
-      basicForm.value.isPerishable = Boolean(value);
-    } else if (key === 'tags') {
-      basicForm.value.tags = String(value);
-    } else {
-      basicForm.value[key] = value;
-    }
-  });
-}; //套用假資料到表單
-const generateFakeData = () => {
-  const preset = fakeDataPresets[props.fakeDataType];
-  if (!preset) return;
-  applyFakeFormValues(preset);
-  basicFormRef.value?.clearValidate?.();
-  mainStore.SWAL_Success(t('fakeDataApplied', { category: props.categoryLabel }, '已套用範例資料'));
-}; //產生假資料
 const fillFormFromProduct = (product) => {
   if (!product) return;
   if (product.primaryVendor?.id || product.primaryVendorId) {
@@ -844,7 +920,7 @@ onMounted(async () => {
   await getAPI();
 
   await nextTick();
-  systemStore.updateTableHeight(360);
+  systemStore.updateTableHeight(420);
 });
 </script>
 
