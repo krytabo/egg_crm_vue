@@ -1,7 +1,18 @@
 // src/pages/BasicInfo/Customer/BasePage/useBasePage.js 客戶/潛在客戶管理共用邏輯
 import { computed, reactive, ref, watch, toRaw } from 'vue';
 import { OrderListGet } from '@/assets/API/Order';
-import { CustomersListGet, CustomersCreatePost, CustomersUpdatePatch, CustomersDeleteById, CustomersGetByID, CustomersImportExcel } from '@/assets/API/Customers';
+import {
+  CustomersListGet,
+  CustomersCreatePost,
+  CustomersUpdatePatch,
+  CustomersDeleteById,
+  CustomersGetByID,
+  CustomersImportExcel,
+  CustomersStoredGetByID,
+  CustomersStoredCreatePost,
+  CustomersStoredUpdatePatch,
+  CustomersStoredDeleteById,
+} from '@/assets/API/Customers';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';
@@ -216,6 +227,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       createdAt: customer.createdAt || '',
       createdAtDisplay: formatDateValue(customer.createdAt),
       orderLookupId: customFields.orderLookupId || customer.id || customer.code,
+      customFields, // 保留原始 customFields 供 fillFormFromRecord 讀取
       raw: customer,
     };
   };
@@ -322,17 +334,19 @@ export function useBasePage(props, t, showMessage = () => {}) {
     otherForm: { ...FORM_TEMPLATES.other },
     metaForm: getDefaultMeta(),
   });
-  const basicForm = ref(initializeForm());
-  const categoriesForm = ref([]);
-  const deliveryDaysForm = ref([]);
-  const customPriceForm = ref([]);
-  const waterDepositsForm = ref([]); //儲值管理：API 開好後串接 waterBottleDeposits
+  const basicForm = ref(initializeForm()); //基本資料
+  const categoriesForm = ref([]); //客戶類別
+  const deliveryDaysForm = ref([]); //出貨星期
+  const customPriceForm = ref([]); //商品價格調整
+  const waterDepositsForm = ref([]); //儲值管理
+  const _originalDepositIds = ref(new Set()); // 記錄從 API 取得的儲值 ID，用於判斷新增/更新/刪除
   const resetForm = () => {
-    basicForm.value = initializeForm();
-    categoriesForm.value = [];
-    deliveryDaysForm.value = [];
-    customPriceForm.value = [];
-    waterDepositsForm.value = [];
+    basicForm.value = initializeForm(); //基本資料
+    categoriesForm.value = []; //客戶類別
+    deliveryDaysForm.value = []; //出貨星期
+    customPriceForm.value = []; //商品價格調整
+    waterDepositsForm.value = []; //儲值管理
+    _originalDepositIds.value = new Set(); //儲值管理原始ID
     activeTab.value = 'infoData';
     basicFormRef.value?.clearValidate?.();
     sameAsCompanyInfo.value = false;
@@ -345,7 +359,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       phone: contact.phone || '',
       address: contact.address || '',
       email: contact.email || '',
-    }));
+    })); //聯絡人
     basicForm.value.companyForm = {
       companyName: record.companyName || '',
       companyPhone: record.companyPhone || '',
@@ -353,7 +367,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       companyAddress: record.companyAddress || '',
       taxId: record.taxId || '',
       registeredDate: record.registeredDate || '',
-    };
+    }; //公司資料
 
     //付款方式轉換
     const paymentMethodMap = { 現金: 'CASH', 月結: 'MONTHLY', 預付: 'PREPAID' };
@@ -365,7 +379,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       invoiceTitle: record.invoiceTitle || '',
       invoiceTaxId: record.invoiceTaxId || '',
       note: record.note || '',
-    };
+    }; //其他資料
     basicForm.value.metaForm = {
       type: record.type || FORM_TEMPLATES.meta.type,
       segment: record.segment || FORM_TEMPLATES.meta.segment,
@@ -373,13 +387,13 @@ export function useBasePage(props, t, showMessage = () => {}) {
       salesRepId: record.salesRepId || '',
       tags: Array.isArray(record.tags) ? record.tags.join(',') : record.tags || '',
       status: record.status || FORM_TEMPLATES.meta.status,
-    };
+    }; //公司資訊
 
     //客戶類別轉換
     const categoryMap = { 飲水: 'BOTTLED_WATER', 桶裝水: 'BOTTLED_WATER', 雞蛋: 'EGG', 飲水機: 'DISPENSER' };
     const rawCategories = record.categories || [];
-    categoriesForm.value = rawCategories.map((cat) => categoryMap[cat] || cat);
-    deliveryDaysForm.value = record.deliveryDays || [];
+    categoriesForm.value = rawCategories.map((cat) => categoryMap[cat] || cat); //客戶類別
+    deliveryDaysForm.value = record.deliveryDays || []; //出貨星期
     customPriceForm.value = (record.customPrices || []).map((item, index) => {
       const product = item.product || null;
       const productId = product?.id || item.productId || '';
@@ -392,19 +406,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
         basePriceAmount,
         adjustment,
       };
-    });
-
-    // 儲值管理（API 開好後會回傳 waterBottleDeposits）
-    waterDepositsForm.value = (record.waterBottleDeposits || []).map((item, index) => ({
-      id: item.id ?? index + 1,
-      productId: item.productId || '',
-      productName: item.productName || '',
-      unit: item.unit || '',
-      quantity: item.quantity ?? null,
-      amount: item.amount ?? null,
-      remainingQuantity: item.remainingQuantity ?? null, //系統維護，唯讀
-      remainingAmount: item.remainingAmount ?? null,     //系統維護，唯讀
-    }));
+    }); //商品價格調整
   };
   const handleInvoiceSameAsCompany = (checked) => {
     sameAsCompanyInfo.value = checked;
@@ -428,6 +430,27 @@ export function useBasePage(props, t, showMessage = () => {}) {
       detailLoading.value = false;
     }
   };
+  const getDeposits = async (customerId) => {
+    if (!customerId) return;
+    try {
+      const response = await CustomersStoredGetByID(customerId);
+      const list = response?.data?.data?.data ?? [];
+      _originalDepositIds.value = new Set(list.map((item) => item.id));
+      waterDepositsForm.value = list.map((item) => ({
+        id: item.id,
+        productId: item.product ?? item.productId ?? '',
+        productName: item.product?.name ?? '',
+        unit: item.unit ?? '',
+        quantity: item.quantity ?? null,
+        amount: item.amount ?? null,
+        remainingQuantity: item.remainingQuantity ?? null, //系統維護，唯讀
+        remainingAmount: item.remainingAmount ?? null, //系統維護，唯讀
+        notes: item.notes ?? null,
+      }));
+    } catch (error) {
+      console.error('getDeposits error', error);
+    }
+  };
   const openCreateDialog = () => {
     dialogMode.value = 'create';
     editingCustomerId.value = null;
@@ -441,6 +464,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     activeTab.value = 'infoData';
     dialogVisible.value = true;
     getData(customer.id);
+    getDeposits(customer.id);
   };
   const closeDialog = () => {
     isSaving.value = false;
@@ -479,7 +503,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     }
   };
   const setPrimaryContact = (index) => {
-    basicForm.value.contactsForm = basicForm.value.contactsForm.map((contact, i) => ({ ...contact, isPrimary: i === index }));
+    basicForm.value.contactsForm[index].isPrimary = !basicForm.value.contactsForm[index].isPrimary;
   };
 
   //客製價格操作
@@ -539,16 +563,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       }))
       .filter((item) => item.productId);
 
-    // 儲值管理：TODO API 開好後確認欄位名稱是否與後端一致
-    const processedWaterDeposits = waterDepositsForm.value
-      .filter((item) => item.productId)
-      .map((item) => ({
-        productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
-        quantity: item.quantity !== null && item.quantity !== '' ? Number(item.quantity) : undefined,
-        amount: item.amount !== null && item.amount !== '' ? Number(item.amount) : undefined,
-      }))
-      .filter((item) => item.productId);
-
+    // 儲值管理：已由獨立 API 處理，不放在 customFields 內
     const payload = {
       name: companyForm.companyName || primaryContact?.name || t('unnamedCustomer', '未命名客戶'),
       type: metaForm.type || FORM_TEMPLATES.meta.type,
@@ -572,7 +587,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
         customPrices: processedCustomPrices,
         registeredDate: companyForm.registeredDate,
         companyAddress: companyForm.companyAddress,
-        waterBottleDeposits: processedWaterDeposits, //TODO API 開好後確認欄位路徑
       },
     };
     const tagValues = parseTagsInput(metaForm.tags);
@@ -591,8 +605,36 @@ export function useBasePage(props, t, showMessage = () => {}) {
     try {
       const payload = preparePayload();
       isSaving.value = true;
-      if (isCreate.value) await CustomersCreatePost(payload);
-      if (isEdite.value) await CustomersUpdatePatch(editingCustomerId.value, payload);
+      let customerId = editingCustomerId.value;
+      if (isCreate.value) {
+        const createRes = await CustomersCreatePost(payload);
+        customerId = createRes?.data?.data?.id ?? createRes?.data?.id ?? null;
+      }
+      if (isEdite.value) await CustomersUpdatePatch(customerId, payload);
+
+      // 儲值管理：同步 CRUD
+      const depositsWithProductId = waterDepositsForm.value.filter((item) => item.productId);
+      const buildDepositPayload = (item) => ({
+        productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
+        quantity: item.quantity !== null && item.quantity !== '' ? Number(item.quantity) : undefined,
+        amount: item.amount !== null && item.amount !== '' ? Number(item.amount) : undefined,
+        unit: item.unit || undefined,
+        notes: item.notes || undefined,
+      });
+
+      if (customerId) {
+        const currentIds = new Set(depositsWithProductId.map((item) => item.id));
+
+        // 刪除：原本有、現在沒有的
+        const deletePromises = [..._originalDepositIds.value].filter((id) => !currentIds.has(id)).map((id) => CustomersStoredDeleteById(customerId, id));
+
+        // 新增或更新
+        const upsertPromises = depositsWithProductId.map((item) =>
+          _originalDepositIds.value.has(item.id) ? CustomersStoredUpdatePatch(customerId, item.id, buildDepositPayload(item)) : CustomersStoredCreatePost(customerId, buildDepositPayload(item)),
+        );
+
+        await Promise.all([...deletePromises, ...upsertPromises]);
+      }
 
       await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
       await getAPI();

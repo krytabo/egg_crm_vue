@@ -1,6 +1,6 @@
 <!-- src/pages/product-management/BottledWaterManagementPage.vue 飲水商品管理 -->
 <template>
-  <BaseList :category-id="CATEGORY_IDS.WATER" category-label="飲水" default-unit="桶" :default-perishable="true" fake-data-type="bottledWater" />
+  <BaseList :category-id="CATEGORY_IDS.WATER" category-label="飲水" default-unit="桶" :defaultPerishable="false" fake-data-type="bottledWater" />
 </template>
 
 <script setup>

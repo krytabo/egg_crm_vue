@@ -64,7 +64,7 @@
         <CustomTinyGridColumn field="" :title="t('actions')" :width="200" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" :disabled="!row.isDeletable" @click="deleteData(row.id)">
+              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" @click="deleteData(row.id)">
                 <Trash2 class="size-4 text-rose-500" />
               </button>
               <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
@@ -317,13 +317,12 @@ const _submitForm = async () => {
   }
 }; //新增編輯儲存
 const saveData = debounce(_submitForm, 300, { leading: true, trailing: false }); //新增編輯儲存-防抖
-const deleteData = async (row) => {
-  // if (!row?.id || !row.isDeletable) return;
+const deleteData = async (id) => {
   await mainStore.SWAL_DeleteConfirm({
     onConfirm: async () => {
       mainStore.setLoading(true);
       try {
-        await ProductTypeDeleteById(row.id);
+        await ProductTypeDeleteById(id);
         await mainStore.SWAL_Success(t('deleteSuccess'));
         if (basicDataList.value.length === 1 && pagination.page > 1) pagination.page -= 1;
         await getAPI();

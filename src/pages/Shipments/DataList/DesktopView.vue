@@ -26,6 +26,7 @@
       <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
         <p class="text-[18px]">{{ t('totalAmount', '累計金額') }}</p>
         <p class="text-2xl font-semibold text-green-600">NT$ {{ formatNumber(summaryData.totalAmount) }}</p>
+        <p class="text-xs text-gray-400">{{ t('currentPageTotal', '（當頁加總）') }}</p>
       </div>
     </div>
 
@@ -60,6 +61,10 @@
           <span>{{ t('deliveryReportHint', '使用編輯按鈕進入報表編輯頁面；複製鏈接可分享給其他裝置；使用「轉入訂單」將商品建立或加入訂單。') }}</span>
         </div>
         <div class="flex items-center gap-2">
+          <a-button @click="batchPrintSlip" class="flex items-center gap-1">
+            <ScrollText :size="14" />
+            {{ t('batchPrintSlip', '批次列印三聯單') }}
+          </a-button>
           <a-button @click="openExportDialog">{{ t('exportExcel', '匯出Excel') }}</a-button>
           <a-button status="danger" @click="clearFilter">{{ t('clearFilter', '清除篩選') }}</a-button>
           <a-button type="primary" @click="openCreateDialog">
@@ -72,7 +77,8 @@
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <!--         報表列表          -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" row-key="id" :expand-config="{ trigger: 'row', accordion: true }">
+      <CustomTinyGrid ref="reportGridRef" :data="basicDataList" :height="systemStore.tableHeight" row-key="id" :expand-config="{ trigger: 'row', accordion: true }">
+        <CustomTinyGridColumn field="" title="" type="selection" width="50" />
         <CustomTinyGridColumn field="" title="" type="expand" width="50">
           <template #default="{ row }">
             <div class="bg-gray-50 p-4 flex flex-col gap-2">
@@ -124,14 +130,15 @@
             <span v-else>{{ row.status }}</span>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="210" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <a-button :disabled="!canReviewReport(row)" class="px-[2px]!" type="text" status="success" @click.stop="handleCheck(row)">{{ t('review', '審核') }}</a-button>
-              <a-button :disabled="!canDeleteReport(row)" class="px-[2px]!" type="text" status="danger" @click.stop="handleDelete(row)">{{ t('delete', '刪除') }}</a-button>
-              <!--<a-button class="px-[2px]!" type="text" status="success" @click.stop="handlePrint(row)">{{ t('print', '列印') }}</a-button>-->
-              <!--<a-button class="px-[2px]!" type="text" status="warning" @click.stop="handleCopyLink(row)">{{ t('copyLink', '複製連結') }}</a-button>-->
-              <a-button class="px-[2px]!" type="text" status="normal" @click.stop="handleEdit(row)">{{ isViewOnlyReport(row) ? t('view', '檢視') : t('edit', '編輯') }}</a-button>
+              <a-button :disabled="!canReviewReport(row)" class="px-0.5!" type="text" status="success" @click.stop="handleCheck(row)">{{ t('review', '審核') }}</a-button>
+              <a-button :disabled="!canDeleteReport(row)" class="px-0.5!" type="text" status="danger" @click.stop="handleDelete(row)">{{ t('delete', '刪除') }}</a-button>
+              <a-button class="px-0.5! flex items-center gap-0.5" type="text" status="normal" @click.stop="printSlip(row)" :title="t('printSlip', '列印三聯單')">
+                <ScrollText :size="14" />
+              </a-button>
+              <a-button class="px-0.5!" type="text" status="normal" @click.stop="handleEdit(row)">{{ isViewOnlyReport(row) ? t('view', '檢視') : t('edit', '編輯') }}</a-button>
             </div>
           </template>
         </CustomTinyGridColumn>
@@ -153,10 +160,22 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <DailyShippingReportEnhanced v-model="createDialogVisible" @reportCreated="handleReportCreated" />
 
+  <!-- 送貨日報表三聯單列印元件（常駐 DOM，不使用 v-if） -->
+  <div class="hidden">
+    <DeliveryReportSlip ref="slipRef" :orders="slipReports" />
+  </div>
+
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--       列印預覽彈窗         -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="printDialogVisible" :title="t('printReport', '列印報表')" width="900px" :closable="false">
+  <a-modal v-model:visible="printDialogVisible" width="900px" :closable="false" :fullscreen="printFullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('printReport', '列印報表') }}</div>
+        <button v-if="!printFullscreen" class="-ml-8!" @click="printFullscreen = true"><Expand /></button>
+        <button v-if="printFullscreen" class="-ml-8!" @click="printFullscreen = false"><Shrink /></button>
+      </div>
+    </template>
     <div class="space-y-4">
       <a-descriptions :column="2" bordered size="small">
         <a-descriptions-item :label="t('driver', '司機')">{{ printingReport?.employeeName }}</a-descriptions-item>
@@ -205,7 +224,14 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--       轉入訂單彈窗         -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="convertDialogVisible" :title="t('convertToOrder', '轉入訂單')" width="1000px" @cancel="closeConvertDialog">
+  <a-modal v-model:visible="convertDialogVisible" width="1000px" @cancel="closeConvertDialog" :closable="false" :fullscreen="convertFullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('convertToOrder', '轉入訂單') }}</div>
+        <button v-if="!convertFullscreen" class="-ml-8!" @click="convertFullscreen = true"><Expand /></button>
+        <button v-if="convertFullscreen" class="-ml-8!" @click="convertFullscreen = false"><Shrink /></button>
+      </div>
+    </template>
     <a-tabs v-model:active-key="activeTab" @tab-click="handleTabChange">
       <a-tab-pane :key="TAB_KEYS.PROJECT" :title="t('step1SelectProducts', '步驟一：選擇商品')"></a-tab-pane>
       <a-tab-pane :key="TAB_KEYS.ORDER" :title="t('step2SelectMethod', '步驟二：選擇處理方式')"></a-tab-pane>
@@ -261,7 +287,15 @@
       <!-- 建立新訂單：選擇產品種類 -->
       <div v-if="convertMode === 'new'" class="flex flex-col gap-2 rounded-[10px] border bg-[#f2f3f5] p-3">
         <AFormItem :label="t('productCategory', '產品種類')" required>
-          <InfiniteSelect v-model="convertCategoryId" emitValue dataSource="productTypes" :placeholder="t('pleaseSelectCategory', '請選擇產品種類')" type="outline" class="w-full" />
+          <InfiniteSelect
+            v-model="convertCategoryId"
+            emitValue
+            dataSource="productTypes"
+            :placeholder="t('pleaseSelectCategory', '請選擇產品種類')"
+            type="outline"
+            class="w-full"
+            :filters="{ status: 'active' }"
+          />
         </AFormItem>
       </div>
 
@@ -477,17 +511,22 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted, computed } from 'vue';
+import { nextTick, onMounted, onUnmounted, computed, ref } from 'vue';
 import { Card, CardContent } from '@/components/ui/card';
 import { TinyInput, TinySelect, TinyDatePicker } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import DailyShippingReportEnhanced from '@/components/dialogs/DailyShippingReportEnhanced.vue';
+import DeliveryReportSlip from '../components/DeliveryReportSlip.vue';
 import { useI18n } from 'vue-i18n';
 import { useDataList } from './useDataList';
+import { useVueToPrint } from 'vue-to-print';
+import { Expand, Shrink, ScrollText } from 'lucide-vue-next';
 
 const { t } = useI18n();
+const printFullscreen = ref(false);
+const convertFullscreen = ref(false);
 const {
   //常數
   statusOptions,
@@ -580,6 +619,36 @@ const {
   //Store 引用
   systemStore,
 } = useDataList(t);
+
+/** 三聯單列印 **/
+const reportGridRef = ref(null);
+const slipRef = ref(null);
+const slipReports = ref([]);
+
+const triplicatePageStyle = `@page { size: 241mm 140mm; margin: 0; } body { margin: 0; }`;
+const { handlePrint: handleTriplicatePrint } = useVueToPrint({
+  content: () => slipRef.value?.printContentRef,
+  documentTitle: '送貨日報表三聯單',
+  pageStyle: triplicatePageStyle,
+  removeAfterPrint: true,
+  suppressErrors: true,
+});
+
+const printSlip = async (row) => {
+  slipReports.value = [row.raw];
+  await nextTick();
+  handleTriplicatePrint();
+};
+
+const batchPrintSlip = async () => {
+  const selected = reportGridRef.value?.getSelectRecords?.() ?? [];
+  if (!selected.length) {
+    return;
+  }
+  slipReports.value = selected.map((r) => r.raw);
+  await nextTick();
+  handleTriplicatePrint();
+};
 
 /** 日期相關 **/
 const startDatePickerOptions = {

@@ -230,5 +230,17 @@ export const useMainStore = defineStore('main', {
         showLoading,
       });
     }, //刪除確認對話框
+    async SWAL_DisableConfirm({ title, text, onConfirm, confirmButtonText, cancelButtonText, showLoading = true } = {}) {
+      return this.SWAL_Confirm({
+        title: title || i18n.global.t('swal.aboutToDisable'),
+        text: text || i18n.global.t('swal.disableWarning'),
+        icon: 'warning',
+        confirmButtonColor: '#F77234',
+        confirmButtonText: confirmButtonText || i18n.global.t('swal.confirmDisable'),
+        cancelButtonText: cancelButtonText || i18n.global.t('swal.cancel'),
+        onConfirm,
+        showLoading,
+      });
+    }, //停用確認對話框
   },
 });

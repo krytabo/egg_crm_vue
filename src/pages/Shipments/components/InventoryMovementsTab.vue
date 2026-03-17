@@ -61,15 +61,39 @@
   </div>
 
   <!-- 新增異動彈窗 -->
-  <a-modal v-model:visible="createDialogVisible" :title="t('addTransaction', '新增異動')" :width="1300" :mask-closable="false">
-    <div class="grid grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+  <a-modal v-model:visible="createDialogVisible" :title="t('addTransaction', '新增異動')" :width="1300" :maskClosable="false" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">
+          {{ t('addTransaction', '新增異動') }}
+        </div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+
+    <div :class="['grid grid-cols-3 gap-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-270px)]']">
       <!-- 左側：異動基本資訊 -->
       <perfect-scrollbar class="flex-1 pr-4">
         <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
           <AFormItem :label="t('transactionType', '異動類型')" field="transactionType">
             <CustomField v-model="basicForm.transactionType" type="select" :options="formTypeOptions" />
           </AFormItem>
-          <AFormItem :label="t('location', '存放位置')" field="location">
+          <!-- 調撥類型：來源/目標位置 -->
+          <template v-if="basicForm.transactionType === 'TRANSFER'">
+            <AFormItem :label="t('fromLocation', '來源位置')" field="fromLocation">
+              <a-select v-model="basicForm.fromLocation" :placeholder="t('pleaseSelect', '請選擇')" allow-create>
+                <a-option v-for="item in locationOption" :key="item" :label="item" :value="item" />
+              </a-select>
+            </AFormItem>
+            <AFormItem :label="t('toLocation', '目標位置')" field="toLocation">
+              <a-select v-model="basicForm.toLocation" :placeholder="t('pleaseSelect', '請選擇')" allow-create>
+                <a-option v-for="item in locationOption" :key="item" :label="item" :value="item" />
+              </a-select>
+            </AFormItem>
+          </template>
+          <!-- 其他類型：單一存放位置 -->
+          <AFormItem v-else :label="t('location', '存放位置')" field="location">
             <a-select v-model="basicForm.location" :placeholder="t('pleaseSelect', '請選擇')" allow-create>
               <a-option v-for="item in locationOption" :key="item" :label="item" :value="item" />
             </a-select>
@@ -79,7 +103,7 @@
               <CustomField v-model="basicForm.unitCostAmount" type="number" :min="0" />
             </AFormItem>
           </template>
-          <AFormItem :label="t('reason', '原因')">
+          <AFormItem :label="t('reason', basicForm.transactionType === 'ADJUSTMENT' ? '調整原因（必填）' : '原因')" :required="basicForm.transactionType === 'ADJUSTMENT'">
             <CustomField v-model="basicForm.reason" type="input" />
           </AFormItem>
           <AFormItem :label="t('notes', '備註')">
@@ -99,12 +123,14 @@
           :readonly="false"
           :pageSize="20"
           :extraColumns="extraColumns"
+          :fullscreen="fullscreen"
+          :quantityTitle="quantityTitle"
         />
       </div>
     </div>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button @click="createDialogVisible = false">{{ t('cancel', '取消') }}</a-button>
         <a-button type="primary" :disabled="isSaving || basicForm.items.length === 0" :loading="isSaving" @click="handleSubmit">
           {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
@@ -116,7 +142,7 @@
 
 <script setup>
 import { ref, onMounted, nextTick, onUnmounted, watch, computed } from 'vue';
-import { InventoryMovementsGet, InventoryStockInPost, InventoryStockOutPost, InventoryAdjustmentPost, InventoryLocationsGet } from '@/assets/API/Inventory';
+import { InventoryMovementsGet, InventoryBulkUploadPost, InventoryBulkStockOutPost, InventoryBulkTransferPost, InventoryBulkAdjustmentPost, InventoryLocationsGet } from '@/assets/API/Inventory';
 import { TinySelect, TinyBadge, TinyDatePicker } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
@@ -129,11 +155,14 @@ import { useSystemStore } from '@/stores/system';
 import { useI18n } from 'vue-i18n';
 import { endOfDay } from 'date-fns';
 import { debounce } from 'lodash';
+import { Expand, Shrink } from 'lucide-vue-next';
 
 const systemStore = useSystemStore();
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const { t } = useI18n();
+
+const fullscreen = ref(false);
 
 /** 選單相關 **/
 const typeOptions = [
@@ -148,6 +177,7 @@ const typeOptions = [
 const formTypeOptions = [
   { label: t('stockIn', '入庫'), value: 'STOCK_IN' },
   { label: t('stockOut', '出庫'), value: 'STOCK_OUT' },
+  { label: t('transfer', '調撥'), value: 'TRANSFER' },
   { label: t('adjustment', '調整'), value: 'ADJUSTMENT' },
 ];
 const locationOption = ref([]);
@@ -262,21 +292,33 @@ const extraColumns = computed(() => {
     ];
   }
   return [];
-}); //入庫的自訂欄位
+}); //各異動類型的自訂欄位
+
+const quantityTitle = computed(() => {
+  if (basicForm.value.transactionType === 'ADJUSTMENT') return t('newQuantity', '調整後數量');
+  return null;
+}); //數量欄位標題（ADJUSTMENT 改為「調整後數量」）
 const initializeForm = () => ({
   transactionType: 'STOCK_IN',
   items: [],
   location: 'MAIN_WAREHOUSE',
+  fromLocation: 'MAIN_WAREHOUSE',
+  toLocation: '',
   unitCostAmount: '',
   reason: '',
   notes: '',
 }); //初始化表單資料
 const basicForm = ref(initializeForm());
-const basicFormRules = {
+const basicFormRules = computed(() => ({
   transactionType: [{ required: true, message: t('required', '此欄位必填') }],
-  location: [{ required: true, message: t('required', '此欄位必填') }],
-};
-const openCreateDialog = (product = null) => {
+  ...(basicForm.value.transactionType !== 'TRANSFER'
+    ? { location: [{ required: true, message: t('required', '此欄位必填') }] }
+    : {
+        fromLocation: [{ required: true, message: t('required', '此欄位必填') }],
+        toLocation: [{ required: true, message: t('required', '此欄位必填') }],
+      }),
+}));
+const openCreateDialog = async (product = null) => {
   basicForm.value = initializeForm();
   basicForm.value.transactionType = 'STOCK_IN';
   basicForm.value.location = 'MAIN_WAREHOUSE';
@@ -293,35 +335,11 @@ const openCreateDialog = (product = null) => {
   }
 
   createDialogVisible.value = true;
+  await nextTick();
+  formRef.value?.clearValidate();
 }; //開啟新增異動對話框（可帶入產品物件）
 
-const preparePayload = () => {
-  // 從 ProductSelectionTable 取得選中的商品
-  const items = basicForm.value.items.map((item) => ({
-    productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
-    quantity: Number(item.quantity),
-    ...(basicForm.value.transactionType === 'STOCK_IN' &&
-      item.batchNumber && {
-        batchNumber: item.batchNumber,
-      }),
-    ...(basicForm.value.transactionType === 'STOCK_IN' &&
-      item.expiryDate && {
-        expiryDate: item.expiryDate,
-      }),
-  }));
-
-  return {
-    transactionType: basicForm.value.transactionType,
-    items,
-    location: basicForm.value.location,
-    ...(basicForm.value.reason && { reason: basicForm.value.reason }),
-    ...(basicForm.value.notes && { notes: basicForm.value.notes }),
-    ...(basicForm.value.transactionType === 'STOCK_IN' &&
-      basicForm.value.unitCostAmount && {
-        unitCostAmount: Number(basicForm.value.unitCostAmount),
-      }),
-  };
-}; //準備送出資料
+const preparePayload = null; // 已移至 _saveForm 各類型分支
 
 const _saveForm = async () => {
   const validateResult = await formRef.value?.validate();
@@ -336,31 +354,62 @@ const _saveForm = async () => {
   mainStore.setLoading(true);
   isSaving.value = true;
   try {
-    // 使用批量 API - 一次提交所有商品
-    const transactionType = basicForm.value.transactionType;
-    const items = basicForm.value.items.map((item) => ({
-      productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
-      quantity: Number(item.quantity),
-      ...(transactionType === 'STOCK_IN' && item.batchNumber && { batchNumber: item.batchNumber }),
-      ...(transactionType === 'STOCK_IN' && item.expiryDate && { expiryDate: item.expiryDate }),
-    }));
+    const form = basicForm.value;
+    const transactionType = form.transactionType;
+    const getProductId = (item) => (typeof item.productId === 'object' ? item.productId.id : item.productId);
 
-    const payload = {
-      transactionType,
-      items,
-      location: basicForm.value.location,
-      ...(basicForm.value.reason && { reason: basicForm.value.reason }),
-      ...(basicForm.value.notes && { notes: basicForm.value.notes }),
-      ...(transactionType === 'STOCK_IN' &&
-        basicForm.value.unitCostAmount && {
-          unitCostAmount: Number(basicForm.value.unitCostAmount),
-        }),
-    };
-
-    // 根據異動類型調用相應 API
-    if (transactionType === 'STOCK_IN') await InventoryStockInPost(payload);
-    else if (transactionType === 'STOCK_OUT') await InventoryStockOutPost(payload);
-    else if (transactionType === 'ADJUSTMENT') await InventoryAdjustmentPost(payload);
+    if (transactionType === 'STOCK_IN') {
+      const payload = {
+        items: form.items.map((item) => ({
+          productId: getProductId(item),
+          quantity: Number(item.quantity),
+          ...(item.batchNumber && { batchNumber: item.batchNumber }),
+          ...(item.expiryDate && { expiryDate: item.expiryDate }),
+          ...(form.unitCostAmount && { unitCostAmount: Number(form.unitCostAmount) }),
+        })),
+        location: form.location,
+        ...(form.reason && { reason: form.reason }),
+        ...(form.notes && { notes: form.notes }),
+      };
+      await InventoryBulkUploadPost(payload);
+    } else if (transactionType === 'STOCK_OUT') {
+      const payload = {
+        items: form.items.map((item) => ({
+          productId: getProductId(item),
+          quantity: Number(item.quantity),
+        })),
+        location: form.location,
+        ...(form.reason && { reason: form.reason }),
+        ...(form.notes && { notes: form.notes }),
+      };
+      await InventoryBulkStockOutPost(payload);
+    } else if (transactionType === 'TRANSFER') {
+      const payload = {
+        items: form.items.map((item) => ({
+          productId: getProductId(item),
+          quantity: Number(item.quantity),
+        })),
+        fromLocation: form.fromLocation,
+        toLocation: form.toLocation,
+        ...(form.reason && { reason: form.reason }),
+        ...(form.notes && { notes: form.notes }),
+      };
+      await InventoryBulkTransferPost(payload);
+    } else if (transactionType === 'ADJUSTMENT') {
+      const payload = {
+        items: form.items.map((item) => ({
+          productId: getProductId(item),
+          newQuantity: Number(item.quantity),
+          location: form.location,
+          reason: form.reason || t('adjustment', '調整'),
+          ...(item.notes && { notes: item.notes }),
+        })),
+        location: form.location,
+        ...(form.reason && { reason: form.reason }),
+        ...(form.notes && { notes: form.notes }),
+      };
+      await InventoryBulkAdjustmentPost(payload);
+    }
 
     await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
     createDialogVisible.value = false;

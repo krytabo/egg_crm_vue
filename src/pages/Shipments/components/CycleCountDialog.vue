@@ -1,12 +1,19 @@
 <!-- src/pages/inventory-reports/components/CycleCountDialog.vue 盤點作業-->
 <template>
-  <a-modal v-model:visible="dialogVisible" :title="t('cycleCount', '盤點作業')" width="800px" :mask-closable="false" :closable="!isSaving">
-    <perfect-scrollbar class="h-[calc(100vh-300px)] pr-4">
+  <a-modal v-model:visible="dialogVisible" width="800px" :mask-closable="false" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('cycleCount', '盤點作業') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="['pr-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-300px)]']">
       <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
         <!-- 基本資訊 -->
         <div class="mb-4 grid gap-4 md:grid-cols-2">
           <AFormItem :label="t('countLocation', '盤點位置')" field="location">
-            <InfiniteSelect v-model="basicForm.location" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" @change="handleLocationChange" />
+            <InfiniteSelect v-model="basicForm.location" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" @change="handleLocationChange" :filters="{ status: 'active' }" />
           </AFormItem>
           <AFormItem :label="t('countedBy', '盤點人員')" field="countedBy">
             <InfiniteSelect v-model="basicForm.countedBy" dataSource="users" :placeholder="t('pleaseSelect', '請選擇')" />
@@ -24,19 +31,24 @@
             <a-button size="small" type="primary" @click="addCountItem">{{ t('addProduct', '新增商品') }}</a-button>
           </div>
 
-          <CustomTinyGrid :data="basicForm.items" :height="350" :border="true" row-key="index">
+          <CustomTinyGrid :data="basicForm.items" :height="tableScrollY" :border="true" row-key="index">
             <CustomTinyGridColumn field="productId" :title="t('product', '商品')" min-width="200" fixed="left">
               <template #default="{ row, rowIndex }">
-                <InfiniteSelect v-model="row.productId" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelect', '請選擇')" size="small" @change="(val) => handleProductChange(rowIndex, val)" />
+                <InfiniteSelect
+                  v-model="row.productId"
+                  dataSource="products"
+                  :filters="{ status: 'ACTIVE' }"
+                  :placeholder="t('pleaseSelect', '請選擇')"
+                  size="small"
+                  @change="(val) => handleProductChange(rowIndex, val)"
+                />
               </template>
             </CustomTinyGridColumn>
-
             <CustomTinyGridColumn field="systemQuantity" :title="t('systemQuantity', '系統數量')" width="140" align="right">
               <template #default="{ row }">
                 <span class="text-gray-600">{{ row.systemQuantity ?? '—' }}</span>
               </template>
             </CustomTinyGridColumn>
-
             <CustomTinyGridColumn field="countedQuantity" :title="t('countedQuantity', '盤點數量')" width="140">
               <template #default="{ row, rowIndex }">
                 <a-input-number
@@ -53,7 +65,6 @@
                 />
               </template>
             </CustomTinyGridColumn>
-
             <CustomTinyGridColumn field="difference" :title="t('difference', '差異')" width="120" align="right">
               <template #default="{ row }">
                 <span :class="getDifferenceClass(row.difference)">
@@ -61,8 +72,7 @@
                 </span>
               </template>
             </CustomTinyGridColumn>
-
-            <CustomTinyGridColumn :title="t('actions', '操作')" width="80" fixed="right" align="center">
+            <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="80" fixed="right" align="center">
               <template #default="{ rowIndex }">
                 <a-button type="text" status="danger" size="small" @click="removeCountItem(rowIndex)">
                   <template #icon><Trash2 class="size-4" /></template>
@@ -71,30 +81,24 @@
             </CustomTinyGridColumn>
           </CustomTinyGrid>
 
-          <!-- 無資料提示 -->
-          <div v-if="basicForm.items.length === 0" class="rounded-md border border-dashed py-8 text-center text-gray-500">
-            {{ t('noCountItems', '尚未新增盤點項目') }}
-          </div>
-
           <!-- 盤點摘要 -->
-          <div v-if="basicForm.items.length > 0" class="mt-4 rounded-md bg-gray-50 p-4">
-            <div class="grid gap-4 md:grid-cols-4">
-              <div>
-                <p class="text-sm text-gray-500">{{ t('totalItems', '總項目數') }}</p>
+          <div class="mt-4 rounded-md bg-gray-50 h-22.5 flex items-center justify-center px-10">
+            <p v-if="basicForm.items.length === 0" class="text-center">
+              {{ t('noCountItems', '尚未新增盤點項目') }}
+            </p>
+            <div v-else class="grid gap-4 md:grid-cols-4 mx-auto w-full">
+              <a-form-item class="mb-0!" :label="t('totalItems', '總項目數')">
                 <p class="text-xl font-semibold">{{ basicForm.items.length }}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500">{{ t('itemsWithDifference', '有差異項目') }}</p>
+              </a-form-item>
+              <a-form-item class="mb-0!" :label="t('itemsWithDifference', '有差異項目')">
                 <p class="text-xl font-semibold" :class="countSummary.diffCount > 0 ? 'text-orange-600' : 'text-green-600'">{{ countSummary.diffCount }}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500">{{ t('totalIncrease', '總增加') }}</p>
+              </a-form-item>
+              <a-form-item class="mb-0!" :label="t('totalIncrease', '總增加')">
                 <p class="text-xl font-semibold text-green-600">+{{ countSummary.totalIncrease }}</p>
-              </div>
-              <div>
-                <p class="text-sm text-gray-500">{{ t('totalDecrease', '總減少') }}</p>
+              </a-form-item>
+              <a-form-item class="mb-0!" :label="t('totalDecrease', '總減少')">
                 <p class="text-xl font-semibold text-red-600">{{ countSummary.totalDecrease }}</p>
-              </div>
+              </a-form-item>
             </div>
           </div>
         </div>
@@ -102,7 +106,7 @@
     </perfect-scrollbar>
 
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button :disabled="isSaving" @click="handleClose">{{ t('cancel', '取消') }}</a-button>
         <a-button type="primary" :disabled="isSaving || basicForm.items.length === 0" :loading="isSaving" @click="handleSubmit">
           {{ isSaving ? t('processing', '處理中') : t('executeCount', '執行盤點') }}
@@ -113,15 +117,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, nextTick } from 'vue';
 import { InventoryCycleCountPost, InventoryListGet } from '@/assets/API/Inventory';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useI18n } from 'vue-i18n';
-import { Trash2 } from 'lucide-vue-next';
+import { Trash2, Expand, Shrink } from 'lucide-vue-next';
 import { debounce } from 'lodash';
+import { useWindowSize } from '@vueuse/core';
 
 const props = defineProps({
   visible: {
@@ -129,6 +134,8 @@ const props = defineProps({
     default: false,
   },
 });
+const { height: windowHeight } = useWindowSize();
+const tableScrollY = computed(() => Math.max(windowHeight.value - (fullscreen.value ? 500 : 640), 300));
 const emit = defineEmits(['update:visible', 'success']);
 const mainStore = useMainStore();
 const { t } = useI18n();
@@ -140,6 +147,7 @@ const dialogVisible = computed({
 });
 
 /** 表單相關 **/
+const fullscreen = ref(false);
 const formRef = ref(null);
 const isSaving = ref(false);
 const initializeForm = () => ({
@@ -280,10 +288,12 @@ const handleClose = () => {
 /** 重置表單 **/
 watch(
   () => props.visible,
-  (val) => {
+  async (val) => {
     if (val) {
       //開啟時重置表單
       Object.assign(basicForm, initializeForm());
+      await nextTick();
+      formRef.value?.clearValidate();
     }
   },
 );

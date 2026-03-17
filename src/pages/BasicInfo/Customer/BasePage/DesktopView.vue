@@ -14,7 +14,7 @@
       <div class="flex flex-1 items-center justify-end gap-1">
         <TinyInput
           v-model="globalSearch"
-          class="max-w-[620px]!"
+          class="max-w-155!"
           :placeholder="t('globalSearchPlaceholder', '輸入關鍵字搜尋(可搜尋主要聯絡人、公司名稱、公司電話、電子信箱、統一編號、備註)')"
           clearable
           @keyup.enter="handleGlobalSearch"
@@ -142,7 +142,7 @@
                 dataSource="users"
                 labelKey="fullName"
                 type="outline"
-                class="w-[130px]!"
+                class="w-32.5!"
                 :placeholder="t('pleaseSelect', '請選擇')"
                 allowClear
                 @change="handleGlobalSearch"
@@ -313,7 +313,14 @@
   </TinyDrawer>
 
   <!--新增編輯客戶視窗-->
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editCustomer', '編輯客戶') : t('newCustomer', '新增客戶')" :top="30" draggable :maskClosable="false" :closable="false" width="1000px">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="1000px" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isEdite ? t('editCustomer', '編輯客戶') : t('newCustomer', '新增客戶') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
       <a-tab-pane key="infoData" :title="t('資本資料', '資本資料')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
@@ -322,7 +329,7 @@
       <a-tab-pane v-if="basicForm.metaForm?.type === 'COMPANY'" key="company" :title="t('companyTab', '公司資訊')"></a-tab-pane>
       <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
-    <perfect-scrollbar class="h-[calc(100vh-400px)] px-4">
+    <perfect-scrollbar :class="['px-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-400px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
         <!--資本資料-->
         <template v-if="activeTab === 'infoData'">
@@ -391,7 +398,7 @@
             <div class="flex w-full flex-col gap-1">
               <template v-for="(item, index) in customPriceForm" :key="item.id">
                 <div class="flex items-center gap-2 rounded-md border p-2">
-                  <AFormItem :label="t('product', '商品')" class="min-w-[180px] flex-1">
+                  <AFormItem :label="t('product', '商品')" class="min-w-45 flex-1">
                     <InfiniteSelect
                       v-model="item.productId"
                       dataSource="products"
@@ -432,7 +439,7 @@
             <div class="flex w-full flex-col gap-1">
               <template v-for="(item, index) in waterDepositsForm" :key="item.id">
                 <div class="flex items-center gap-2 rounded-md border p-2">
-                  <AFormItem :label="t('product', '商品')" class="min-w-[180px] flex-1">
+                  <AFormItem :label="t('product', '商品')" class="min-w-45 flex-1">
                     <InfiniteSelect
                       v-model="item.productId"
                       dataSource="products"
@@ -441,20 +448,20 @@
                       @change="(product) => changeDepositProduct(product, index)"
                     />
                   </AFormItem>
-                  <AFormItem :label="t('unit', '單位')" class="flex-1">
+                  <!--<AFormItem :label="t('unit', '單位')" class="flex-1">
                     <p class="h-8 flex items-center text-[15px] text-gray-600">{{ item.unit || '—' }}</p>
-                  </AFormItem>
+                  </AFormItem>-->
                   <AFormItem :label="t('depositQuantity', '儲值數量')" class="flex-1">
                     <CustomField v-model="item.quantity" type="number" :min="0" :placeholder="t('optional', '選填')" allowClear />
                   </AFormItem>
                   <AFormItem :label="t('depositAmount', '儲值金額')" class="flex-1">
                     <CustomField v-model="item.amount" type="number" thousands :min="0" :placeholder="t('optional', '選填')" allowClear />
                   </AFormItem>
-                  <AFormItem v-if="item.remainingQuantity !== null" :label="t('remainingQuantity', '剩餘數量')" class="flex-1">
-                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ item.remainingQuantity }}</p>
+                  <AFormItem :label="t('remainingQuantity', '剩餘數量')" class="flex-1">
+                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ item.remainingQuantity || '-' }}</p>
                   </AFormItem>
-                  <AFormItem v-if="item.remainingAmount !== null" :label="t('remainingDepositAmount', '剩餘金額')" class="flex-1">
-                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ currency(item.remainingAmount) }}</p>
+                  <AFormItem :label="t('remainingDepositAmount', '剩餘金額')" class="flex-1">
+                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ currency(item.remainingAmount) || '-' }}</p>
                   </AFormItem>
                   <a-button type="text" status="danger" @click="removeWaterDeposit(item.id)">{{ t('remove') }}</a-button>
                 </div>
@@ -520,6 +527,7 @@
     </perfect-scrollbar>
 
     <template #footer>
+      <a-button @click="getInfo">取得儲值紀錄</a-button>
       <div class="flex flex-1 items-center justify-center gap-2">
         <a-button size="large" @click="closeDialog">{{ t('cancel', '取消') }}</a-button>
         <Button :disabled="isSaving" @click="saveData" :loading="isSaving">
@@ -531,7 +539,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { TinyInput, TinySelect, TinyCheckbox, TinyBadge, TinyDrawer, TinyTextPopup, TinyForm, TinyFormItem, TinyCheckboxGroup } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -539,12 +547,13 @@ import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import CustomField from '@/components/Form/CustomField.vue';
-import { UserRoundSearch, ShoppingCart, Trash2, SquarePen, ScrollText, Package } from 'lucide-vue-next';
+import { UserRoundSearch, ShoppingCart, Trash2, SquarePen, ScrollText, Package, Expand, Shrink } from 'lucide-vue-next';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { useSystemStore } from '@/stores/system';
 import { usePermissionStore } from '@/stores/PermissionStore';
 import { useI18n } from 'vue-i18n';
 import { useBasePage } from './useBasePage';
+import { CustomersStoredGetByID } from '@/assets/API/Customers';
 
 const props = defineProps({
   pageType: { type: String, default: 'customer', validator: (v) => ['customer', 'prospect'].includes(v) },
@@ -553,6 +562,7 @@ const { containerRef } = useContentWidth();
 const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
+const fullscreen = ref(false);
 
 const {
   //頁面類型
@@ -619,6 +629,7 @@ const {
   isCreate,
   isEdite,
   basicForm,
+  editingCustomerId,
   categoriesForm,
   deliveryDaysForm,
   customPriceForm,
@@ -663,6 +674,10 @@ const {
   generateFakeCustomer,
 } = useBasePage(props, t);
 
+const getInfo = async () => {
+  const res = await CustomersStoredGetByID(editingCustomerId.value);
+  console.log(res.data);
+};
 const tableHeight = computed(() => {
   const height = window.innerHeight || document.documentElement.clientHeight;
   return height - 600;

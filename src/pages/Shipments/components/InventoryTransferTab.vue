@@ -26,7 +26,7 @@
       <CustomTinyGridColumn field="type" :title="t('transactionType', '異動類型')" width="100">
         <template #default="{ row }">
           <TinyBadge :type="row.type === 'TRANSFER_IN' ? 'success' : 'warning'">
-            {{ row.type === "TRANSFER_IN" ? t("transferIn", "調撥入") : t("transferOut", "調撥出") }}
+            {{ row.type === 'TRANSFER_IN' ? t('transferIn', '調撥入') : t('transferOut', '調撥出') }}
           </TinyBadge>
         </template>
       </CustomTinyGridColumn>
@@ -34,19 +34,42 @@
       <CustomTinyGridColumn field="toLocation" :title="t('toLocation', '目標位置')" width="120" />
       <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" width="100" align="right">
         <template #default="{ row }">
-          <span :class="row.type === 'TRANSFER_IN' ? 'text-green-600' : 'text-orange-600'">{{ row.type === "TRANSFER_IN" ? "+" : "-" }}{{ Math.abs(row.quantity) }}</span>
+          <span :class="row.type === 'TRANSFER_IN' ? 'text-green-600' : 'text-orange-600'">{{ row.type === 'TRANSFER_IN' ? '+' : '-' }}{{ Math.abs(row.quantity) }}</span>
         </template>
       </CustomTinyGridColumn>
       <CustomTinyGridColumn field="notes" :title="t('notes', '備註')" min-width="150" />
-      <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" width="160" sortable :sort-field="'createdAt'" :current-order="getColumnOrder('createdAt')" @sort="handleColumnSort" />
+      <CustomTinyGridColumn
+        field="createdAt"
+        :title="t('createdAt', '建立時間')"
+        width="160"
+        sortable
+        :sort-field="'createdAt'"
+        :current-order="getColumnOrder('createdAt')"
+        @sort="handleColumnSort"
+      />
       <CustomTinyGridColumn field="createdBy" :title="t('operator', '操作人員')" width="120" fiexd="right" />
     </CustomTinyGrid>
-    <AppPagination class="md:w-auto" :current="pagination.page" :page-size="pagination.limit" :total="pagination.total" :page-size-options="pageSizeOptions" @change="CurrentChange" @page-size-change="SizeChange" />
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </div>
 
   <!-- 新增調撥彈窗 -->
-  <a-modal v-model:visible="transferDialogVisible" :title="t('newTransfer', '新增調撥')" width="1300px" :mask-closable="false">
-    <div class="grid grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+  <a-modal v-model:visible="transferDialogVisible" width="1300px" :mask-closable="false" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('newTransfer', '新增調撥') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <div :class="['grid grid-cols-3 gap-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-270px)]']">
       <!-- 左側：調撥基本資訊 -->
       <perfect-scrollbar class="flex-1 pr-4">
         <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
@@ -78,7 +101,7 @@
       </div>
     </div>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button @click="transferDialogVisible = false">{{ t('cancel', '取消') }}</a-button>
         <a-button type="primary" :disabled="isSaving || basicForm.items.length === 0" :loading="isSaving" @click="handleSubmit">
           {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
@@ -104,6 +127,7 @@ import { useSystemStore } from '@/stores/system';
 import { useI18n } from 'vue-i18n';
 import { endOfDay } from 'date-fns';
 import { debounce } from 'lodash';
+import { Expand, Shrink } from 'lucide-vue-next';
 
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
@@ -140,12 +164,12 @@ const responseDataToList = (item = {}) => ({
   notes: item.notes || EMPTY_PLACEHOLDER,
   createdAt: timezoneStore.formatDate(item.createdAt) || EMPTY_PLACEHOLDER,
   createdBy: item.createdBy?.name || EMPTY_PLACEHOLDER,
-  raw: item
+  raw: item,
 }); //結果轉換
 const defaultFilters = {
   startDate: '',
   endDate: '',
-  location: ''
+  location: '',
 };
 const wrappedTransferMovementsGet = (params) => {
   const processedParams = { ...params };
@@ -169,13 +193,18 @@ const getListFromResponse = (response) => {
   const meta = payload?.meta ?? payload?.pagination ?? {};
   return { items: filteredItems, meta };
 }; //自訂資料處理：過濾只保留調撥記錄
-const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, handleGlobalSearch, handleFiltersChange, clearFilter, CurrentChange, SizeChange } = usePaginatedSearchApi(wrappedTransferMovementsGet, defaultFilters, {
-  getListFromResponse,
-  responseDataToList
-});
+const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, handleGlobalSearch, handleFiltersChange, clearFilter, CurrentChange, SizeChange } = usePaginatedSearchApi(
+  wrappedTransferMovementsGet,
+  defaultFilters,
+  {
+    getListFromResponse,
+    responseDataToList,
+  },
+);
 const getAPI = () => getDefaultAPI(); //取得列表資料
 
 /** 新增調撥 **/
+const fullscreen = ref(false);
 const transferDialogVisible = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);
@@ -184,7 +213,7 @@ const initializeForm = () => ({
   fromLocation: '',
   toLocation: '',
   items: [],
-  notes: ''
+  notes: '',
 }); //初始化表單資料
 const basicForm = ref(initializeForm());
 const basicFormRules = {
@@ -198,21 +227,25 @@ const basicFormRules = {
         } else {
           callback();
         }
-      }
-    }
-  ]
+      },
+    },
+  ],
 };
-const openTransferDialog = () => {
+const openTransferDialog = async () => {
   basicForm.value = initializeForm();
   transferDialogVisible.value = true;
+  await nextTick();
+  formRef.value?.clearValidate();
 }; //開啟新增調撥對話框
 const preparePayload = () => {
   // 準備批量調撥資料
-  const items = basicForm.value.items.filter((item) => item.quantity > 0).map((item) => ({
-    productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
-    quantity: Number(item.quantity),
-  }));
-  
+  const items = basicForm.value.items
+    .filter((item) => item.quantity > 0)
+    .map((item) => ({
+      productId: typeof item.productId === 'object' ? item.productId.id : item.productId,
+      quantity: Number(item.quantity),
+    }));
+
   return {
     transactionType: 'TRANSFER',
     items,
@@ -235,7 +268,7 @@ const _saveForm = async () => {
   isSaving.value = true;
   try {
     const payload = preparePayload();
-    
+
     // 使用批量 API 一次提交所有商品
     await InventoryTransferPost(payload);
 
@@ -258,13 +291,13 @@ watch(
     if (newVal && productSelectionTableRef.value) {
       await productSelectionTableRef.value.loadProducts();
     }
-  }
+  },
 ); //當對話框打開時加載商品列表
 
 defineExpose({
   openTransferDialog,
   clearFilter,
-  getAPI
+  getAPI,
 });
 
 const cleanupResize = systemStore.initializeWindowResize();

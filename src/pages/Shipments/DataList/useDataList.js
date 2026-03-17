@@ -8,6 +8,7 @@ import {
   DeliveryReportConvertToOrderPost,
   DeliveryReportDailyExportGet,
   DeliveryReportReviewPost,
+  DeliveryReportDailyGet,
 } from '@/assets/API/DeliveryReports.js';
 import { OrderListGet } from '@/assets/API/Order.js';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
@@ -73,13 +74,22 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     totalReports: 0,
     totalAmount: 0,
   });
-  const calculateSummary = (items) => {
-    if (!Array.isArray(items)) items = [];
-    const todayReports = items.filter((item) => item.reportDate === todayDate);
-    summaryData.todayReports = todayReports.length;
-    summaryData.todayAmount = todayReports.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
-    summaryData.totalReports = items.length;
-    summaryData.totalAmount = items.reduce((sum, item) => sum + (item.totalAmount || 0), 0);
+  const fetchTodaySummary = async () => {
+    try {
+      const response = await DeliveryReportDailyGet({ reportDate: todayDate });
+      const data = response?.data?.data ?? response?.data ?? response;
+      summaryData.todayReports = data?.reportCount ?? 0;
+      summaryData.todayAmount = data?.grandTotal ?? 0;
+    } catch {
+      summaryData.todayReports = 0;
+      summaryData.todayAmount = 0;
+    }
+  };
+  const calculateSummary = (response) => {
+    const pagination = response?.data?.pagination ?? response?.data?.meta;
+    summaryData.totalReports = pagination?.total ?? 0;
+    const items = response?.data?.data || response?.data?.items || [];
+    summaryData.totalAmount = Array.isArray(items) ? items.reduce((sum, item) => sum + (item.totalAmount || 0), 0) : 0;
   };
 
   /** 取得資料 **/
@@ -99,9 +109,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     raw: item,
   });
   const afterApiCall = (response) => {
-    let items = response?.data?.data || response?.data?.items || response?.data || [];
-    if (!Array.isArray(items)) items = [];
-    calculateSummary(items);
+    calculateSummary(response);
   };
 
   // 初始化日期篩選為當月
@@ -147,7 +155,9 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       afterApiCall,
     },
   );
-  const getAPI = async () => await getDefaultAPI();
+  const getAPI = async () => {
+    await Promise.all([getDefaultAPI(), fetchTodaySummary()]);
+  };
 
   /** 匯出彈窗相關 **/
   const exportDialogVisible = ref(false);

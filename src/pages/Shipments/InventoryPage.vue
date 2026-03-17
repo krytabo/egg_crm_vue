@@ -33,7 +33,7 @@
 
           <!-- 庫存警示 Tab 操作按鈕 -->
           <template v-if="isAlerts">
-            <a-button v-if="permissionStore.hasPermission('INVENTORY', 'CREATE')" type="primary" @click="alertsTabRef?.openQuickStockIn()">{{ t('add', '新增') }}</a-button>
+            <a-button v-if="permissionStore.hasPermission('INVENTORY', 'CREATE')" type="primary" @click="alertsTabRef?.openQuickStockIn()">{{ t('入庫', '入庫') }}</a-button>
           </template>
 
           <!-- 庫存調撥 Tab 操作按鈕 -->

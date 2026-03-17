@@ -97,7 +97,7 @@ const menuSections = [
       { id: 'shipments-reports', label: '送貨報表', remixIcon: 'ri-survey-line', role: 'REPORT' },
     ],
   },
-  {
+  /*{
     key: 'section-finance',
     label: '帳務管理',
     remixIcon: 'ri-money-dollar-circle-line',
@@ -112,7 +112,7 @@ const menuSections = [
       { id: 'settings-roles', label: '角色設定', remixIcon: 'ri-shield-user-line', role: 'ROLE' },
       { id: 'settings-permissions', label: '權限設定', remixIcon: 'ri-key-2-line', role: 'ROLE' },
     ],
-  },
+  },*/
 ];
 const router = useRouter();
 const route = useRoute();

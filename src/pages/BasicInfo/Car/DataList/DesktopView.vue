@@ -29,8 +29,6 @@
         </TinyFormItem>
       </TinyForm>
 
-      <!-- 表格 -->
-      <!--<JsonViewer :value="basicDataList" boxed copyable />-->
       <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id">
         <CustomTinyGridColumn field="licensePlate" :title="t('licensePlate', '車牌號碼')" min-width="120" fixed="left" />
         <CustomTinyGridColumn field="makeModel" :title="t('makeModel', '品牌/型號')" min-width="220">
@@ -55,7 +53,7 @@
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center">
           <template #default="{ row }">
-            <TinyTag :type="getStatusType(row.status)">{{ statusMap[row.status] || row.status }}</TinyTag>
+            <a-tag :color="getStatusColor(row.status)" size="large">{{ statusMap[row.status] || row.status }}</a-tag>
           </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
@@ -67,8 +65,8 @@
               <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('assignDriver', '指派司機')" @click="openDriverDialog(row)">
                 <UserCheck class="size-4 text-blue-500" />
               </button>
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" :title="t('delete', '刪除')" @click="deleteData(row.id)">
-                <Trash2 class="size-4 text-rose-500" />
+              <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" :title="t('disable', '停用')" @click="deleteData(row.id)">
+                <PowerOff class="size-4 text-orange-500" />
               </button>
               <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('edit', '編輯')" @click="editData(row)"><SquarePen class="size-4" /></button>
             </div>
@@ -90,8 +88,15 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--      新增/編輯彈窗        -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="dialogVisible" :title="isCreate ? t('addVehicle', '新增車輛') : t('editVehicle', '編輯車輛')" :top="30" draggable :mask-closable="false" :closable="false" width="700px">
-    <perfect-scrollbar class="max-h-[calc(100vh-300px)] pr-4">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :mask-closable="false" :closable="false" width="700px" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isCreate ? t('addVehicle', '新增車輛') : t('editVehicle', '編輯車輛') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="['pr-4', fullscreen ? 'max-h-[calc(100vh-120px)]' : 'max-h-[calc(100vh-300px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
         <!-- 基本資訊 -->
         <div class="mb-4 text-sm font-medium text-gray-700">{{ t('basicInfo', '基本資訊') }}</div>
@@ -200,11 +205,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { TinyInput, TinySelect, TinyTag, TinyForm, TinyFormItem } from '@opentiny/vue';
+import { TinyInput, TinySelect, TinyForm, TinyFormItem } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, SquarePen, UserCheck, FileText } from 'lucide-vue-next';
+import { Trash2, SquarePen, UserCheck, FileText, Expand, Shrink, PowerOff } from 'lucide-vue-next';
 import VehicleDetailDrawer from './VehicleDetailDrawer.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
@@ -222,7 +227,7 @@ const {
   statusMap,
   fuelTypeOptions,
   fuelTypeMap,
-  getStatusType,
+  getStatusColor,
 
   //列表資料
   basicDataList,
@@ -269,6 +274,7 @@ const handleUnassignDriver = () => {
 };
 
 /** 詳細資料抽屜 **/
+const fullscreen = ref(false);
 const detailDrawerVisible = ref(false);
 const detailVehicle = ref(null);
 const openDetailDrawer = (vehicle) => {

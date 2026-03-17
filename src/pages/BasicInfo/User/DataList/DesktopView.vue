@@ -62,7 +62,15 @@
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-[#111827]">{{ t('role') }}</span>
-              <InfiniteSelect v-model="filters.role" dataSource="roles" type="outline" :placeholder="t('pleaseSelectPermission')" allowClear @change="handleFilterChange" />
+              <InfiniteSelect
+                v-model="filters.role"
+                dataSource="roles"
+                type="outline"
+                :placeholder="t('pleaseSelectPermission')"
+                allowClear
+                @change="handleFilterChange"
+                :filters="{ status: 'active' }"
+              />
             </div>
           </template>
           <template #default="{ row }">
@@ -133,7 +141,7 @@
             <div class="text-[16px]">{{ formatDate(row.createdAt) || '—' }}</div>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status')" :width="150" align="center">
+        <CustomTinyGridColumn field="status" :title="t('status')" :width="150" align="center" fixed="right">
           <template #header>
             <div class="flex flex-col gap-1 text-center">
               <span class="text-[16px] text-[#111827]">{{ t('status') }}</span>
@@ -196,14 +204,21 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--       新增編輯視窗        -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editEmployee') : t('addEmployee')" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :unmount-on-close="true">
-    <perfect-scrollbar class="h-[calc(100vh-370px)]" :class="userPhoto ? 'h-[calc(100vh-370px)]' : 'h-[calc(100vh-470px)]'">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :unmount-on-close="true" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isEdite ? t('editEmployee') : t('addEmployee') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : userPhoto ? 'h-[calc(100vh-370px)]' : 'h-[calc(100vh-470px)]']">
       <AForm ref="basicFormRef" auto-label-width :model="basicForm" layout="vertical" :rules="basicFormRules">
         <template v-if="userPhoto">
-          <div class="relative mx-auto size-[110px] overflow-hidden rounded-[15px] border border-gray-200" @click="basicForm.avatar && openPhoto()">
+          <div class="relative mx-auto size-27.5 overflow-hidden rounded-[15px] border border-gray-200" @click="basicForm.avatar && openPhoto()">
             <a-image :src="basicForm.avatar" class="h-full w-full cursor-pointer rounded-full object-cover" :preview-visible="false" />
 
-            <div class="absolute bottom-0 flex w-[110px] items-center justify-end gap-1 p-1">
+            <div class="absolute bottom-0 flex w-27.5 items-center justify-end gap-1 p-1">
               <a-button v-if="basicForm.avatar" shape="circle" status="danger" @click.stop="clearAvatar">
                 <i class="ri-delete-bin-fill font-[16px]" />
               </a-button>
@@ -323,7 +338,7 @@ import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { AuthPasswordChangePost } from '@/assets/API/Auth';
 import Swal from 'sweetalert2';
 import { TinyInput, TinySelect } from '@opentiny/vue';
-import { SquarePen, Trash2, KeyRound } from 'lucide-vue-next';
+import { SquarePen, Trash2, KeyRound, Expand, Shrink } from 'lucide-vue-next';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { ImagePreview } from '@kousum/semi-ui-vue';
@@ -351,6 +366,7 @@ const isSystemAdmin = (row) => {
 };
 
 // ＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
+const fullscreen = ref(false);
 const passwordDialogVisible = ref(false);
 const isChangingPassword = ref(false);
 const passwordFormRef = ref(null);

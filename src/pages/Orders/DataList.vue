@@ -54,6 +54,7 @@
                 type="outline"
                 class="w-[185px]!"
                 allowClear
+                :filters="{ status: 'active' }"
                 @change="handleFiltersChange"
               />
             </div>
@@ -69,8 +70,9 @@
                 dataSource="vendors"
                 :placeholder="t('pleaseSelect', '請選擇')"
                 type="outline"
-                class="w-[185px]!"
+                class="w-46.25!"
                 allowClear
+                :filters="{ status: 'active' }"
                 @change="handleFiltersChange"
               />
             </div>
@@ -140,8 +142,8 @@
         <div class="flex w-full items-center justify-center text-lg font-semibold">
           {{ isReadOnly ? t('viewOrder', '檢視訂單') : isCreate ? t('addOrder', '新增訂單') : t('editOrder', '編輯訂單') }}
         </div>
-        <button v-if="!fullscreen" class="ml-[-32px]!" @click="fullscreen = true"><Expand /></button>
-        <button v-if="fullscreen" class="ml-[-32px]!" @click="fullscreen = false"><Shrink /></button>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
       </div>
     </template>
 
@@ -166,6 +168,7 @@
                 :readonly="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'customer')"
                 class="w-full"
+                :filters="{ status: 'active' }"
               />
             </a-form-item>
             <a-form-item v-else-if="basicForm.targetType === 'VENDOR'" :label="t('vendor', '廠商')" field="targetId">
@@ -176,6 +179,7 @@
                 :disabled="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'vendor')"
                 class="w-full"
+                :filters="{ status: 'active' }"
               />
             </a-form-item>
             <a-form-item :label="t('contact', '聯絡人')" field="contact">
@@ -252,6 +256,7 @@
             :target-object="basicForm.targetId"
             :readonly="!canModifyItems || isReadOnly"
             :category-id="props.categoryId"
+            :fullscreen="fullscreen"
           />
         </div>
       </div>

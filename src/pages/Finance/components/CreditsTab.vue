@@ -9,7 +9,16 @@
             <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
           </AFormItem>
           <AFormItem :label="t('invoice', '發票')">
-            <InfiniteSelect v-model="filters.invoiceId" dataSource="Invoice" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" emitValue />
+            <InfiniteSelect
+              v-model="filters.invoiceId"
+              dataSource="Invoice"
+              :placeholder="t('all', '全部')"
+              allowClear
+              class="w-48"
+              @change="handleFiltersChange"
+              emitValue
+              :filters="{ status: 'active' }"
+            />
           </AFormItem>
         </div>
       </AForm>
@@ -110,7 +119,7 @@
       </AForm>
     </perfect-scrollbar>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button @click="dialogVisible = false">{{ t('cancel', '取消') }}</a-button>
         <a-button type="primary" :disabled="isSaving" :loading="isSaving" @click="handleSubmit">{{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}</a-button>
       </div>

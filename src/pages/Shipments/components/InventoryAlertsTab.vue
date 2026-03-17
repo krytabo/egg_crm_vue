@@ -27,32 +27,32 @@
 
     <!-- 列表 -->
     <CustomTinyGrid :data="alertList" :height="systemStore.tableHeight" :border="true" row-key="productId">
-      <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" min-width="200" fixed="left" />
-      <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" width="150" />
-      <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" width="80" align="center" />
-      <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" width="100" align="right">
+      <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" :min-width="200" fixed="left" />
+      <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" :width="150" />
+      <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="80" align="center" />
+      <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" :width="100" align="right">
         <template #default="{ row }">
           <span :class="row.currentStock === 0 ? 'font-semibold text-red-600' : 'text-orange-600'">{{ row.currentStock }}</span>
         </template>
       </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" width="100" align="right" />
-      <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" width="100" align="right" />
-      <CustomTinyGridColumn field="shortfall" :title="t('shortfall', '缺口數量')" width="100" align="right">
+      <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" :width="100" align="right" />
+      <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" :width="100" align="right" />
+      <CustomTinyGridColumn field="shortfall" :title="t('shortfall', '缺口數量')" :width="100" align="right">
         <template #default="{ row }">
           <span class="text-red-600">{{ row.shortfall }}</span>
         </template>
       </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="suggestedOrderQuantity" :title="t('suggestedOrderQuantity', '建議訂購量')" width="120" align="right">
+      <CustomTinyGridColumn field="suggestedOrderQuantity" :title="t('suggestedOrderQuantity', '建議訂購量')" :width="120" align="right">
         <template #default="{ row }">
           <span class="font-semibold text-blue-600">{{ row.suggestedOrderQuantity }}</span>
         </template>
       </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="vendorName" :title="t('vendor', '供應商')" width="150" />
-      <CustomTinyGridColumn :title="t('actions', '操作')" width="120" fixed="right" align="center">
+      <CustomTinyGridColumn field="vendorName" :title="t('vendor', '供應商')" :min-width="200" />
+      <!--<CustomTinyGridColumn field="" :title="t('actions', '操作')" width="120" fixed="right" align="center">
         <template #default="{ row }">
           <a-button type="text" @click="handleQuickStockIn(row)">{{ t('quickStockIn', '快速入庫') }}</a-button>
         </template>
-      </CustomTinyGridColumn>
+      </CustomTinyGridColumn>-->
     </CustomTinyGrid>
 
     <!-- 空狀態提示 -->
@@ -63,8 +63,15 @@
   </div>
 
   <!-- 入庫彈窗 -->
-  <a-modal v-model:visible="stockInDialogVisible" :title="t('stockIn', '入庫')" width="1300px" :mask-closable="false">
-    <div class="grid grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+  <a-modal v-model:visible="stockInDialogVisible" width="1300px" :mask-closable="false" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('stockIn', '入庫') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <div :class="['grid grid-cols-3 gap-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-270px)]']">
       <!-- 左側：入庫基本資訊 -->
       <perfect-scrollbar class="flex-1 pr-4">
         <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
@@ -99,7 +106,7 @@
       </div>
     </div>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <a-button @click="stockInDialogVisible = false">{{ t('cancel', '取消') }}</a-button>
         <a-button type="primary" :disabled="isSaving || basicForm.items.length === 0" :loading="isSaving" @click="handleSubmit">
           {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
@@ -118,7 +125,7 @@ import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTab
 import { useMainStore } from '@/stores/LoadingStore';
 import { useSystemStore } from '@/stores/system';
 import { useI18n } from 'vue-i18n';
-import { CheckCircle as IconCheckCircle } from 'lucide-vue-next';
+import { CheckCircle as IconCheckCircle, Expand, Shrink } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 
 const mainStore = useMainStore();
@@ -211,6 +218,7 @@ const getEmptyMessage = () => {
 }; //取得空狀態訊息
 
 /** 入庫彈窗 **/
+const fullscreen = ref(false);
 const stockInDialogVisible = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);
@@ -249,9 +257,11 @@ const extraColumns = [
   },
 ];
 
-const openStockInDialog = () => {
+const openStockInDialog = async () => {
   basicForm.value = initializeForm();
   stockInDialogVisible.value = true;
+  await nextTick();
+  formRef.value?.clearValidate();
 }; //開啟入庫彈窗
 const handleQuickStockIn = (row) => {
   openStockInDialog();

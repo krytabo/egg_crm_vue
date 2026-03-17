@@ -19,10 +19,10 @@ export function useDataList(t, showMessage = () => {}) {
 
   // ===== 狀態相關 =====
   const STATUS_MAP = {
-    AVAILABLE: { label: t('statusAvailable', '可用'), color: 'green' },
+    AVAILABLE: { label: t('statusAvailable', '待指派'), color: 'green' },
     ASSIGNED: { label: t('statusAssigned', '已指派'), color: 'blue' },
-    ON_TRIP: { label: t('statusOnTrip', '配送中'), color: 'orange' },
-    OFF_DUTY: { label: t('statusOffDuty', '休假'), color: 'gray' },
+    // ON_TRIP: { label: t('statusOnTrip', '配送中'), color: 'orange' },
+    // OFF_DUTY: { label: t('statusOffDuty', '休假'), color: 'gray' },
     INACTIVE: { label: t('statusInactive', '停用'), color: 'red' },
   };
   const getStatusLabel = (status) => STATUS_MAP[status]?.label || status;
@@ -30,7 +30,7 @@ export function useDataList(t, showMessage = () => {}) {
 
   const statusFilterOptions = [
     { label: t('all', '全部'), value: 'all' },
-    { label: t('statusAvailable', '可用'), value: 'AVAILABLE' },
+    { label: t('statusAvailable', '待指派'), value: 'AVAILABLE' },
     { label: t('statusAssigned', '已指派'), value: 'ASSIGNED' },
     { label: t('statusOnTrip', '配送中'), value: 'ON_TRIP' },
     { label: t('statusOffDuty', '休假'), value: 'OFF_DUTY' },
@@ -38,7 +38,7 @@ export function useDataList(t, showMessage = () => {}) {
   ];
 
   const statusSelectOptions = [
-    { label: t('statusAvailable', '可用'), value: 'AVAILABLE' },
+    { label: t('statusAvailable', '待指派'), value: 'AVAILABLE' },
     { label: t('statusAssigned', '已指派'), value: 'ASSIGNED' },
     { label: t('statusOnTrip', '配送中'), value: 'ON_TRIP' },
     { label: t('statusOffDuty', '休假'), value: 'OFF_DUTY' },

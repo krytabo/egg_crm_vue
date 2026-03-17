@@ -1,5 +1,4 @@
 // src/pages/BasicInfo/Car/DataList/useDataList.js
-// 車輛資料列表 - 共用業務邏輯（Desktop / Mobile 共用）
 import { computed, ref } from 'vue';
 import { VehicleListGet, VehicleCreatePost, VehicleUpdatePatch, VehicleDeleteById, VehicleGetByID, VehicleAssignDriverPost, VehicleUnassignDriverPost } from '@/assets/API/Vehicle';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -29,16 +28,16 @@ export function useDataList(t, showMessage = () => {}) {
     { label: t('fuelOther', '其他'), value: 'OTHER' },
   ];
   const fuelTypeMap = Object.fromEntries(fuelTypeOptions.map((opt) => [opt.value, opt.label]));
-  const getStatusType = (status) => {
+  const getStatusColor = (status) => {
     switch (status) {
       case 'ACTIVE':
-        return 'success';
+        return 'arcoblue';
       case 'MAINTENANCE':
-        return 'warning';
+        return 'orange';
       case 'INACTIVE':
-        return 'info';
+        return 'red';
       default:
-        return 'info';
+        return 'gray';
     }
   };
 
@@ -60,7 +59,10 @@ export function useDataList(t, showMessage = () => {}) {
     registrationExpiry: item.registrationExpiry,
     inspectionExpiry: item.inspectionExpiry,
     notes: item.notes,
-    assignedDriver: item.assignedDriver || {},
+    assignedDriver: {
+      ...item.assignedDriver,
+      name: item.assignedDriver?.user?.fullName,
+    },
     raw: item,
   });
   const defaultFilters = {
@@ -178,7 +180,7 @@ export function useDataList(t, showMessage = () => {}) {
   const saveData = debounce(_submitForm, 300, { leading: true, trailing: false });
   const deleteData = async (id) => {
     if (!id) return;
-    await mainStore.SWAL_DeleteConfirm({
+    await mainStore.SWAL_DisableConfirm({
       onConfirm: async () => {
         mainStore.setLoading(true);
         try {
@@ -204,7 +206,7 @@ export function useDataList(t, showMessage = () => {}) {
   const isAssigning = ref(false); //是否正在指派中
   const openDriverDialog = async (vehicle) => {
     selectedVehicle.value = vehicle;
-    selectedDriverId.value = vehicle.assignedDriver?.id || null;
+    selectedDriverId.value = vehicle.assignedDriver || null;
     driverDialogVisible.value = true;
   }; //開啟指派司機彈窗
   const closeDriverDialog = () => {
@@ -249,16 +251,16 @@ export function useDataList(t, showMessage = () => {}) {
   }; //解除司機指派
 
   return {
-    // 選項
+    //選項
     statusOptions,
     statusMap,
     fuelTypeOptions,
     fuelTypeMap,
 
-    // 工具函式
-    getStatusType,
+    //工具函式
+    getStatusColor,
 
-    // 列表資料
+    //列表資料
     basicDataList,
     filters,
     pagination,
@@ -270,7 +272,7 @@ export function useDataList(t, showMessage = () => {}) {
     CurrentChange,
     SizeChange,
 
-    // 新增編輯
+    //新增編輯
     dialogMode,
     dialogVisible,
     editingId,
@@ -286,7 +288,7 @@ export function useDataList(t, showMessage = () => {}) {
     saveData,
     deleteData,
 
-    // 指派司機
+    //指派司機
     driverDialogVisible,
     selectedVehicle,
     selectedDriverId,

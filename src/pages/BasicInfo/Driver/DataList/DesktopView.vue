@@ -38,7 +38,7 @@
             <span class="font-medium text-gray-900">{{ row.employeeId }}</span>
           </template>
         </CustomTinyGridColumn>-->
-        <CustomTinyGridColumn field="fullName" :title="t('fullName', '姓名')" min-width="160">
+        <CustomTinyGridColumn field="fullName" :title="t('fullName', '姓名')" :min-width="160" fixed="left">
           <template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('fullName', '姓名') }}</span>
@@ -53,7 +53,7 @@
           </template>
         </CustomTinyGridColumn>
         <CustomTinyGridColumn field="licenseNumber" :title="t('licenseNumber', '駕照號碼')" :width="160">
-          <template #header>
+          <!--<template #header>
             <div class="flex flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('licenseNumber', '駕照號碼') }}</span>
               <TinyInput
@@ -65,7 +65,7 @@
                 @clear="handleGlobalSearch"
               />
             </div>
-          </template>
+          </template>-->
           <template #default="{ row }">
             <span class="text-sm text-gray-900">{{ row.licenseNumber || '—' }}</span>
           </template>
@@ -91,7 +91,10 @@
         <CustomTinyGridColumn field="hireDate" :title="t('hireDate', '入職日期')" :width="140">
           <template #default="{ row }">{{ formatDate(row.hireDate) }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="130" align="center">
+        <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" :width="160">
+          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+        </CustomTinyGridColumn>
+        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="130" align="center" fixed="right">
           <template #header>
             <div class="flex flex-col gap-1 text-center">
               <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
@@ -101,9 +104,6 @@
           <template #default="{ row }">
             <a-tag :color="getStatusColor(row.status)" size="large">{{ getStatusLabel(row.status) }}</a-tag>
           </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" :width="160">
-          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
         </CustomTinyGridColumn>
         <!--<CustomTinyGridColumn title="操作" :width="120" fixed="right" align="center">
           <template #default="{ row }">
@@ -126,8 +126,15 @@
     </CardContent>
   </Card>
 
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editDriver', '編輯司機') : t('addDriver', '新增司機')" :top="30" draggable :maskClosable="false" :closable="false" width="700px">
-    <perfect-scrollbar class="h-[calc(100vh-370px)]">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isEdite ? t('editDriver', '編輯司機') : t('addDriver', '新增司機') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-370px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
         <div class="mb-3 text-sm font-semibold text-gray-700">{{ t('basicInfo', '基本資料') }}</div>
         <div class="grid gap-4 md:grid-cols-2">
@@ -184,7 +191,7 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted } from 'vue';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { TinyInput, TinySelect } from '@opentiny/vue';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -196,10 +203,12 @@ import { useContentWidth } from '@/composables/useContentWidth';
 import { useI18n } from 'vue-i18n';
 import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
 import { useDataList } from './useDataList';
+import { Expand, Shrink } from 'lucide-vue-next';
 
 const systemStore = useSystemStore();
 const { containerRef } = useContentWidth();
 const { t } = useI18n();
+const fullscreen = ref(false);
 
 // 使用共用邏輯
 const {

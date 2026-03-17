@@ -58,7 +58,7 @@ export function useSelectOptions() {
   }; //產品類別顏色 (用於比對來源資料)
   const statusColorMap = {
     ACTIVE: 'arcoblue',
-    INACTIVE: 'orange',
+    INACTIVE: 'red',
     DELETED: 'red',
   }; //狀態顏色
 

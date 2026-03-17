@@ -112,7 +112,7 @@
         <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160" sortable :sort-field="'updatedAt'" :current-order="getColumnOrder('updatedAt')" @sort="handleColumnSort">
           <template #default="{ row }">{{ row.updatedAt }}</template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status')" :width="130" align="center">
+        <CustomTinyGridColumn field="status" :title="t('status')" :width="130" align="center" fixed="right">
           <template #header>
             <div class="flex flex-col gap-1 text-center">
               <span class="text-[16px] text-gray-600">{{ t('status') }}</span>
@@ -123,10 +123,12 @@
             <a-tag :color="row.isActive ? 'arcoblue' : 'red'" size="large">{{ row.isActive ? t('statusActive') : t('statusInactive') }}</a-tag>
           </template>
         </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions')" :width="180" fixed="right" align="center">
+        <CustomTinyGridColumn field="" :title="t('actions')" :width="180" fixed="right" align="center">
           <template #default="{ row }">
             <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('VENDOR', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+              <button v-if="permissionStore.hasPermission('VENDOR', 'DELETE')" class="table-button" :title="t('disable', '停用')" @click="deleteData(row.id)">
+                <PowerOff class="size-4 text-orange-500" />
+              </button>
               <button v-if="permissionStore.hasPermission('VENDOR', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
             </div>
           </template>
@@ -144,16 +146,23 @@
     </CardContent>
   </Card>
 
-  <a-modal v-model:visible="dialogVisible" :title="isEdite ? t('editVendor') : t('addVendor')" :top="30" draggable :maskClosable="false" :closable="false" width="700px">
-    <perfect-scrollbar class="h-[calc(100vh-370px)]">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isEdite ? t('editVendor') : t('addVendor') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-370px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
         <div class="grid gap-4 md:grid-cols-2">
           <AFormItem :label="t('vendorName')" field="name">
             <CustomField v-model="basicForm.name" type="input" :placeholder="t('pleaseEnterVendorName')" allowClear />
           </AFormItem>
-          <!--<AFormItem :label="t('productType')">
-            <InfiniteSelect v-model="basicForm.productTypeId" dataSource="productTypes" :placeholder="t('pleaseSelectProductType')" allowClear />
-          </AFormItem>-->
+          <AFormItem :label="t('productType')" field="productTypeId">
+            <InfiniteSelect v-model="basicForm.productTypeId" dataSource="productTypes" value-key="id" :placeholder="t('pleaseSelectProductType')" allowClear />
+          </AFormItem>
           <AFormItem :label="t('taxId')">
             <CustomField v-model="basicForm.taxId" type="input" :placeholder="t('pleaseEnterTaxId')" allowClear />
           </AFormItem>
@@ -166,7 +175,7 @@
           <AFormItem :label="t('companyPhone')">
             <CustomField v-model="basicForm.companyPhone" type="input" :placeholder="t('pleaseEnterCompanyPhone')" allowClear />
           </AFormItem>
-          <AFormItem :label="t('email')" field="email">
+          <AFormItem :label="t('email')">
             <CustomField v-model="basicForm.email" type="email" :placeholder="t('pleaseEnterEmail')" allowClear />
           </AFormItem>
           <AFormItem :label="t('paymentTermsDaysLabel')">
@@ -213,18 +222,18 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted } from 'vue';
-import { TinyInput, TinySelect, TinyBadge } from '@opentiny/vue';
+import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { TinyInput, TinySelect } from '@opentiny/vue';
+import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
 import CustomField from '@/components/Form/CustomField.vue';
-import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { useI18n } from 'vue-i18n';
-import { SquarePen, Trash2 } from 'lucide-vue-next';
+import { SquarePen, Trash2, Expand, Shrink, PowerOff } from 'lucide-vue-next';
 import { useSystemStore } from '@/stores/system';
 import { usePermissionStore } from '@/stores/PermissionStore';
 import { useDataList } from './useDataList';
@@ -233,22 +242,20 @@ const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { containerRef } = useContentWidth();
 const { t } = useI18n();
+const fullscreen = ref(false);
 
-// 使用共用邏輯
 const {
-  // 選項
-  productTypeFilterOptions,
+  //篩選與查詢
   statusFilterOptions,
   statusSelectOptions,
-  // 工具函式
-  loadProductTypes,
-  // 篩選與查詢
   searchFields,
+  loadProductTypes,
   getColumnOrder,
   handleColumnSort,
   handleGlobalSearch,
   clearFilter,
-  // 列表資料
+
+  //列表資料
   basicDataList,
   filters,
   pagination,
@@ -256,7 +263,8 @@ const {
   getAPI,
   CurrentChange,
   SizeChange,
-  // 新增編輯
+
+  //新增編輯
   dialogVisible,
   basicFormRef,
   isSaving,

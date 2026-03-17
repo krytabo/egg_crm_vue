@@ -1,170 +1,170 @@
 <!-- ProductSelectionTable.vue 商品選擇表格 - 用於訂單中快速批量選擇商品 -->
 <template>
-  <div>
-    <div class="mb-4 flex items-center gap-3">
-      <a-input v-model="searchKeyword" :placeholder="t('pleaseEnterProductName', '請輸入商品名稱或編碼搜尋')" class="flex-1" allow-clear>
-        <template #prefix>
-          <icon-search />
-        </template>
-      </a-input>
-      <a-spin v-if="loading" size="small" />
-    </div>
-
-    <!-- 加載提示 -->
-    <div v-if="loading" class="py-8 text-center text-gray-500">
-      <a-spin />
-      <p class="mt-2">{{ t('loading', '加載中...') }}</p>
-    </div>
-
-    <!-- 商品表格 -->
-    <a-table v-else :data="filteredProducts" :pagination="false" :bordered="{ cell: true }" class="products-table" :scroll="{ x: '100%' }">
-      <template #columns>
-        <!-- 商品名稱 -->
-        <a-table-column v-if="isColumnVisible('name')" :title="t('productName', '商品名稱')" data-index="name" :min-width="150" fixed="left">
-          <template #cell="{ record }">
-            <div class="font-medium">{{ record.name }}</div>
-            <div class="text-xs text-gray-500">{{ record.code }}</div>
-          </template>
-        </a-table-column>
-
-        <!-- 規格 -->
-        <a-table-column v-if="isColumnVisible('unit')" :title="t('unit', '規格')" data-index="unit" :width="80" align="center">
-          <template #cell="{ record }">
-            {{ record.unit }}
-          </template>
-        </a-table-column>
-
-        <!-- 建議單價 -->
-        <a-table-column v-if="isColumnVisible('basePriceAmount')" :title="t('basePriceAmount', '建議單價')" data-index="basePriceAmount" :width="120" align="right">
-          <template #cell="{ record }">
-            {{ formatCurrency(record.basePriceAmount) }}
-          </template>
-        </a-table-column>
-
-        <!-- 標籤 -->
-        <a-table-column v-if="isColumnVisible('tags')" :title="t('tags', '標籤')" data-index="tags" :min-width="120">
-          <template #cell="{ record }">
-            <a-tag v-for="tag in record.tags" :key="tag" size="small">{{ tag }}</a-tag>
-          </template>
-        </a-table-column>
-
-        <!-- 狀態 -->
-        <a-table-column v-if="isColumnVisible('status')" :title="t('status', '狀態')" data-index="status" :width="100" align="center">
-          <template #cell="{ record }">
-            <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'red'">
-              {{ record.status }}
-            </a-tag>
-          </template>
-        </a-table-column>
-
-        <!-- 描述 -->
-        <a-table-column v-if="isColumnVisible('description')" :title="t('description', '描述')" data-index="description" :min-width="150">
-          <template #cell="{ record }">
-            <span class="line-clamp-2">{{ record.description || '-' }}</span>
-          </template>
-        </a-table-column>
-
-        <!-- 廠商 -->
-        <a-table-column v-if="isColumnVisible('primaryVendor')" :title="t('vendor', '廠商')" data-index="primaryVendor" :min-width="120">
-          <template #cell="{ record }">
-            {{ record.primaryVendor?.name || '-' }}
-          </template>
-        </a-table-column>
-
-        <!-- 冷藏需求 -->
-        <a-table-column v-if="isColumnVisible('isPerishable')" :title="t('needsColdChain', '冷藏')" data-index="isPerishable" :width="80" align="center">
-          <template #cell="{ record }">
-            <a-tag v-if="record.isPerishable" color="blue">{{ t('yes', '是') }}</a-tag>
-            <span v-else class="text-gray-400">-</span>
-          </template>
-        </a-table-column>
-
-        <!-- 數量（可編輯） -->
-        <a-table-column :title="t('quantity', '數量')" data-index="selectedQuantity" :width="150" align="center" fixed="right">
-          <template #cell="{ record, rowIndex }">
-            <CustomField
-              type="number"
-              :model-value="selectedItems[record.id] || 0"
-              :min="0"
-              :step="1"
-              :precision="0"
-              :readonly="props.readonly"
-              @update:model-value="
-                (val) => {
-                  selectedItems[record.id] = val;
-                  validateQuantity(record.id);
-                }
-              "
-            />
-          </template>
-        </a-table-column>
-
-        <!-- 實際單價（可編輯） -->
-        <a-table-column v-if="showUnitPrice" :title="t('actualUnitPrice', '實際單價')" data-index="customPrice" :width="160" align="right" fixed="right">
-          <template #cell="{ record }">
-            <CustomField
-              type="number"
-              :model-value="customPrices[record.id] ?? getProductPrice(record)"
-              :min="0"
-              :step="0.01"
-              :precision="1"
-              :readonly="props.readonly"
-              @update:model-value="(val) => (customPrices[record.id] = val)"
-            />
-          </template>
-        </a-table-column>
-
-        <!-- 小計（只讀） -->
-        <a-table-column v-if="showUnitPrice" :title="t('subtotal', '小計')" data-index="subtotal" :width="130" align="right" fixed="right">
-          <template #cell="{ record }">
-            <div class="font-medium">
-              {{ formatCurrency((customPrices[record.id] ?? getProductPrice(record)) * (selectedItems[record.id] || 0)) }}
-            </div>
-          </template>
-        </a-table-column>
-
-        <!-- 自訂額外欄位 -->
-        <a-table-column v-for="col in props.extraColumns" :key="col.key" :title="col.title" :width="col.width || 120" :align="col.align || 'left'" :fixed="col.fixed || null">
-          <template #cell="{ record }">
-            <CustomField
-              v-if="!props.readonly && col.editable !== false && (!col.showWhen || col.showWhen(record))"
-              :type="col.type || 'input'"
-              :model-value="record[col.key] || ''"
-              :readonly="props.readonly"
-              @update:model-value="(val) => updateExtraField(record.id, col.key, val)"
-            />
-            <template v-else>
-              {{ record[col.key] || '-' }}
-            </template>
-          </template>
-        </a-table-column>
+  <div class="mb-4 flex items-center gap-3">
+    <a-input v-model="searchKeyword" :placeholder="t('pleaseEnterProductName', '請輸入商品名稱或編碼搜尋')" class="flex-1" allow-clear>
+      <template #prefix>
+        <icon-search />
       </template>
-    </a-table>
+    </a-input>
+    <a-spin v-if="loading" size="small" />
+  </div>
+  <a-table :data="filteredProducts" :pagination="false" :bordered="{ cell: true }" class="products-table" :scroll="{ x: '100%', y: tableScrollY }">
+    <template #columns>
+      <!-- 商品名稱 -->
+      <a-table-column v-if="isColumnVisible('name')" :title="t('productName', '商品名稱')" data-index="name" :min-width="150" fixed="left">
+        <template #cell="{ record }">
+          <div class="font-medium">{{ record.name }}</div>
+          <div class="text-xs text-gray-500">{{ record.code }}</div>
+        </template>
+      </a-table-column>
 
-    <!-- 底部統計 -->
-    <div v-if="showUnitPrice" class="mt-4 flex items-center justify-end gap-6 rounded-md bg-gray-50 p-4">
-      <div class="text-right">
-        <div class="text-sm text-gray-600">{{ t('totalItems', '總項目數') }}</div>
-        <div class="text-2xl font-bold text-gray-900">{{ totalItemCount }}</div>
-      </div>
-      <div class="text-right">
-        <div class="text-sm text-gray-600">{{ t('totalAmount', '合計金額') }}</div>
-        <div class="text-2xl font-bold text-green-600">{{ formatCurrency(totalAmount) }}</div>
-      </div>
+      <!-- 規格 -->
+      <a-table-column v-if="isColumnVisible('unit')" :title="t('unit', '規格')" data-index="unit" :width="80" align="center">
+        <template #cell="{ record }">
+          {{ record.unit }}
+        </template>
+      </a-table-column>
+
+      <!-- 建議單價 -->
+      <a-table-column v-if="isColumnVisible('basePriceAmount')" :title="t('basePriceAmount', '建議單價')" data-index="basePriceAmount" :width="120" align="right">
+        <template #cell="{ record }">
+          {{ formatCurrency(record.basePriceAmount) }}
+        </template>
+      </a-table-column>
+
+      <!-- 標籤 -->
+      <a-table-column v-if="isColumnVisible('tags')" :title="t('tags', '標籤')" data-index="tags" :min-width="120">
+        <template #cell="{ record }">
+          <a-tag v-for="tag in record.tags" :key="tag" size="small">{{ tag }}</a-tag>
+        </template>
+      </a-table-column>
+
+      <!-- 狀態 -->
+      <a-table-column v-if="isColumnVisible('status')" :title="t('status', '狀態')" data-index="status" :width="100" align="center">
+        <template #cell="{ record }">
+          <a-tag :color="record.status === 'ACTIVE' ? 'green' : 'red'">
+            {{ record.status }}
+          </a-tag>
+        </template>
+      </a-table-column>
+
+      <!-- 描述 -->
+      <a-table-column v-if="isColumnVisible('description')" :title="t('description', '描述')" data-index="description" :min-width="150">
+        <template #cell="{ record }">
+          <span class="line-clamp-2">{{ record.description || '-' }}</span>
+        </template>
+      </a-table-column>
+
+      <!-- 廠商 -->
+      <a-table-column v-if="isColumnVisible('primaryVendor')" :title="t('vendor', '廠商')" data-index="primaryVendor" :min-width="120">
+        <template #cell="{ record }">
+          {{ record.primaryVendor?.name || '-' }}
+        </template>
+      </a-table-column>
+
+      <!-- 冷藏需求 -->
+      <a-table-column v-if="isColumnVisible('isPerishable')" :title="t('needsColdChain', '冷藏')" data-index="isPerishable" :width="80" align="center">
+        <template #cell="{ record }">
+          <a-tag v-if="record.isPerishable" color="blue">{{ t('yes', '是') }}</a-tag>
+          <span v-else class="text-gray-400">-</span>
+        </template>
+      </a-table-column>
+
+      <!-- 數量（可編輯） -->
+      <a-table-column :title="props.quantityTitle || t('quantity', '數量')" data-index="selectedQuantity" :width="150" align="center" fixed="right">
+        <template #cell="{ record, rowIndex }">
+          <CustomField
+            type="number"
+            :model-value="selectedItems[record.id] || 0"
+            :min="0"
+            :step="1"
+            :precision="0"
+            :readonly="props.readonly"
+            @update:model-value="
+              (val) => {
+                selectedItems[record.id] = val;
+                validateQuantity(record.id);
+              }
+            "
+          />
+        </template>
+      </a-table-column>
+
+      <!-- 實際單價（可編輯） -->
+      <a-table-column v-if="showUnitPrice" :title="t('actualUnitPrice', '實際單價')" data-index="customPrice" :width="160" align="right" fixed="right">
+        <template #cell="{ record }">
+          <CustomField
+            type="number"
+            :model-value="customPrices[record.id] ?? getProductPrice(record)"
+            :min="0"
+            :step="0.01"
+            :precision="1"
+            :readonly="props.readonly"
+            @update:model-value="(val) => (customPrices[record.id] = val)"
+          />
+        </template>
+      </a-table-column>
+
+      <!-- 小計（只讀） -->
+      <a-table-column v-if="showUnitPrice" :title="t('subtotal', '小計')" data-index="subtotal" :width="130" align="right" fixed="right">
+        <template #cell="{ record }">
+          <div class="font-medium">
+            {{ formatCurrency((customPrices[record.id] ?? getProductPrice(record)) * (selectedItems[record.id] || 0)) }}
+          </div>
+        </template>
+      </a-table-column>
+
+      <!-- 自訂額外欄位 -->
+      <a-table-column v-for="col in props.extraColumns" :key="col.key" :title="col.title" :width="col.width || 120" :align="col.align || 'left'" :fixed="col.fixed || null">
+        <template #cell="{ record }">
+          <CustomField
+            v-if="!props.readonly && col.editable !== false && (!col.showWhen || col.showWhen(record))"
+            :type="col.type || 'input'"
+            :model-value="record[col.key] || ''"
+            :readonly="props.readonly"
+            @update:model-value="(val) => updateExtraField(record.id, col.key, val)"
+          />
+          <template v-else>
+            {{ record[col.key] || '-' }}
+          </template>
+        </template>
+      </a-table-column>
+    </template>
+  </a-table>
+  <div v-if="showUnitPrice" class="mt-4 flex items-center justify-end gap-6 rounded-md bg-gray-50 p-4">
+    <div class="text-right">
+      <div class="text-sm text-gray-600">{{ t('totalItems', '總項目數') }}</div>
+      <div class="text-2xl font-bold text-gray-900">{{ totalItemCount }}</div>
+    </div>
+    <div class="text-right">
+      <div class="text-sm text-gray-600">{{ t('totalAmount', '合計金額') }}</div>
+      <div class="text-2xl font-bold text-green-600">{{ formatCurrency(totalAmount) }}</div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, ref, watch, onMounted } from 'vue';
+import { useWindowSize } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import { ProductListGet } from '@/assets/API/Product';
 import { IconSearch } from '@arco-design/web-vue/es/icon';
 import CustomField from '@/components/Form/CustomField.vue';
 
 const { t } = useI18n();
-
+const { height: windowHeight } = useWindowSize();
+const tableScrollY = computed(() => Math.max(windowHeight.value - (props.fullscreen ? 310 : 400), 300));
 const props = defineProps({
+  // 是否全螢幕模式（影響表格高度）
+  fullscreen: {
+    type: Boolean,
+    default: false,
+  },
+  // 自訂數量欄位標題（如調整類型可改為「調整後數量」）
+  quantityTitle: {
+    type: String,
+    default: null,
+  },
   // v-model 綁定的訂單項目
   modelValue: {
     type: Array,
@@ -213,21 +213,18 @@ const props = defineProps({
     // }
   },
 });
-
 const emit = defineEmits(['update:modelValue']);
 
-// 資料
 const products = ref([]);
 const searchKeyword = ref('');
 const selectedItems = ref({});
 const customPrices = ref({});
-const extraFields = ref({}); // 存储额外字段数据：{ productId: { fieldKey: value } }
+const extraFields = ref({}); //存储额外字段数据：{ productId: { fieldKey: value } }
 const loading = ref(false);
 const page = ref(1);
 const total = ref(0);
 const hasMore = ref(true);
 
-// 解析 API 回應的通用方法（參考 InfiniteSelect）
 const normalizeResponse = (response) => {
   if (!response) return { data: [], total: 0 };
   const dataBlock = response.data?.data ?? response.data ?? response;
@@ -235,8 +232,6 @@ const normalizeResponse = (response) => {
   const totalCount = dataBlock?.meta?.total ?? dataBlock?.total ?? items.length;
   return { data: Array.isArray(items) ? items : [], total: totalCount };
 };
-
-// 加載商品列表
 const loadProducts = async (targetPage = 1, append = false) => {
   if (loading.value) return;
   loading.value = true;
@@ -253,14 +248,12 @@ const loadProducts = async (targetPage = 1, append = false) => {
 
     total.value = totalCount;
     if (append) {
-      // 添加模式：合併新數據
       const merged = [...products.value];
       data.forEach((item) => {
         if (!merged.some((p) => p.id === item.id)) merged.push(item);
       });
       products.value = merged;
     } else {
-      // 替換模式：直接替換
       products.value = data;
       page.value = 1;
     }
@@ -274,9 +267,7 @@ const loadProducts = async (targetPage = 1, append = false) => {
   } finally {
     loading.value = false;
   }
-};
-
-// 加載更多
+}; //商品列表
 const loadMore = async () => {
   if (!hasMore.value || loading.value) return;
   await loadProducts(page.value, true);
@@ -394,6 +385,10 @@ const updateModelValue = () => {
       return item;
     });
 
+  // 避免兩者皆為空時重複 emit（防止 modelValue 重置時的無限迴圈）
+  const currentLen = (props.modelValue || []).length;
+  if (selectedProducts.length === 0 && currentLen === 0) return;
+
   emit('update:modelValue', selectedProducts);
 };
 
@@ -418,28 +413,42 @@ const updateExtraField = (productId, fieldKey, value) => {
 watch(
   () => props.modelValue,
   (newVal) => {
-    if (Array.isArray(newVal)) {
-      newVal.forEach((item) => {
-        if (item.productId) {
-          selectedItems.value[item.productId] = item.quantity || 0;
-          if (item.unitPrice?.amount) {
-            customPrices.value[item.productId] = item.unitPrice.amount;
-          }
+    if (!Array.isArray(newVal)) return;
 
-          // 初始化額外欄位
-          if (props.extraColumns && props.extraColumns.length > 0) {
-            if (!extraFields.value[item.productId]) {
-              extraFields.value[item.productId] = {};
-            }
-            props.extraColumns.forEach((col) => {
-              if (item[col.key] !== undefined) {
-                extraFields.value[item.productId][col.key] = item[col.key];
-              }
-            });
-          }
-        }
-      });
+    if (newVal.length === 0) {
+      // 表單重置 - 清除所有內部狀態
+      if (
+        Object.keys(selectedItems.value).length > 0 ||
+        Object.keys(customPrices.value).length > 0 ||
+        Object.keys(extraFields.value).length > 0
+      ) {
+        selectedItems.value = {};
+        customPrices.value = {};
+        extraFields.value = {};
+      }
+      return;
     }
+
+    newVal.forEach((item) => {
+      if (item.productId) {
+        selectedItems.value[item.productId] = item.quantity || 0;
+        if (item.unitPrice?.amount) {
+          customPrices.value[item.productId] = item.unitPrice.amount;
+        }
+
+        // 初始化額外欄位
+        if (props.extraColumns && props.extraColumns.length > 0) {
+          if (!extraFields.value[item.productId]) {
+            extraFields.value[item.productId] = {};
+          }
+          props.extraColumns.forEach((col) => {
+            if (item[col.key] !== undefined) {
+              extraFields.value[item.productId][col.key] = item[col.key];
+            }
+          });
+        }
+      }
+    });
   },
   { deep: true },
 );

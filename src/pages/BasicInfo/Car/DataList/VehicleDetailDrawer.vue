@@ -1,17 +1,17 @@
 <!-- src/pages/BasicInfo/Car/DataList/VehicleDetailDrawer.vue 車輛詳細資料抽屜 -->
 <template>
   <a-drawer v-model:visible="visible" :title="t('vehicleDetail', '車輛詳細資料') + ` - ${vehicle?.licensePlate || ''}`" :width="800" :footer="false" unmount-on-close @close="handleClose">
-    <a-tabs v-model:active-key="activeTab" type="card">
+    <a-tabs v-model:active-key="activeTab">
       <template #extra>
-        <a-button v-if="activeTab === 'maintenance'" type="primary" size="small" @click="openMaintenanceDialog()">
+        <a-button v-if="activeTab === 'maintenance'" type="primary" @click="openMaintenanceDialog()">
           <template #icon><icon-plus /></template>
           {{ t('addMaintenance', '新增保養') }}
         </a-button>
-        <a-button v-if="activeTab === 'repairs'" type="primary" size="small" @click="openRepairDialog()">
+        <a-button v-if="activeTab === 'repairs'" type="primary" @click="openRepairDialog()">
           <template #icon><icon-plus /></template>
           {{ t('addRepair', '新增維修') }}
         </a-button>
-        <a-button v-if="activeTab === 'insurance'" type="primary" size="small" @click="openInsuranceDialog()">
+        <a-button v-if="activeTab === 'insurance'" type="primary" @click="openInsuranceDialog()">
           <template #icon><icon-plus /></template>
           {{ t('addInsurance', '新增保險') }}
         </a-button>
@@ -20,33 +20,29 @@
       <!--        保養記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="maintenance" :title="t('maintenanceHistory', '保養記錄')">
-        <a-table :data="maintenanceList" :loading="maintenanceLoading" :pagination="false" size="small" :bordered="{ cell: true }">
-          <template #columns>
-            <a-table-column :title="t('type', '類型')" data-index="type" :width="100">
-              <template #cell="{ record }">
-                <a-tag>{{ maintenanceTypeMap[record.type] || record.type }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('description', '說明')" data-index="description" ellipsis />
-            <a-table-column :title="t('cost', '費用')" data-index="costAmount" :width="100" align="right">
-              <template #cell="{ record }"> ${{ formatNumber(record.costAmount) }} </template>
-            </a-table-column>
-            <a-table-column :title="t('performedBy', '執行者')" data-index="performedBy" :width="100" />
-            <a-table-column :title="t('completedDate', '完成日期')" data-index="completedDate" :width="110">
-              <template #cell="{ record }">
-                {{ formatDate(record.completedDate) || '-' }}
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('actions', '操作')" :width="80" align="center">
-              <template #cell="{ record }">
-                <a-button-group size="mini">
-                  <a-button @click="openMaintenanceDialog(record)"><icon-edit /></a-button>
-                  <a-button status="danger" @click="deleteMaintenance(record.id)"><icon-delete /></a-button>
-                </a-button-group>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <CustomTinyGrid :data="maintenanceList" :loading="maintenanceLoading" :height="systemStore.tableHeight" :border="true">
+          <CustomTinyGridColumn field="type" :title="t('type', '類型')" :width="100" fixed="left" align="center">
+            <template #default="{ row }">
+              <a-tag>{{ maintenanceTypeMap[row.type] || row.type }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="description" :title="t('description', '說明')" :min-width="160" show-overflow="tooltip" />
+          <CustomTinyGridColumn field="costAmount" :title="t('cost', '費用')" :width="100" align="right">
+            <template #default="{ row }">${{ formatNumber(row.costAmount) }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="performedBy" :title="t('performedBy', '執行者')" :width="100" />
+          <CustomTinyGridColumn field="completedDate" :title="t('completedDate', '完成日期')" :width="110" align="center">
+            <template #default="{ row }">{{ formatDate(row.completedDate) || '-' }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" :width="130" align="center" fixed="right">
+            <template #default="{ row }">
+              <div class="flex gap-1">
+                <a-button @click="openMaintenanceDialog(row)"><icon-edit /></a-button>
+                <a-button status="danger" @click="deleteMaintenance(row.id)"><icon-delete /></a-button>
+              </div>
+            </template>
+          </CustomTinyGridColumn>
+        </CustomTinyGrid>
         <div class="mt-4 flex justify-end">
           <a-pagination :current="maintenancePagination.page" :page-size="maintenancePagination.limit" :total="maintenancePagination.total" show-total @change="onMaintenancePageChange" />
         </div>
@@ -56,42 +52,38 @@
       <!--        維修記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="repairs" :title="t('repairHistory', '維修記錄')">
-        <a-table :data="repairList" :loading="repairLoading" :pagination="false" size="small" :bordered="{ cell: true }">
-          <template #columns>
-            <a-table-column :title="t('type', '類型')" data-index="type" :width="100">
-              <template #cell="{ record }">
-                <a-tag>{{ repairTypeMap[record.type] || record.type }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('description', '說明')" data-index="description" ellipsis />
-            <a-table-column :title="t('severity', '嚴重程度')" data-index="severity" :width="90">
-              <template #cell="{ record }">
-                <a-tag :color="severityColorMap[record.severity]">{{ severityMap[record.severity] || record.severity }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('status', '狀態')" data-index="status" :width="80">
-              <template #cell="{ record }">
-                <a-tag :color="repairStatusColorMap[record.status]">{{ repairStatusMap[record.status] || record.status }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('cost', '費用')" data-index="costAmount" :width="100" align="right">
-              <template #cell="{ record }"> ${{ formatNumber(record.costAmount) }} </template>
-            </a-table-column>
-            <a-table-column :title="t('reportedDate', '報修日期')" data-index="reportedDate" :width="110">
-              <template #cell="{ record }">
-                {{ formatDate(record.reportedDate) }}
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('actions', '操作')" :width="80" align="center">
-              <template #cell="{ record }">
-                <a-button-group size="mini">
-                  <a-button @click="openRepairDialog(record)"><icon-edit /></a-button>
-                  <a-button status="danger" @click="deleteRepair(record.id)"><icon-delete /></a-button>
-                </a-button-group>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <CustomTinyGrid :data="repairList" :loading="repairLoading" :height="systemStore.tableHeight" :border="true">
+          <CustomTinyGridColumn field="type" :title="t('type', '類型')" :width="100" fixed="left" align="center">
+            <template #default="{ row }">
+              <a-tag>{{ repairTypeMap[row.type] || row.type }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="description" :title="t('description', '說明')" :min-width="160" show-overflow="tooltip" />
+          <CustomTinyGridColumn field="severity" :title="t('severity', '嚴重程度')" :width="90" align="center">
+            <template #default="{ row }">
+              <a-tag :color="severityColorMap[row.severity]">{{ severityMap[row.severity] || row.severity }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="80" align="center">
+            <template #default="{ row }">
+              <a-tag :color="repairStatusColorMap[row.status]">{{ repairStatusMap[row.status] || row.status }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="costAmount" :title="t('cost', '費用')" :width="100" align="right">
+            <template #default="{ row }">${{ formatNumber(row.costAmount) }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="reportedDate" :title="t('reportedDate', '報修日期')" :width="110" align="center">
+            <template #default="{ row }">{{ formatDate(row.reportedDate) || '-' }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" :width="130" align="center" fixed="right">
+            <template #default="{ row }">
+              <div class="flex gap-1">
+                <a-button @click="openRepairDialog(row)"><icon-edit /></a-button>
+                <a-button status="danger" @click="deleteRepair(row.id)"><icon-delete /></a-button>
+              </div>
+            </template>
+          </CustomTinyGridColumn>
+        </CustomTinyGrid>
         <div class="mt-4 flex justify-end">
           <a-pagination :current="repairPagination.page" :page-size="repairPagination.limit" :total="repairPagination.total" show-total @change="onRepairPageChange" />
         </div>
@@ -101,27 +93,21 @@
       <!--        行程記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="trips" :title="t('tripHistory', '行程記錄')">
-        <a-table :data="tripList" :loading="tripLoading" :pagination="false" size="small" :bordered="{ cell: true }">
-          <template #columns>
-            <a-table-column :title="t('orderNumber', '訂單編號')" data-index="orderNumber" :width="140" />
-            <a-table-column :title="t('customerName', '客戶名稱')" data-index="customerName" :width="120" />
-            <a-table-column :title="t('deliveryAddress', '配送地址')" data-index="deliveryAddress" ellipsis>
-              <template #cell="{ record }">
-                {{ parseAddress(record.deliveryAddress) }}
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('deliveryDate', '配送日期')" data-index="deliveryDate" :width="110">
-              <template #cell="{ record }">
-                {{ formatDate(record.deliveryDate) }}
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('status', '狀態')" data-index="status" :width="90">
-              <template #cell="{ record }">
-                <a-tag :color="orderStatusColorMap[record.status]">{{ orderStatusMap[record.status] || record.status }}</a-tag>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <CustomTinyGrid :data="tripList" :loading="tripLoading" :height="systemStore.tableHeight" :border="true">
+          <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="140" fixed="left" />
+          <CustomTinyGridColumn field="customerName" :title="t('customerName', '客戶名稱')" :width="120" />
+          <CustomTinyGridColumn field="deliveryAddress" :title="t('deliveryAddress', '配送地址')" :min-width="160" show-overflow="tooltip">
+            <template #default="{ row }">{{ parseAddress(row.deliveryAddress) }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="deliveryDate" :title="t('deliveryDate', '配送日期')" :width="110" align="center">
+            <template #default="{ row }">{{ formatDate(row.deliveryDate) || '-' }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="90" align="center">
+            <template #default="{ row }">
+              <a-tag :color="orderStatusColorMap[row.status]">{{ orderStatusMap[row.status] || row.status }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+        </CustomTinyGrid>
         <div class="mt-4 flex justify-end">
           <a-pagination :current="tripPagination.page" :page-size="tripPagination.limit" :total="tripPagination.total" show-total @change="onTripPageChange" />
         </div>
@@ -131,45 +117,43 @@
       <!--        保險記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="insurance" :title="t('insuranceHistory', '保險記錄')">
-        <a-table :data="insuranceList" :loading="insuranceLoading" :pagination="false" size="small" :bordered="{ cell: true }">
-          <template #columns>
-            <a-table-column :title="t('insurer', '保險公司')" data-index="insurer" :width="120" />
-            <a-table-column :title="t('policyNumber', '保單號碼')" data-index="policyNumber" :width="140">
-              <template #cell="{ record }">{{ record.policyNumber || '-' }}</template>
-            </a-table-column>
-            <a-table-column :title="t('insuranceType', '保險類型')" data-index="insuranceType" :width="110">
-              <template #cell="{ record }">
-                <a-tag>{{ insuranceTypeMap[record.insuranceType] || record.insuranceType || '-' }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('amount', '保費金額')" data-index="amount" :width="100" align="right">
-              <template #cell="{ record }"> ${{ formatNumber(record.amount) }} </template>
-            </a-table-column>
-            <a-table-column :title="t('startDate', '生效日期')" data-index="startDate" :width="110">
-              <template #cell="{ record }">{{ formatDate(record.startDate) || '-' }}</template>
-            </a-table-column>
-            <a-table-column :title="t('expiryDate', '到期日期')" data-index="expiryDate" :width="110">
-              <template #cell="{ record }">
-                <span :class="isExpiringSoon(record.expiryDate) ? 'text-red-500 font-semibold' : ''">
-                  {{ formatDate(record.expiryDate) || '-' }}
-                </span>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('status', '狀態')" data-index="status" :width="90">
-              <template #cell="{ record }">
-                <a-tag :color="insuranceStatusColorMap[record.status]">{{ insuranceStatusMap[record.status] || record.status }}</a-tag>
-              </template>
-            </a-table-column>
-            <a-table-column :title="t('actions', '操作')" :width="80" align="center">
-              <template #cell="{ record }">
-                <a-button-group size="mini">
-                  <a-button @click="openInsuranceDialog(record)"><icon-edit /></a-button>
-                  <a-button status="danger" @click="deleteInsurance(record.insuranceId)"><icon-delete /></a-button>
-                </a-button-group>
-              </template>
-            </a-table-column>
-          </template>
-        </a-table>
+        <CustomTinyGrid :data="insuranceList" :loading="insuranceLoading" :height="systemStore.tableHeight" :border="true">
+          <CustomTinyGridColumn field="insurer" :title="t('insurer', '保險公司')" :min-width="120" fixed="left" />
+          <CustomTinyGridColumn field="policyNumber" :title="t('policyNumber', '保單號碼')" :min-width="140">
+            <template #default="{ row }">{{ row.policyNumber || '-' }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="insuranceType" :title="t('insuranceType', '保險類型')" :width="110" align="center">
+            <template #default="{ row }">
+              <a-tag>{{ insuranceTypeMap[row.insuranceType] || row.insuranceType || '-' }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="amount" :title="t('amount', '保費金額')" :width="110" align="right">
+            <template #default="{ row }">${{ formatNumber(row.amount) }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="startDate" :title="t('startDate', '生效日期')" :width="110" align="center">
+            <template #default="{ row }">{{ formatDate(row.startDate) || '-' }}</template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="expiryDate" :title="t('expiryDate', '到期日期')" :width="110" align="center">
+            <template #default="{ row }">
+              <span :class="isExpiringSoon(row.expiryDate) ? 'text-red-500 font-semibold' : ''">
+                {{ formatDate(row.expiryDate) || '-' }}
+              </span>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="90" align="center">
+            <template #default="{ row }">
+              <a-tag :color="insuranceStatusColorMap[row.status]">{{ insuranceStatusMap[row.status] || row.status }}</a-tag>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="actions" :title="t('actions', '操作')" :width="130" align="center" fixed="right">
+            <template #default="{ row }">
+              <div class="flex gap-1">
+                <a-button @click="openInsuranceDialog(row)"><icon-edit /></a-button>
+                <a-button status="danger" @click="deleteInsurance(row.id)"><icon-delete /></a-button>
+              </div>
+            </template>
+          </CustomTinyGridColumn>
+        </CustomTinyGrid>
         <div class="mt-4 flex justify-end">
           <a-pagination :current="insurancePagination.page" :page-size="insurancePagination.limit" :total="insurancePagination.total" show-total @change="onInsurancePageChange" />
         </div>
@@ -309,7 +293,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-vue/es/icon';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -329,30 +313,36 @@ import {
   VehicleInsuranceDeleteById,
 } from '@/assets/API/Vehicle';
 import CustomField from '@/components/Form/CustomField.vue';
+import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
+import { useSystemStore } from '@/stores/system';
 
 const { t } = useI18n();
 const mainStore = useMainStore();
+const systemStore = useSystemStore();
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   vehicle: { type: Object, default: null },
 });
 const emit = defineEmits(['update:modelValue']);
-
 const visible = ref(false);
 const activeTab = ref('maintenance');
-
 watch(
   () => props.modelValue,
-  (val) => {
+  async (val) => {
     visible.value = val;
     if (val && props.vehicle) {
       activeTab.value = 'maintenance';
+
       // 重置分頁狀態
       maintenancePagination.value = { page: 1, limit: 20, total: 0 };
       repairPagination.value = { page: 1, limit: 20, total: 0 };
       tripPagination.value = { page: 1, limit: 20, total: 0 };
       insurancePagination.value = { page: 1, limit: 20, total: 0 };
+
+      await nextTick();
+      systemStore.updateTableHeight(190);
+
       // 載入資料
       fetchMaintenanceHistory();
       fetchRepairHistory();
@@ -361,11 +351,9 @@ watch(
     }
   },
 );
-
 watch(visible, (val) => {
   emit('update:modelValue', val);
 });
-
 const handleClose = () => {
   visible.value = false;
 };
@@ -401,7 +389,6 @@ const maintenanceTypeOptions = [
   { label: t('maintenanceOther', '其他'), value: 'OTHER' },
 ];
 const maintenanceTypeMap = Object.fromEntries(maintenanceTypeOptions.map((o) => [o.value, o.label]));
-
 const repairTypeOptions = [
   { label: t('repairEngine', '引擎'), value: 'ENGINE' },
   { label: t('repairTransmission', '變速箱'), value: 'TRANSMISSION' },
@@ -416,7 +403,6 @@ const repairTypeOptions = [
   { label: t('repairOther', '其他'), value: 'OTHER' },
 ];
 const repairTypeMap = Object.fromEntries(repairTypeOptions.map((o) => [o.value, o.label]));
-
 const severityOptions = [
   { label: t('severityLow', '輕微'), value: 'LOW' },
   { label: t('severityMedium', '中等'), value: 'MEDIUM' },
@@ -425,7 +411,6 @@ const severityOptions = [
 ];
 const severityMap = Object.fromEntries(severityOptions.map((o) => [o.value, o.label]));
 const severityColorMap = { LOW: 'green', MEDIUM: 'orange', HIGH: 'red', CRITICAL: 'magenta' };
-
 const repairStatusOptions = [
   { label: t('repairStatusPending', '待處理'), value: 'PENDING' },
   { label: t('repairStatusInProgress', '進行中'), value: 'IN_PROGRESS' },
@@ -434,7 +419,6 @@ const repairStatusOptions = [
 ];
 const repairStatusMap = Object.fromEntries(repairStatusOptions.map((o) => [o.value, o.label]));
 const repairStatusColorMap = { PENDING: 'orange', IN_PROGRESS: 'blue', COMPLETED: 'green', CANCELLED: 'gray' };
-
 const orderStatusMap = {
   DRAFT: '草稿',
   PENDING: '待處理',
@@ -455,27 +439,25 @@ const orderStatusColorMap = {
   CANCELLED: 'red',
   RETURNED: 'magenta',
 };
-
 const insuranceTypeOptions = [
   { label: t('insuranceTypeThirdParty', '第三責任險'), value: 'THIRD_PARTY' },
   { label: t('insuranceTypeComprehensive', '全險'), value: 'COMPREHENSIVE' },
   { label: t('insuranceTypeOther', '其他'), value: 'OTHER' },
 ];
 const insuranceTypeMap = Object.fromEntries(insuranceTypeOptions.map((o) => [o.value, o.label]));
-
 const insuranceStatusMap = {
   ACTIVE: t('insuranceStatusActive', '有效'),
   EXPIRED: t('insuranceStatusExpired', '已到期'),
   CANCELLED: t('insuranceStatusCancelled', '已取消'),
 };
 const insuranceStatusColorMap = { ACTIVE: 'green', EXPIRED: 'red', CANCELLED: 'gray' };
-
 const isExpiringSoon = (expiryDate) => {
   if (!expiryDate) return false;
   const diff = new Date(expiryDate) - new Date();
   return diff > 0 && diff <= 30 * 24 * 60 * 60 * 1000; // 30 天內到期
 };
 
+// TDesign t-table columns 定義
 /** 保養記錄 **/
 const maintenanceList = ref([]);
 const maintenanceLoading = ref(false);
@@ -501,7 +483,6 @@ const maintenanceFormRules = {
   cost: [{ required: true, message: t('required', '此欄位必填') }],
   performedBy: [{ required: true, message: t('required', '此欄位必填') }],
 };
-
 const fetchMaintenanceHistory = async () => {
   if (!props.vehicle?.id) return;
   maintenanceLoading.value = true;
@@ -518,12 +499,10 @@ const fetchMaintenanceHistory = async () => {
     maintenanceLoading.value = false;
   }
 };
-
 const onMaintenancePageChange = (page) => {
   maintenancePagination.value.page = page;
   fetchMaintenanceHistory();
 };
-
 const openMaintenanceDialog = (record = null) => {
   if (record) {
     maintenanceForm.value = {
@@ -553,8 +532,7 @@ const openMaintenanceDialog = (record = null) => {
     };
   }
   maintenanceDialogVisible.value = true;
-};
-
+}; //取得單筆
 const saveMaintenance = async () => {
   const valid = await maintenanceFormRef.value?.validate();
   if (valid) return;
@@ -586,8 +564,7 @@ const saveMaintenance = async () => {
   } finally {
     maintenanceSaving.value = false;
   }
-};
-
+}; //儲存
 const deleteMaintenance = async (id) => {
   await mainStore.SWAL_DeleteConfirm({
     onConfirm: async () => {
@@ -600,7 +577,7 @@ const deleteMaintenance = async (id) => {
       }
     },
   });
-};
+}; //刪除
 
 /** 維修記錄 **/
 const repairList = ref([]);
@@ -629,7 +606,6 @@ const repairFormRules = {
   performedBy: [{ required: true, message: t('required', '此欄位必填') }],
   reportedDate: [{ required: true, message: t('required', '此欄位必填') }],
 };
-
 const fetchRepairHistory = async () => {
   if (!props.vehicle?.id) return;
   repairLoading.value = true;
@@ -646,12 +622,10 @@ const fetchRepairHistory = async () => {
     repairLoading.value = false;
   }
 };
-
 const onRepairPageChange = (page) => {
   repairPagination.value.page = page;
   fetchRepairHistory();
 };
-
 const openRepairDialog = (record = null) => {
   if (record) {
     repairForm.value = {
@@ -683,8 +657,7 @@ const openRepairDialog = (record = null) => {
     };
   }
   repairDialogVisible.value = true;
-};
-
+}; //取得單筆
 const saveRepair = async () => {
   const valid = await repairFormRef.value?.validate();
   if (valid) return;
@@ -717,8 +690,7 @@ const saveRepair = async () => {
   } finally {
     repairSaving.value = false;
   }
-};
-
+}; //儲存
 const deleteRepair = async (id) => {
   await mainStore.SWAL_DeleteConfirm({
     onConfirm: async () => {
@@ -731,13 +703,12 @@ const deleteRepair = async (id) => {
       }
     },
   });
-};
+}; //刪除
 
 /** 行程記錄 **/
 const tripList = ref([]);
 const tripLoading = ref(false);
 const tripPagination = ref({ page: 1, limit: 20, total: 0 });
-
 const fetchTripHistory = async () => {
   if (!props.vehicle?.id) return;
   tripLoading.value = true;
@@ -754,7 +725,6 @@ const fetchTripHistory = async () => {
     tripLoading.value = false;
   }
 };
-
 const onTripPageChange = (page) => {
   tripPagination.value.page = page;
   fetchTripHistory();
@@ -783,7 +753,6 @@ const insuranceFormRules = {
   expiryDate: [{ required: true, message: t('required', '此欄位必填') }],
   amount: [{ required: true, message: t('required', '此欄位必填') }],
 };
-
 const fetchInsuranceHistory = async () => {
   if (!props.vehicle?.id) return;
   insuranceLoading.value = true;
@@ -800,16 +769,14 @@ const fetchInsuranceHistory = async () => {
     insuranceLoading.value = false;
   }
 };
-
 const onInsurancePageChange = (page) => {
   insurancePagination.value.page = page;
   fetchInsuranceHistory();
 };
-
 const openInsuranceDialog = (record = null) => {
   if (record) {
     insuranceForm.value = {
-      insuranceId: record.insuranceId,
+      insuranceId: record.id,
       insurer: record.insurer,
       policyNumber: record.policyNumber || '',
       insuranceType: record.insuranceType || null,
@@ -831,8 +798,7 @@ const openInsuranceDialog = (record = null) => {
     };
   }
   insuranceDialogVisible.value = true;
-};
-
+}; //取得單筆
 const saveInsurance = async () => {
   const valid = await insuranceFormRef.value?.validate();
   if (valid) return;
@@ -862,8 +828,7 @@ const saveInsurance = async () => {
   } finally {
     insuranceSaving.value = false;
   }
-};
-
+}; //儲存
 const deleteInsurance = async (insuranceId) => {
   await mainStore.SWAL_DeleteConfirm({
     onConfirm: async () => {
@@ -876,5 +841,5 @@ const deleteInsurance = async (insuranceId) => {
       }
     },
   });
-};
+}; //刪除
 </script>

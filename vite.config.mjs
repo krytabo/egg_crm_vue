@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue';
 import vueJsx from '@vitejs/plugin-vue-jsx';
 import AutoImport from 'unplugin-auto-import/vite';
 import Components from 'unplugin-vue-components/vite';
-import { ArcoResolver } from 'unplugin-vue-components/resolvers';
+import { ArcoResolver, ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 import { TinyVueSingleResolver } from '@opentiny/unplugin-tiny-vue';
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons';
 import { TDesignResolver } from '@tdesign-vue-next/auto-import-resolver';
@@ -17,10 +17,10 @@ export default defineConfig({
     tailwindcss(),
     vueJsx(),
     AutoImport({
-      resolvers: [ArcoResolver(), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' })],
+      resolvers: [ArcoResolver(), ElementPlusResolver(), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' }), TDesignResolver({ library: 'vue-next' })],
     }),
     Components({
-      resolvers: [ArcoResolver({ sideEffect: true }), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' })],
+      resolvers: [ArcoResolver({ sideEffect: true }), ElementPlusResolver(), TinyVueSingleResolver, TDesignResolver({ library: 'mobile-vue' }), TDesignResolver({ library: 'vue-next' })],
     }),
     createSvgIconsPlugin({
       iconDirs: [path.resolve(process.cwd(), 'src/assets/icon')],

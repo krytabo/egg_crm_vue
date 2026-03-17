@@ -1,4 +1,4 @@
-import { dataList } from "./api";
+import { dataList } from './api';
 
 //庫存查詢
 export const InventoryListGet = (params) => dataList.get(`/inventory`, { params }); //查詢庫存列表
@@ -19,6 +19,10 @@ export const InventoryStockInPost = (data) => dataList.post(`/inventory/movement
 export const InventoryStockOutPost = (data) => dataList.post(`/inventory/movements/stock-out`, data); //出庫
 export const InventoryTransferPost = (data) => dataList.post(`/inventory/movements/transfer`, data); //庫存調撥
 export const InventoryAdjustmentPost = (data) => dataList.post(`/inventory/movements/adjustment`, data); //庫存盤點調整
+export const InventoryBulkUploadPost = (data) => dataList.post(`/inventory/movements/batch-stock-in`, data); //批量入庫
+export const InventoryBulkStockOutPost = (data) => dataList.post(`/inventory/movements/batch-stock-out`, data); //批量出庫
+export const InventoryBulkTransferPost = (data) => dataList.post(`/inventory/movements/batch-transfer`, data); //批量庫存調撥
+export const InventoryBulkAdjustmentPost = (data) => dataList.post(`/inventory/movements/batch-adjustment`, data); //批量盤點調整
 
 //盤點作業
 export const InventoryCycleCountPost = (data) => dataList.post(`/inventory/cycle-count`, data); //執行盤點作業

@@ -13,7 +13,7 @@
             </div>
           </AFormItem>
           <AFormItem :label="t('customer', '客戶')">
-            <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" />
+            <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" :filters="{ status: 'active' }" />
           </AFormItem>
           <AFormItem :label="t('search', '關鍵字')">
             <CustomField v-model="filters.search" type="input" :placeholder="t('匯款帳號', '匯款帳號')" @keyup.enter="handleFiltersChange" />

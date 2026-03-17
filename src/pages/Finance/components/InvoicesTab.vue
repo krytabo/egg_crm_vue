@@ -16,7 +16,16 @@
             <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
           </AFormItem>
           <AFormItem :label="t('customer', '客戶')">
-            <InfiniteSelect v-model="filters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" />
+            <InfiniteSelect
+              v-model="filters.customerId"
+              dataSource="customers"
+              type="outline"
+              :placeholder="t('all', '全部')"
+              allowClear
+              class="w-48"
+              @change="handleFiltersChange"
+              :filters="{ status: 'active' }"
+            />
           </AFormItem>
           <AFormItem :label="t('search', '關鍵字')">
             <TinyInput v-model="filters.search" :placeholder="t('searchBillingRequest', '請款單號碼/客戶')" @keyup.enter="handleFiltersChange" />
@@ -88,8 +97,15 @@
   </div>
 
   <!-- 新增/編輯請款單彈窗 -->
-  <a-modal v-model:visible="dialogVisible" :title="isEditing ? t('editBillingRequest', '編輯請款單') : t('createBillingRequest', '新增請款單')" width="800px" :mask-closable="false">
-    <perfect-scrollbar class="h-[calc(100vh-300px)] pr-4">
+  <a-modal v-model:visible="dialogVisible" width="800px" :mask-closable="false" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ isEditing ? t('editBillingRequest', '編輯請款單') : t('createBillingRequest', '新增請款單') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="['pr-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-270px)]']">
       <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
         <!-- 新增模式選擇（僅新增時顯示） -->
         <div v-if="!isEditing" class="mb-4">
@@ -134,7 +150,13 @@
         </div>
 
         <AFormItem v-if="createMode === 'manual'" :label="t('customer', '客戶')" field="customerId" class="col-span-2">
-          <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('pleaseSelect', '請選擇')" :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)" />
+          <InfiniteSelect
+            v-model="basicForm.customerId"
+            dataSource="customers"
+            :placeholder="t('pleaseSelect', '請選擇')"
+            :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)"
+            :filters="{ status: 'active' }"
+          />
         </AFormItem>
         <AFormItem :label="t('billingRequestItems', '請款單項目')" field="">
           <template #label>
@@ -148,7 +170,13 @@
           </template>
           <div v-for="(item, index) in basicForm.items" :key="index" class="mb-2 flex items-end gap-2 rounded border border-gray-200 p-3">
             <AFormItem :label="t('product', '商品')" :field="`items.${index}.productId`" class="mb-0 flex-1">
-              <InfiniteSelect v-model="item.productId" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelect', '請選擇')" @change="(val) => handleProductChange(index, val)" />
+              <InfiniteSelect
+                v-model="item.productId"
+                dataSource="products"
+                :filters="{ status: 'ACTIVE' }"
+                :placeholder="t('pleaseSelect', '請選擇')"
+                @change="(val) => handleProductChange(index, val)"
+              />
             </AFormItem>
             <AFormItem :label="t('quantity', '數量')" :field="`items.${index}.quantity`" class="mb-0 w-24">
               <CustomField v-model="item.quantity" type="number" :min="1" />
@@ -403,6 +431,7 @@ import { useI18n } from 'vue-i18n';
 import { addDays, endOfDay, format } from 'date-fns';
 import { debounce } from 'lodash';
 import { useCurrencyStore } from '@/stores/currency';
+import { Expand, Shrink } from 'lucide-vue-next';
 
 const emit = defineEmits(['open-payment']);
 const mainStore = useMainStore();
@@ -520,6 +549,7 @@ const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, hand
 const getAPI = () => getDefaultAPI();
 
 /** 新增/編輯請款單 **/
+const fullscreen = ref(false);
 const dialogVisible = ref(false);
 const isEditing = ref(false);
 const isSaving = ref(false);

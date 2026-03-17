@@ -136,14 +136,27 @@
   </Card>
 
   <!-- 新增商品彈窗 -->
-  <a-modal v-model:visible="addProductDialogVisible" :title="t('addProduct', '新增商品')" width="720px" :closable="false">
+  <a-modal v-model:visible="addProductDialogVisible" width="720px" :closable="false" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ t('addProduct', '新增商品') }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
     <AForm layout="vertical">
       <div class="grid grid-cols-2 gap-4">
         <AFormItem :label="t('selectProduct', '選擇商品')" required>
           <InfiniteSelect v-model="selectedProduct" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelectProduct', '請選擇商品')" type="outline" />
         </AFormItem>
         <AFormItem :label="t('selectCustomer', '選擇客戶')" required>
-          <InfiniteSelect v-model="selectedCustomer" dataSource="customers" :placeholder="t('pleaseSelectCustomer', '請選擇客戶')" type="outline" :filters="{ deliveryDays: basicForm.deliveryDays }" />
+          <InfiniteSelect
+            v-model="selectedCustomer"
+            dataSource="customers"
+            :placeholder="t('pleaseSelectCustomer', '請選擇客戶')"
+            type="outline"
+            :filters="{ deliveryDays: basicForm.deliveryDays, status: 'active' }"
+          />
         </AFormItem>
         <AFormItem :label="t('quantity', '數量')">
           <TinyCustomField type="number" v-model="newProductQuantity" :min="0" />
@@ -187,7 +200,7 @@
 </template>
 
 <script setup>
-import { onMounted, nextTick, onUnmounted } from 'vue';
+import { onMounted, nextTick, onUnmounted, ref } from 'vue';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { TinyCheckboxGroup, TinyInput, TinySelect } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
@@ -198,12 +211,14 @@ import { useSystemStore } from '@/stores/system';
 import { useI18n } from 'vue-i18n';
 import { Message } from '@arco-design/web-vue';
 import { useFormPage } from './useFormPage';
+import { Expand, Shrink } from 'lucide-vue-next';
 
 const props = defineProps({
   uuid: { type: String, default: '' },
 });
 const systemStore = useSystemStore();
 const { t } = useI18n();
+const fullscreen = ref(false);
 
 const showMessage = (type, content) => {
   if (type === 'success') Message.success(content);

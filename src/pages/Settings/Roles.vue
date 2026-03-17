@@ -88,8 +88,15 @@
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!--       新增編輯視窗        -->
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-  <a-modal v-model:visible="dialogVisible" :title="dialogTitle" :top="30" draggable :maskClosable="false" :closable="false" width="800px">
-    <perfect-scrollbar class="h-[calc(100vh-370px)]">
+  <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="800px" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ dialogTitle }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-370px)]']">
       <AForm ref="basicFormRef" auto-label-width :model="basicForm" layout="vertical" :rules="basicFormRules">
         <div class="flex gap-4">
           <div class="flex flex-col gap-2">
@@ -138,7 +145,7 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
-import { SquarePen, Trash2 } from 'lucide-vue-next';
+import { SquarePen, Trash2, Expand, Shrink } from 'lucide-vue-next';
 import { useI18n } from 'vue-i18n';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { usePermissionStore } from '@/stores/PermissionStore';
@@ -225,6 +232,7 @@ const initializeForm = () => ({
   isSystem: false,
   permissionIds: [],
 }); //初始化表單資料
+const fullscreen = ref(false);
 const dialogVisible = ref(false); //彈窗開關
 const dialogMode = ref('create'); //彈窗模式
 const dialogTitle = computed(() => (isCreate.value ? t('addRole') : t('editRole'))); //彈窗標題

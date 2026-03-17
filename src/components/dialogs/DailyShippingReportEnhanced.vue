@@ -1,7 +1,7 @@
 <!-- src/components/dialogs/DailyShippingReportEnhanced.vue 新增彈窗 -->
 <template>
   <a-modal v-model:visible="props.modelValue" :title="t('addDriverDeliveryReport', '新增司機出貨日報表')" :width="1020" :render-to-body="false" :closable="false">
-    <div class="max-h-[600px] px-1">
+    <div class="max-h-150 px-1">
       <a-form ref="basicDataRef" :model="basicForm" :rules="basicFormRules" layout="vertical">
         <!-- 司機與星期選擇 -->
         <div class="grid gap-4 md:grid-cols-2">
@@ -33,7 +33,7 @@
           <!-- 批量選擇模式 -->
           <div v-if="selectionMode === 'batch'" class="flex gap-2">
             <!-- 商品選擇區塊（使用無限捲軸組件） -->
-            <div class="rounded border p-3 w-[320px] flex-shrink-0">
+            <div class="rounded border p-3 w-[320px] shrink-0">
               <div class="flex flex-wrap items-center gap-2 mb-3">
                 <TinySelect v-model="selectedCategory" :options="productCategoryFilters" :placeholder="t('selectCategory', '選擇分類')" />
                 <div class="flex items-center gap-1">
@@ -170,6 +170,7 @@
                   type="outline"
                   multiple
                   allowClear
+                  :filters="{ status: 'active' }"
                 />
               </div>
             </div>
@@ -181,7 +182,7 @@
                   <p class="text-sm font-medium">{{ t('addedProducts', '已新增商品') }}</p>
                   <span class="text-xs text-gray-500">{{ basicForm.products.length }} {{ t('items', '項') }}</span>
                 </div>
-                <div v-if="basicForm.products.length" class="max-h-[200px] overflow-y-auto flex flex-col gap-1">
+                <div v-if="basicForm.products.length" class="max-h-50 overflow-y-auto flex flex-col gap-1">
                   <div
                     v-for="item in basicForm.products"
                     :key="item.productId"
@@ -225,7 +226,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
-import { Button as TinyButton, Select as TinySelect, Badge as TinyBadge } from '@opentiny/vue';
+import { Button as TinyButton, Select as TinySelect } from '@opentiny/vue';
 import Notify from '@opentiny/vue-notify';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import InfiniteScrollList from '@/components/Form/InfiniteScrollList.vue';
@@ -244,9 +245,7 @@ const emit = defineEmits(['update:modelValue', 'report-created']);
 const { t } = useI18n();
 const { weekDayOptions, paymentOptions, customerCategories, formatWeekDays } = useSelectOptions();
 
-// 取得 customerCategories 中 label(code) 對應的 CATEGORY_IDS
 const getCategoryIdByCode = (code) => CATEGORY_IDS[code] ?? null;
-
 const productCategoryFilters = computed(() => [{ label: t('all', '全部'), value: 'ALL' }, ...customerCategories.value.map((c) => ({ label: c.text, value: getCategoryIdByCode(c.value) ?? c.text }))]); //產品分類篩選選項（value 使用 categoryId 以正確匹配 API 回傳）
 const quickSelectCategories = computed(() =>
   customerCategories.value.map((c) => ({
@@ -405,7 +404,6 @@ const fetchProductsWithFilters = async (params) => {
     status: 'ACTIVE',
   });
 }; //商品列表 API 包裝 - 只顯示啟用的商品
-
 const fetchCustomersWithFilters = async (params) => {
   // ✅ 增加 status: 'ACTIVE' 固定篩選到 payload
   return CustomersListGet({
@@ -584,13 +582,12 @@ const editProduct = (item) => {
     categoryName: item.categoryName,
     category: { name: item.categoryName },
   };
-  const customers = item.customerIds.map((id) => {
+  singleModeCustomers.value = item.customerIds.map((id) => {
     const cachedCustomer = customerListRefs.value._singleModeCustomers?.[id];
     if (cachedCustomer) return cachedCustomer;
     const foundCustomer = findCustomerFromRefs(id);
     return foundCustomer || { id, name: '未知客戶' };
   });
-  singleModeCustomers.value = customers;
   singleModeCustomerKey.value++;
 }; //編輯已新增的商品
 const cancelEdit = () => {

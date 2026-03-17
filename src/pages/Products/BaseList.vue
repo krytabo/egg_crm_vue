@@ -197,7 +197,7 @@
           @sort="handleColumnSort"
         >
           <template #header>
-            <div class="flex w-[190px] flex-col gap-1">
+            <div class="flex w-47.5 flex-col gap-1">
               <span class="text-[16px] text-gray-600">{{ t('vendor', '供應商') }}</span>
               <InfiniteSelect
                 v-model="filters.primaryVendorId"
@@ -205,8 +205,9 @@
                 type="outline"
                 :placeholder="t('pleaseSelect', '請選擇')"
                 allowClear
+                :filters="{ status: 'active' }"
                 @change="handleVendorFilterChange"
-                class="w-[180px]"
+                class="w-45"
               />
               <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
             </div>
@@ -294,8 +295,15 @@
     </CardContent>
   </Card>
 
-  <a-modal v-model:visible="dialogVisible" :title="dialogTitle" draggable :mask-closable="false" width="720px" title-align="start">
-    <perfect-scrollbar class="max-h-[600px] px-1">
+  <a-modal v-model:visible="dialogVisible" draggable :mask-closable="false" :closable="false" width="720px" title-align="start" :fullscreen="fullscreen">
+    <template #title>
+      <div class="flex w-full gap-2">
+        <div class="flex w-full items-center justify-center text-lg font-semibold">{{ dialogTitle }}</div>
+        <button v-if="!fullscreen" class="-ml-8!" @click="fullscreen = true"><Expand /></button>
+        <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
+      </div>
+    </template>
+    <perfect-scrollbar class="max-h-150 px-1">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" label-align="left" auto-label-width>
         <div v-if="hasFakeData && !editingId" class="mb-3 flex justify-end">
           <Button variant="outline" size="sm" @click="generateFakeData">{{ t('generateFakeData', '生成範例資料') }}</Button>
@@ -329,8 +337,7 @@
             <CustomField v-model="basicForm.reorderPoint" type="number" placeholder="0" :min="0" allowClear />
           </AFormItem>
           <AFormItem :label="t('vendorId', '供應商 ID')">
-            <!--<JsonViewer :value="basicForm.primaryVendorId" boxed copyable />-->
-            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear />
+            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear :filters="{ status: 'active' }" />
           </AFormItem>
           <AFormItem :label="t('tags', '標籤')">
             <CustomField v-model="basicForm.tags" type="input" :placeholder="t('tagsCommaSeparated', '標籤（以逗號分隔）')" allowClear />
@@ -348,7 +355,7 @@
       </AForm>
     </perfect-scrollbar>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex items-center justify-center gap-2">
         <Button variant="ghost" @click="dialogVisible = false">{{ t('cancel', '取消') }}</Button>
         <Button :disabled="isSaving" :loading="isSaving" @click="saveData">{{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}</Button>
       </div>
@@ -373,7 +380,7 @@ import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
-import { SquarePen, Trash2 } from 'lucide-vue-next';
+import { SquarePen, Trash2, Expand, Shrink } from 'lucide-vue-next';
 import { debounce } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
@@ -415,7 +422,7 @@ const sortFieldMap = {
 }; //排序欄位映射
 const statusColorMap = {
   ACTIVE: 'arcoblue',
-  INACTIVE: 'orange',
+  INACTIVE: 'red',
   DELETED: 'red',
 }; //狀態顏色對應
 
@@ -752,6 +759,7 @@ const clearFilter = async () => {
 }; //清除全部搜尋條件
 
 /** 新增編輯相關 **/
+const fullscreen = ref(false);
 const dialogMode = ref('create');
 const dialogVisible = ref(false); //彈窗顯示狀態
 const editingId = ref(null); //編輯中的 ID
