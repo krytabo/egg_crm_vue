@@ -44,7 +44,7 @@ export default defineConfig({
     port: 5176,
     proxy: {
       '/hostApi': {
-        target: 'https://eggdrop-crm.zeabur.app',
+        target: 'https://eggdrop.up.railway.app',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/hostApi/, ''),
         ws: true,
