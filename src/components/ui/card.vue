@@ -5,13 +5,13 @@
 </template>
 
 <script setup>
-import { computed, useAttrs } from "vue";
-import { cn } from "./utils";
-defineOptions({ name: "UiCard" });
+import { computed, useAttrs } from 'vue';
+import { cn } from './utils';
+defineOptions({ name: 'UiCard' });
 
 const attrs = useAttrs();
 const cardAttrs = computed(() => ({
   ...attrs,
-  class: cn("p-4 overflow-hidden h-full", attrs.class)
+  class: cn('p-4 overflow-hidden h-full gap-2 flex flex-col', attrs.class),
 }));
 </script>

@@ -10,78 +10,69 @@
         <p class="text-sm text-gray-500">{{ t('totalCount', { total: pagination.total }) }}</p>
       </div>
       <div class="flex items-center gap-3">
-        <Button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</Button>
-        <Button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addProductType') }}</Button>
+        <a-button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</a-button>
+        <a-button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addProductType') }}</a-button>
       </div>
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         其他搜尋         -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-end rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <div class="grid gap-3 md:grid-cols-2">
-            <AFormItem :label="t('nameCode')">
-              <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterNameOrCode')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-            </AFormItem>
-            <AFormItem :label="t('isDeletable')">
-              <TinySelect v-model="filters.deletable" :options="deletableFilterOptions" :placeholder="t('all')" class="h-9 text-sm" @update:model-value="handleFiltersChange" />
-            </AFormItem>
-          </div>
-        </AForm>
-      </div>
+    <CustomForm :col="2" class="mb-4">
+      <CustomFormItem :label="t('nameCode')">
+        <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterNameOrCode')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('isDeletable')">
+        <TinySelect v-model="filters.deletable" :options="deletableFilterOptions" :placeholder="t('all')" class="h-9 text-sm" @update:model-value="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
-        <CustomTinyGridColumn field="name" :title="t('name')" min-width="220">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="text-base font-medium text-gray-900">{{ row.name }}</span>
-              <span class="text-xs text-gray-500">{{ t('codeColon') }}{{ row.code }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="description" :title="t('description')" min-width="260">
-          <template #default="{ row }">{{ row.description || t('unset') }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="isDeletable" :title="t('isDeletable')" :width="140" align="center">
-          <template #default="{ row }">
-            <TinyBadge :type="row.isDeletable ? 'success' : 'info'">{{ row.isDeletable ? t('canBeDeleted') : t('systemDefault') }}</TinyBadge>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="160">
-          <template #default="{ row }">{{ row.createdAt }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
-          <template #default="{ row }">{{ row.updatedAt }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions')" :width="200" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" @click="deleteData(row.id)">
-                <Trash2 class="size-4 text-rose-500" />
-              </button>
-              <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
+      <CustomTinyGridColumn field="name" :title="t('name')" min-width="220">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span class="text-base font-medium text-gray-900">{{ row.name }}</span>
+            <span class="text-xs text-gray-500">{{ t('codeColon') }}{{ row.code }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="description" :title="t('description')" min-width="260">
+        <template #default="{ row }">{{ row.description || t('unset') }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="isDeletable" :title="t('isDeletable')" :width="140" align="center">
+        <template #default="{ row }">
+          <TinyBadge :type="row.isDeletable ? 'success' : 'info'">{{ row.isDeletable ? t('canBeDeleted') : t('systemDefault') }}</TinyBadge>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="160">
+        <template #default="{ row }">{{ row.createdAt }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
+        <template #default="{ row }">{{ row.updatedAt }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions')" :width="200" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" @click="deleteData(row.id)">
+              <Trash2 class="size-4 text-rose-500" />
+            </button>
+            <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -120,7 +111,9 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { ProductTypeListGet, ProductTypeCreatePost, ProductTypeUpdatePatch, ProductTypeDeleteById, ProductTypeGetByID } from '@/assets/API/ProductType';
 import { TinyForm, TinyFormItem, TinyInput, TinySelect, TinyBadge } from '@opentiny/vue';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/ui/AppPagination.vue';

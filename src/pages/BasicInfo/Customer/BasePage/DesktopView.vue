@@ -25,10 +25,10 @@
         <template v-if="!isProspect">
           <input type="file" ref="fileInputRef" class="hidden" @change="handleFileChange" accept=".xlsx, .xls" />
           <a-dropdown @select="handleImportSelect">
-            <a-button>{{ $t('匯入匯出') }}</a-button>
+            <a-button>{{ $t('importExport', '匯入匯出') }}</a-button>
             <template #content>
               <a-doption value="Import">{{ $t('ExcelImport', '匯入Excel') }}</a-doption>
-              <a-doption value="Download">{{ $t('模板下載', '模板下載') }}</a-doption>
+              <a-doption value="Download">{{ $t('templateDownload', '模板下載') }}</a-doption>
             </template>
           </a-dropdown>
         </template>
@@ -39,175 +39,129 @@
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--          列表            -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" row-key="id" :height="systemStore.tableHeight" :border="true" :expand-config="{ trigger: 'row', showIcon: true }" :row-id="'id'">
-        <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220" fixed="left">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('tags', '標籤') }}</span>
-              <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full" @update:model-value="handleFiltersChange" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex flex-wrap gap-1 text-xs text-gray-700">
-              <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
-              <span v-if="!row.tags?.length">—</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="primaryContact" :title="t('primaryContact', '主要聯絡人')" min-width="180" fixed="left">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="font-medium text-gray-900">{{ getPrimaryContact(row)?.name || t('unset', '未設定') }}</span>
-              <span class="text-xs text-gray-500">{{ getPrimaryContact(row)?.phone }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="companyName" :title="t('customerName', '客戶名稱')" min-width="260" sortable :sort-field="'name'" :current-order="getColumnOrder('name')" @sort="handleColumnSort">
-          <!--<template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('customerName', '客戶名稱') }}</span>
-              <div class="flex items-center gap-1">
-                <TinyInput v-model="globalSearch" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 flex-1 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="clearGlobalSearch" />
-              </div>
-            </div>
-          </template>-->
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="font-medium text-gray-900">{{ row.companyName }}</span>
-              <span class="text-xs text-gray-500">{{ row.companyEmail }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="type" :title="t('customerType', '客戶類型')" :width="150" sortable :sort-field="'type'" :current-order="getColumnOrder('type')" @sort="handleColumnSort">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('customerType', '客戶類型') }}</span>
-              <TinySelect v-model="filters.type" :options="typeFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <TinyBadge type="info">{{ typeLabelMap[row.type] || row.type || '—' }}</TinyBadge>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="segment"
-          :title="t('customerSegment', '客戶分類')"
-          :width="160"
-          sortable
-          :sort-field="'segment'"
-          :current-order="getColumnOrder('segment')"
-          @sort="handleColumnSort"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('customerSegment', '客戶分類') }}</span>
-              <TinySelect v-model="filters.segment" :options="segmentFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <span class="text-sm text-gray-900">{{ segmentLabelMap[row.segment] || row.segment || '—' }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="source" :title="t('customerSource', '客戶來源')" :width="160" sortable :sort-field="'source'" :current-order="getColumnOrder('source')" @sort="handleColumnSort">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('customerSource', '客戶來源') }}</span>
-              <TinySelect v-model="filters.source" :options="sourceFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <span class="text-sm text-gray-900">{{ sourceLabelMap[row.source] || row.source || '—' }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="salesRep"
-          :title="t('salesRep', '業務負責')"
-          :width="180"
-          sortable
-          :sort-field="'salesRepId'"
-          :current-order="getColumnOrder('salesRepId')"
-          @sort="handleColumnSort"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('salesRep', '業務負責') }}</span>
-              <InfiniteSelect
-                v-model="filters.salesRepId"
-                dataSource="users"
-                labelKey="fullName"
-                type="outline"
-                class="w-32.5!"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                allowClear
-                @change="handleGlobalSearch"
-                emitValue
-              />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <span class="text-sm text-gray-900">{{ row.salesRepId?.fullName || '—' }}</span>
-          </template>
-        </CustomTinyGridColumn>
-
-        <CustomTinyGridColumn
-          field="createdAt"
-          :title="t('createdAt', '建立日期')"
-          :width="160"
-          sortable
-          :sort-field="'createdAt'"
-          :current-order="getColumnOrder('createdAt')"
-          @sort="handleColumnSort"
-        >
-          <template #default="{ row }">{{ row.createdAtDisplay }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          v-if="!isProspect"
-          field="status"
-          :title="t('status', '狀態')"
-          :width="150"
-          align="center"
-          fixed="right"
-          sortable
-          :sort-field="'status'"
-          :current-order="getColumnOrder('status')"
-          @sort="handleColumnSort"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-[#111827]">{{ t('status', '狀態') }}</span>
-              <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <a-tag :color="statusColorMap[row.status] || 'arcoblue'" size="large">{{ statusLabelMap[row.status] || row.status || '—' }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('CUSTOMER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button class="table-button" @click="openDrawer(row)"><ScrollText class="size-4 text-green-500" /></button>
-              <button v-if="permissionStore.hasPermission('CUSTOMER', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <CustomTinyGrid :data="basicDataList" row-key="id" :height="TableScrollY" :border="true" :expand-config="{ trigger: 'row', showIcon: true }" :row-id="'id'">
+      <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220" fixed="left">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('tags', '標籤') }}</span>
+            <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full" @update:model-value="handleFiltersChange" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="flex flex-wrap gap-1 text-xs text-gray-700">
+            <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
+            <span v-if="!row.tags?.length">—</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="primaryContact" :title="t('primaryContact', '主要聯絡人')" :min-width="180" fixed="left">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span>{{ getPrimaryContact(row)?.name || t('unset', '未設定') }}</span>
+            <span class="text-gray-500">{{ getPrimaryContact(row)?.phone }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="companyName" :title="t('customerName', '客戶名稱')" :min-width="260" sortable :sort-field="'name'" :current-order="getColumnOrder('name')" @sort="handleColumnSort">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span>{{ row.companyName }}</span>
+            <span class="text-gray-500">{{ row.companyEmail }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="type" :title="t('customerType', '客戶類型')" :width="150" sortable :sort-field="'type'" :current-order="getColumnOrder('type')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('customerType', '客戶類型') }}</span>
+            <TinySelect v-model="filters.type" :options="typeFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">{{ typeLabelMap[row.type] || row.type || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="segment" :title="t('customerSegment', '客戶分類')" :width="160" sortable :sort-field="'segment'" :current-order="getColumnOrder('segment')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('customerSegment', '客戶分類') }}</span>
+            <TinySelect v-model="filters.segment" :options="segmentFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">{{ segmentLabelMap[row.segment] || row.segment || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="source" :title="t('customerSource', '客戶來源')" :width="160" sortable :sort-field="'source'" :current-order="getColumnOrder('source')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('customerSource', '客戶來源') }}</span>
+            <TinySelect v-model="filters.source" :options="sourceFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">{{ sourceLabelMap[row.source] || row.source || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="salesRep" :title="t('salesRep', '業務負責')" :width="180" sortable :sort-field="'salesRepId'" :current-order="getColumnOrder('salesRepId')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('salesRep', '業務負責') }}</span>
+            <InfiniteSelect
+              v-model="filters.salesRepId"
+              dataSource="users"
+              labelKey="fullName"
+              type="outline"
+              class="w-32.5!"
+              :placeholder="t('pleaseSelect', '請選擇')"
+              allowClear
+              @change="handleGlobalSearch"
+              emitValue
+            />
+          </div>
+        </template>
+        <template #default="{ row }">{{ row.salesRepId?.fullName || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立日期')" :width="160" sortable :sort-field="'createdAt'" :current-order="getColumnOrder('createdAt')" @sort="handleColumnSort">
+        <template #default="{ row }">{{ row.createdAtDisplay }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn
+        v-if="!isProspect"
+        field="status"
+        :title="t('status', '狀態')"
+        :width="150"
+        align="center"
+        fixed="right"
+        sortable
+        :sort-field="'status'"
+        :current-order="getColumnOrder('status')"
+        @sort="handleColumnSort"
+      >
+        <template #header>
+          <div class="flex flex-col gap-1 text-center">
+            <span class="text-[16px] text-[#111827]">{{ t('status', '狀態') }}</span>
+            <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('pleaseSelect', '請選擇')" clearable @clear="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <a-tag :color="statusColorMap[row.status] || 'arcoblue'" size="large">{{ statusLabelMap[row.status] || row.status || '—' }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('CUSTOMER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            <button class="table-button" @click="openDrawer(row)"><ScrollText class="size-4 text-green-500" /></button>
+            <button v-if="permissionStore.hasPermission('CUSTOMER', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--該客戶的訂單API查詢結果-->
@@ -322,7 +276,7 @@
       </div>
     </template>
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
-      <a-tab-pane key="infoData" :title="t('資本資料', '資本資料')"></a-tab-pane>
+      <a-tab-pane key="infoData" :title="t('capitalInfo', '資本資料')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
       <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
@@ -540,9 +494,12 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+
+const route = useRoute();
 import { TinyInput, TinySelect, TinyCheckbox, TinyBadge, TinyDrawer, TinyTextPopup, TinyForm, TinyFormItem, TinyCheckboxGroup } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
@@ -554,6 +511,7 @@ import { usePermissionStore } from '@/stores/PermissionStore';
 import { useI18n } from 'vue-i18n';
 import { useBasePage } from './useBasePage';
 import { CustomersStoredGetByID } from '@/assets/API/Customers';
+import { useWindowSize } from '@vueuse/core';
 
 const props = defineProps({
   pageType: { type: String, default: 'customer', validator: (v) => ['customer', 'prospect'].includes(v) },
@@ -562,6 +520,11 @@ const { containerRef } = useContentWidth();
 const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
+
+/** 高度相關 **/
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 280, 100));
+
 const fullscreen = ref(false);
 
 const {
@@ -687,6 +650,11 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(320);
+  // 來自來電通知的跳轉：自動填入搜尋詞並執行搜尋
+  const autoSearch = route.query.autoSearch;
+  if (autoSearch) {
+    globalSearch.value = String(autoSearch);
+    await handleGlobalSearch();
+  }
 });
 </script>

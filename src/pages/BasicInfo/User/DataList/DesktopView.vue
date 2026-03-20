@@ -15,190 +15,188 @@
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent>
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         其他搜尋         -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-center gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <span class="text-sm font-medium text-gray-700">{{ t('hireDate') }}</span>
-        <a-date-picker v-model="filters.hireDateFrom" :placeholder="t('pleaseSelectDate')" format="YYYY-MM-DD" @change="handleFilterChange" />
-        <span>-</span>
-        <a-date-picker v-model="filters.hireDateTo" :placeholder="t('pleaseSelectDate')" format="YYYY-MM-DD" @change="handleFilterChange" />
-        <a-button status="danger" @click="clearHireDateFilter">{{ t('clearHireDate') }}</a-button>
-      </div>
+    <CustomForm :col="1">
+      <CustomFormItem :label="t('hireDate')">
+        <div class="flex items-center gap-2">
+          <TinyDatePicker v-model="filters.hireDateFrom" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFilterChange" class="w-full" />
+          <span>-</span>
+          <TinyDatePicker v-model="filters.hireDateTo" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFilterChange" class="w-full" />
+          <a-button status="danger" @click="clearHireDateFilter">{{ t('clearHireDate') }}</a-button>
+        </div>
+      </CustomFormItem>
+    </CustomForm>
 
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" :row-id="'id'">
-        <CustomTinyGridColumn field="fullName" :title="t('fullName')" fixed="left" :width="260" sortable :sort-field="'fullName'" :current-order="getColumnOrder('fullName')" @sort="handleColumnSort">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('fullName') }}</span>
-              <div class="flex items-center gap-1">
-                <TinyInput
-                  v-model="searchFields.name"
-                  :placeholder="t('pleaseEnter')"
-                  class="h-8 flex-1 text-xs"
-                  clearable
-                  @keyup.enter="handleFilterChange('name')"
-                  @clear="handleFilterChange('name')"
-                />
-              </div>
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex items-center gap-3">
-              <img v-if="row.avatar" :src="row.avatar" alt="avatar" class="h-10 w-10 rounded-full object-cover" />
-              <div class="flex flex-col">
-                <span class="text-base font-medium text-gray-900">{{ row.fullName }}</span>
-              </div>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="roleLabel" :title="t('role')" :width="180">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('role') }}</span>
-              <InfiniteSelect
-                v-model="filters.role"
-                dataSource="roles"
-                type="outline"
-                :placeholder="t('pleaseSelectPermission')"
-                allowClear
-                @change="handleFilterChange"
-                :filters="{ status: 'active' }"
-              />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ row.role }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="jobType" :title="t('jobType')" :width="200">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('jobType') }}</span>
-              <TinySelect v-model="filters.jobType" :options="jobTypeFilterOptions" :placeholder="t('all')" class="h-8 text-xs" clearable @change="handleFilterChange" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ getJobTypeLabel(row.jobType) }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="phone" :title="t('phone')" :width="180">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('phone') }}</span>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" :row-id="'id'">
+      <CustomTinyGridColumn field="fullName" :title="t('fullName')" fixed="left" :width="260" sortable :sort-field="'fullName'" :current-order="getColumnOrder('fullName')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('fullName') }}</span>
+            <div class="flex items-center gap-1">
               <TinyInput
-                v-model="searchFields.phone"
+                v-model="searchFields.name"
                 :placeholder="t('pleaseEnter')"
                 class="h-8 flex-1 text-xs"
                 clearable
-                @keyup.enter="handleFilterChange('phone')"
-                @clear="handleFilterChange('phone')"
+                @keyup.enter="handleFilterChange('name')"
+                @clear="handleFilterChange('name')"
               />
             </div>
-          </template>
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ row.phone }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="email" :title="t('email')" min-width="220" sortable :sort-field="'email'" :current-order="getColumnOrder('email')" @sort="handleColumnSort">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('email') }}</span>
-              <div class="flex items-center gap-1">
-                <TinyInput
-                  v-model="searchFields.email"
-                  :placeholder="t('pleaseEnter')"
-                  class="h-8 flex-1 text-xs"
-                  clearable
-                  @keyup.enter="handleFilterChange('email')"
-                  @clear="handleFilterChange('email')"
-                />
-              </div>
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="flex items-center gap-3">
+            <img v-if="row.avatar" :src="row.avatar" alt="avatar" class="h-10 w-10 rounded-full object-cover" />
+            <div class="flex flex-col">
+              <span class="text-base font-medium text-gray-900">{{ row.fullName }}</span>
             </div>
-          </template>
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ row.email }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="hireDate" :title="t('hireDate')" :width="150" sortable :sort-field="'hireDate'" :current-order="getColumnOrder('hireDate')" @sort="handleColumnSort">
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ formatDate(row.hireDate) }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="lastLoginAt" :title="t('lastLoginAt')" :width="180" sortable :sort-field="'lastLoginAt'" :current-order="getColumnOrder('lastLoginAt')" @sort="handleColumnSort">
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ formatDate(row.lastLoginAt) || '—' }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="180" sortable :sort-field="'createdAt'" :current-order="getColumnOrder('createdAt')" @sort="handleColumnSort">
-          <template #default="{ row }">
-            <div class="text-[16px]">{{ formatDate(row.createdAt) || '—' }}</div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status')" :width="150" align="center" fixed="right">
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-[#111827]">{{ t('status') }}</span>
-              <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('all')" class="h-8 text-xs" @change="handleFilterChange" />
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="roleLabel" :title="t('role')" :width="180">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('role') }}</span>
+            <InfiniteSelect
+              v-model="filters.role"
+              dataSource="roles"
+              type="outline"
+              :placeholder="t('pleaseSelectPermission')"
+              allowClear
+              @change="handleFilterChange"
+              :filters="{ status: 'active' }"
+            />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ row.role }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="jobType" :title="t('jobType')" :width="200">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('jobType') }}</span>
+            <TinySelect v-model="filters.jobType" :options="jobTypeFilterOptions" :placeholder="t('all')" class="h-8 text-xs" clearable @change="handleFilterChange" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ getJobTypeLabel(row.jobType) }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="phone" :title="t('phone')" :width="180">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('phone') }}</span>
+            <TinyInput
+              v-model="searchFields.phone"
+              :placeholder="t('pleaseEnter')"
+              class="h-8 flex-1 text-xs"
+              clearable
+              @keyup.enter="handleFilterChange('phone')"
+              @clear="handleFilterChange('phone')"
+            />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ row.phone }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="email" :title="t('email')" :min-width="220" sortable :sort-field="'email'" :current-order="getColumnOrder('email')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('email') }}</span>
+            <div class="flex items-center gap-1">
+              <TinyInput
+                v-model="searchFields.email"
+                :placeholder="t('pleaseEnter')"
+                class="h-8 flex-1 text-xs"
+                clearable
+                @keyup.enter="handleFilterChange('email')"
+                @clear="handleFilterChange('email')"
+              />
             </div>
-          </template>
-          <template #default="{ row }">
-            <a-tag :color="row.isActive ? 'arcoblue' : 'red'" size="large">{{ row.isActive ? t('statusActive') : t('statusInactive') }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions')" :width="150" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : ''">
-                <button
-                  class="table-button"
-                  :disabled="isSystemAdmin(row) && !isDevEnv"
-                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
-                  @click="!isSystemAdmin(row) || isDevEnv ? deleteData(row.id) : null"
-                >
-                  <Trash2 class="size-4 text-rose-500" />
-                </button>
-              </a-tooltip>
-              <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
-                <button
-                  class="table-button"
-                  :disabled="isSystemAdmin(row) && !isDevEnv"
-                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
-                  @click="!isSystemAdmin(row) || isDevEnv ? openChangePassword(row) : null"
-                >
-                  <KeyRound class="size-4 text-amber-500" />
-                </button>
-              </a-tooltip>
-              <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
-                <button
-                  class="table-button"
-                  :disabled="isSystemAdmin(row) && !isDevEnv"
-                  :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
-                  @click="!isSystemAdmin(row) || isDevEnv ? editData(row) : null"
-                >
-                  <SquarePen class="size-4" />
-                </button>
-              </a-tooltip>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ row.email }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="hireDate" :title="t('hireDate')" :width="150" sortable :sort-field="'hireDate'" :current-order="getColumnOrder('hireDate')" @sort="handleColumnSort">
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ formatDate(row.hireDate) }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="lastLoginAt" :title="t('lastLoginAt')" :width="180" sortable :sort-field="'lastLoginAt'" :current-order="getColumnOrder('lastLoginAt')" @sort="handleColumnSort">
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ formatDate(row.lastLoginAt) || '—' }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="180" sortable :sort-field="'createdAt'" :current-order="getColumnOrder('createdAt')" @sort="handleColumnSort">
+        <template #default="{ row }">
+          <div class="text-[16px]">{{ formatDate(row.createdAt) || '—' }}</div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="status" :title="t('status')" :width="150" align="center" fixed="right">
+        <template #header>
+          <div class="flex flex-col gap-1 text-center">
+            <span class="text-[16px] text-[#111827]">{{ t('status') }}</span>
+            <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('all')" class="h-8 text-xs" @change="handleFilterChange" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <a-tag :color="row.isActive ? 'arcoblue' : 'red'" size="large">{{ row.isActive ? t('statusActive') : t('statusInactive') }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions')" :width="150" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : ''">
+              <button
+                class="table-button"
+                :disabled="isSystemAdmin(row) && !isDevEnv"
+                :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                @click="!isSystemAdmin(row) || isDevEnv ? deleteData(row.id) : null"
+              >
+                <Trash2 class="size-4 text-rose-500" />
+              </button>
+            </a-tooltip>
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+              <button
+                class="table-button"
+                :disabled="isSystemAdmin(row) && !isDevEnv"
+                :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                @click="!isSystemAdmin(row) || isDevEnv ? openChangePassword(row) : null"
+              >
+                <KeyRound class="size-4 text-amber-500" />
+              </button>
+            </a-tooltip>
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+              <button
+                class="table-button"
+                :disabled="isSystemAdmin(row) && !isDevEnv"
+                :class="{ 'cursor-not-allowed opacity-40': isSystemAdmin(row) && !isDevEnv }"
+                @click="!isSystemAdmin(row) || isDevEnv ? editData(row) : null"
+              >
+                <SquarePen class="size-4" />
+              </button>
+            </a-tooltip>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -334,16 +332,18 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { AuthPasswordChangePost } from '@/assets/API/Auth';
 import Swal from 'sweetalert2';
-import { TinyInput, TinySelect } from '@opentiny/vue';
+import { TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
 import { SquarePen, Trash2, KeyRound, Expand, Shrink } from 'lucide-vue-next';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ImagePreview } from '@kousum/semi-ui-vue';
 import { Button } from '@/components/ui/button';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import ImagePickerModal from '@/components/Form/ImagePickerModal.vue';
 import AEmailAutocomplete from '@/components/Form/AEmailAutocomplete.vue';
 import CustomField from '@/components/Form/CustomField.vue';
@@ -357,15 +357,15 @@ const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
 
-// 判斷是否為本地開發環境
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 360, 100));
+
 const isDevEnv = import.meta.env.DEV;
+const isSystemAdmin = (row) => row.role === '系統管理員'; //判斷是否為系統管理員
 
-// 判斷是否為系統管理員
-const isSystemAdmin = (row) => {
-  return row.role === '系統管理員';
-};
-
-// ＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
+//＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
 const fullscreen = ref(false);
 const passwordDialogVisible = ref(false);
 const isChangingPassword = ref(false);
@@ -377,9 +377,7 @@ const passwordForm = ref({
   newPassword: '',
   confirmPassword: '',
 });
-
-const PASSWORD_MIN_LENGTH = 6; // 密碼最小長度
-
+const PASSWORD_MIN_LENGTH = 6; //密碼最小長度
 const passwordFormRules = {
   oldPassword: [{ required: true, message: t('pleaseEnterOldPassword', '請輸入舊密碼') }],
   newPassword: [
@@ -399,8 +397,6 @@ const passwordFormRules = {
     },
   ],
 };
-
-// 開啟變更密碼視窗
 const openChangePassword = (row) => {
   passwordForm.value = {
     userId: row.id,
@@ -410,15 +406,11 @@ const openChangePassword = (row) => {
     confirmPassword: '',
   };
   passwordDialogVisible.value = true;
-};
-
-// 關閉變更密碼視窗
+}; //開啟變更密碼視窗
 const closePasswordDialog = () => {
   passwordDialogVisible.value = false;
   passwordFormRef.value?.resetFields();
-};
-
-// 提交變更密碼
+}; //關閉變更密碼視窗
 const submitChangePassword = async () => {
   try {
     const valid = await passwordFormRef.value?.validate();
@@ -449,7 +441,7 @@ const submitChangePassword = async () => {
   } finally {
     isChangingPassword.value = false;
   }
-};
+}; //提交變更密碼
 
 const {
   //常數
@@ -515,7 +507,6 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(430);
 });
 </script>
 

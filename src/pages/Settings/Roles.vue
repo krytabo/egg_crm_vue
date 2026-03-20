@@ -10,79 +10,77 @@
         <p class="text-sm text-gray-500">{{ t('totalCount', { total: pagination.total }) }}</p>
       </div>
       <div class="flex items-center gap-3">
-        <Button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</Button>
-        <Button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addRole') }}</Button>
+        <a-button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</a-button>
+        <a-button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addRole') }}</a-button>
       </div>
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         其他搜尋         -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <div class="grid gap-3 md:grid-cols-2">
-            <AFormItem :label="t('keyword')">
-              <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterNameOrDescription')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-            </AFormItem>
-            <AFormItem :label="t('roleType')">
-              <TinySelect v-model="filters.type" :options="roleTypeOptions" :placeholder="t('all')" class="h-9 text-sm" clearable @update:model-value="handleFiltersChange" />
-            </AFormItem>
-          </div>
-        </AForm>
-      </div>
+    <CustomForm :col="2" class="mb-4">
+      <CustomFormItem :label="t('keyword')">
+        <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterNameOrDescription')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('roleType')">
+        <TinySelect v-model="filters.type" :options="roleTypeOptions" :placeholder="t('all')" class="h-9 text-sm" clearable @update:model-value="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
-        <CustomTinyGridColumn field="name" :title="t('role')" min-width="220">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="text-base font-semibold text-gray-900">{{ row.displayName }}</span>
-              <span class="text-xs text-gray-500">{{ t('codeColon') }}{{ row.displayCode || '—' }}</span>
-              <span class="text-xs text-gray-500">{{ row.description || t('unset') }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="isSystem" :title="t('type')" :width="120" align="center">
-          <template #default="{ row }">
-            <TinyBadge :type="row.isSystem ? 'info' : 'success'">{{ row.isSystem ? t('system') : t('custom') }}</TinyBadge>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="permissions" :title="t('permissions')" min-width="260">
-          <template #default="{ row }">
-            <div class="flex flex-wrap gap-1">
-              <TinyTag v-for="permission in row.permissionPreview" :key="permission" size="mini" type="info">{{ permission }}</TinyTag>
-              <TinyTag v-if="row.permissionOverflow > 0" size="mini" effect="dark">+{{ row.permissionOverflow }}</TinyTag>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
-          <template #default="{ row }">{{ row.updatedAt }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions')" :width="220" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <a-button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" type="text" status="danger" :disabled="row.isSystem || row.id === '5445966e-f790-461d-8686-7070d06100ea'" @click="deleteData(row)"><Trash2 class="size-4" /></a-button>
-              <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
+      <CustomTinyGridColumn field="name" :title="t('role')" min-width="220">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span class="text-base font-semibold text-gray-900">{{ row.displayName }}</span>
+            <span class="text-xs text-gray-500">{{ t('codeColon') }}{{ row.displayCode || '—' }}</span>
+            <span class="text-xs text-gray-500">{{ row.description || t('unset') }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="isSystem" :title="t('type')" :width="120" align="center">
+        <template #default="{ row }">
+          <TinyBadge :type="row.isSystem ? 'info' : 'success'">{{ row.isSystem ? t('system') : t('custom') }}</TinyBadge>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="permissions" :title="t('permissions')" min-width="260">
+        <template #default="{ row }">
+          <div class="flex flex-wrap gap-1">
+            <TinyTag v-for="permission in row.permissionPreview" :key="permission" size="mini" type="info">{{ permission }}</TinyTag>
+            <TinyTag v-if="row.permissionOverflow > 0" size="mini" effect="dark">+{{ row.permissionOverflow }}</TinyTag>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
+        <template #default="{ row }">{{ row.updatedAt }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions')" :width="220" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <a-button
+              v-if="permissionStore.hasPermission('ROLE', 'DELETE')"
+              type="text"
+              status="danger"
+              :disabled="row.isSystem || row.id === '5445966e-f790-461d-8686-7070d06100ea'"
+              @click="deleteData(row)"
+              ><Trash2 class="size-4"
+            /></a-button>
+            <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -137,9 +135,11 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { RoleListGet, RoleCreatePost, RoleGetByID, RoleUpdatePatch, RoleDeleteById, RoleAssignPermissionsPost } from '@/assets/API/Role';
 import { TinyForm, TinyFormItem, TinyInput, TinySelect, TinyBadge, TinyTag } from '@opentiny/vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import PermissionTreeSelect from '@/components/Form/PermissionTreeSelect.vue';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';

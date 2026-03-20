@@ -1,115 +1,109 @@
 <!-- src/pages/inventory-reports/components/InventoryOverviewTab.vue 庫存總覽 -->
 <template>
-  <div class="flex flex-col gap-4">
-    <!-- 統計卡片區 -->
-    <div class="grid grid-cols-4 gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('totalInventoryValue', '庫存總價值') }}</p>
-        <p class="text-2xl font-semibold text-gray-900">NT$ {{ formatNumber(summaryData.totalValue) }}</p>
-      </div>
-      <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('lowStockItems', '低庫存項目') }}</p>
-        <div class="flex items-end gap-2">
-          <p class="text-2xl font-semibold text-orange-600">{{ summaryData.lowStockCount }}</p>
-          <p class="text-gray-500">{{ t('items', '項') }}</p>
-        </div>
-      </div>
-      <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('outOfStockItems', '缺貨項目') }}</p>
-        <div class="flex items-end gap-2">
-          <p class="text-2xl font-semibold text-red-600">{{ summaryData.outOfStockCount }}</p>
-          <p class="text-gray-500">{{ t('items', '項') }}</p>
-        </div>
-      </div>
-      <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('reorderItems', '待補貨項目') }}</p>
-        <div class="flex items-end gap-2">
-          <p class="text-2xl font-semibold text-blue-600">{{ summaryData.reorderCount }}</p>
-          <p class="text-gray-500">{{ t('items', '項') }}</p>
-        </div>
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--         統計區塊         -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <div class="grid grid-cols-4 gap-3 rounded-md bg-[#f5f7fb] p-4">
+    <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
+      <p class="text-[18px]">{{ t('totalInventoryValue', '庫存總價值') }}</p>
+      <p class="text-2xl font-semibold text-gray-900">NT$ {{ formatNumber(summaryData.totalValue) }}</p>
+    </div>
+    <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
+      <p class="text-[18px]">{{ t('lowStockItems', '低庫存項目') }}</p>
+      <div class="flex items-end gap-2">
+        <p class="text-2xl font-semibold text-orange-600">{{ summaryData.lowStockCount }}</p>
+        <p class="text-gray-500">{{ t('items', '項') }}</p>
       </div>
     </div>
-
-    <!-- 篩選區塊 -->
-    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <AForm layout="vertical">
-        <div class="grid grid-cols-3 gap-4">
-          <AFormItem :label="t('keyword', '關鍵字')">
-            <TinyInput v-model="filters.search" :placeholder="t('searchProductNameOrCode', '搜尋產品名稱或編號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-          </AFormItem>
-          <AFormItem :label="t('location', '存放位置')">
-            <InfiniteSelect
-              v-model="filters.location"
-              dataSource="InventoryLocations"
-              :placeholder="t('all', '全部')"
-              type="outline"
-              allowClear
-              :filters="{ status: 'active' }"
-              @change="handleFiltersChange"
-            />
-          </AFormItem>
-          <AFormItem :label="t('stockStatus', '庫存狀態')">
-            <TinySelect v-model="filters.stockStatus" :options="stockStatusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
-          </AFormItem>
-        </div>
-      </AForm>
+    <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
+      <p class="text-[18px]">{{ t('outOfStockItems', '缺貨項目') }}</p>
+      <div class="flex items-end gap-2">
+        <p class="text-2xl font-semibold text-red-600">{{ summaryData.outOfStockCount }}</p>
+        <p class="text-gray-500">{{ t('items', '項') }}</p>
+      </div>
     </div>
-
-    <!-- 庫存列表 -->
-    <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" row-key="productId">
-      <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" min-width="200" fixed="left" />
-      <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" width="200" />
-      <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" width="80" align="center" />
-      <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" width="100" align="right">
-        <template #default="{ row }">
-          <span :class="getStockClass(row)">{{ row.currentStock }}</span>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" width="100" align="right" />
-      <CustomTinyGridColumn field="maxStock" :title="t('maxStock', '最高庫存')" width="100" align="right" />
-      <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" width="100" align="right" />
-      <CustomTinyGridColumn field="costPrice" :title="t('unitCost', '單位成本')" width="120" align="right">
-        <template #default="{ row }">NT$ {{ formatNumber(row.costPrice) }}</template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="totalValue" :title="t('totalValue', '庫存總價值')" width="130" align="right">
-        <template #default="{ row }">NT$ {{ formatNumber(row.totalValue) }}</template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn
-        field="updatedAt"
-        :title="t('updatedAt', '更新時間')"
-        width="160"
-        sortable
-        :sort-field="'updatedAt'"
-        :current-order="getColumnOrder('updatedAt')"
-        @sort="handleColumnSort"
-      />
-      <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center" fixed="right">
-        <template #default="{ row }">
-          <TinyBadge v-if="row.isOutOfStock" type="danger">{{ t('outOfStock', '缺貨') }}</TinyBadge>
-          <TinyBadge v-else-if="row.isLowStock" type="warning">{{ t('lowStock', '低庫存') }}</TinyBadge>
-          <TinyBadge v-else type="success">{{ t('normal', '正常') }}</TinyBadge>
-        </template>
-      </CustomTinyGridColumn>
-    </CustomTinyGrid>
-    <AppPagination
-      class="md:w-auto"
-      :current="pagination.page"
-      :page-size="pagination.limit"
-      :total="pagination.total"
-      :page-size-options="pageSizeOptions"
-      @change="CurrentChange"
-      @page-size-change="SizeChange"
-    />
+    <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
+      <p class="text-[18px]">{{ t('reorderItems', '待補貨項目') }}</p>
+      <div class="flex items-end gap-2">
+        <p class="text-2xl font-semibold text-blue-600">{{ summaryData.reorderCount }}</p>
+        <p class="text-gray-500">{{ t('items', '項') }}</p>
+      </div>
+    </div>
   </div>
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--         篩選區塊         -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <CustomForm :col="3">
+    <CustomFormItem :label="t('keyword', '關鍵字')">
+      <TinyInput v-model="filters.search" :placeholder="t('searchProductNameOrCode', '搜尋產品名稱或編號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+    </CustomFormItem>
+    <CustomFormItem :label="t('location', '存放位置')">
+      <InfiniteSelect
+        v-model="filters.location"
+        dataSource="InventoryLocations"
+        :placeholder="t('all', '全部')"
+        type="outline"
+        allowClear
+        :filters="{ status: 'active' }"
+        @change="handleFiltersChange"
+      />
+    </CustomFormItem>
+    <CustomFormItem :label="t('stockStatus', '庫存狀態')">
+      <TinySelect v-model="filters.stockStatus" :options="stockStatusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
+    </CustomFormItem>
+  </CustomForm>
+
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--          列表            -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <CustomTinyGrid :data="basicDataList" :height="TableScrollY" row-key="productId">
+    <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" min-width="200" fixed="left" />
+    <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" width="200" />
+    <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" width="80" align="center" />
+    <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" width="100" align="right">
+      <template #default="{ row }">
+        <span :class="getStockClass(row)">{{ row.currentStock }}</span>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" width="100" align="right" />
+    <CustomTinyGridColumn field="maxStock" :title="t('maxStock', '最高庫存')" width="100" align="right" />
+    <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" width="100" align="right" />
+    <CustomTinyGridColumn field="costPrice" :title="t('unitCost', '單位成本')" width="120" align="right">
+      <template #default="{ row }">NT$ {{ formatNumber(row.costPrice) }}</template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="totalValue" :title="t('totalValue', '庫存總價值')" width="130" align="right">
+      <template #default="{ row }">NT$ {{ formatNumber(row.totalValue) }}</template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt', '更新時間')" width="160" sortable :sort-field="'updatedAt'" :current-order="getColumnOrder('updatedAt')" @sort="handleColumnSort" />
+    <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center" fixed="right">
+      <template #default="{ row }">
+        <TinyBadge v-if="row.isOutOfStock" type="danger">{{ t('outOfStock', '缺貨') }}</TinyBadge>
+        <TinyBadge v-else-if="row.isLowStock" type="warning">{{ t('lowStock', '低庫存') }}</TinyBadge>
+        <TinyBadge v-else type="success">{{ t('normal', '正常') }}</TinyBadge>
+      </template>
+    </CustomTinyGridColumn>
+  </CustomTinyGrid>
+  <AppPagination
+    class="md:w-auto"
+    :current="pagination.page"
+    :page-size="pagination.limit"
+    :total="pagination.total"
+    :page-size-options="pageSizeOptions"
+    @change="CurrentChange"
+    @page-size-change="SizeChange"
+  />
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, reactive, computed, onUnmounted } from 'vue';
 import { InventoryListGet, InventoryLowStockGet, InventoryOutOfStockGet, InventoryReorderAlertsGet } from '@/assets/API/Inventory';
 import { TinyInput, TinySelect, TinyBadge } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useSystemStore } from '@/stores/system';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -120,6 +114,11 @@ const systemStore = useSystemStore();
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const { t } = useI18n();
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 460, 100));
 
 const EMPTY_PLACEHOLDER = '—';
 const stockStatusOptions = [
@@ -249,9 +248,5 @@ onUnmounted(cleanupResize);
 
 onMounted(async () => {
   await getAPI();
-
-  /** Table高度相關 **/
-  await nextTick();
-  systemStore.updateTableHeight(570); //修改table高度
 });
 </script>

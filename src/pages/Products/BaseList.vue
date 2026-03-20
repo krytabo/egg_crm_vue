@@ -17,282 +17,244 @@
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         其他搜尋         -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm auto-label-width>
-          <AFormItem :label="t('stock', '庫存')">
-            <TinyCheckbox :model-value="filters.inStock" @update:model-value="(val) => toggleBooleanFilter('inStock', val)">{{ t('showInStockOnly', '僅顯示有庫存') }}</TinyCheckbox>
-            <TinyCheckbox :model-value="filters.lowStock" @update:model-value="(val) => toggleBooleanFilter('lowStock', val)">{{ t('lowReorderPoint', '低於補貨點') }}</TinyCheckbox>
-            <TinyCheckbox :model-value="filters.isPerishable" @update:model-value="(val) => toggleBooleanFilter('isPerishable', val)">{{ t('refrigeration', '冷藏需求') }}</TinyCheckbox>
-          </AFormItem>
-          <Collapsible :isOpen="showMoreSearch">
-            <div class="grid grid-cols-2 gap-2">
-              <AFormItem :label="t('salePriceAmount', '售價金額')">
-                <div class="flex items-center justify-start gap-2">
-                  <TinyNumeric v-model="filters.minPrice" :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
-                  <TinyNumeric v-model="filters.maxPrice" :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
-                </div>
-              </AFormItem>
-              <AFormItem :label="t('wholesalePrice', '批發價')">
-                <div class="flex items-center justify-start gap-2">
-                  <TinyNumeric
-                    v-model="filters.minWholesalePrice"
-                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                  <TinyNumeric
-                    v-model="filters.maxWholesalePrice"
-                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                </div>
-              </AFormItem>
-              <AFormItem :label="t('cashPrice', '現金價')">
-                <div class="flex items-center justify-start gap-2">
-                  <TinyNumeric
-                    v-model="filters.minCashPrice"
-                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                  <TinyNumeric
-                    v-model="filters.maxCashPrice"
-                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                </div>
-              </AFormItem>
-              <AFormItem :label="t('costPrice', '成本價')">
-                <div class="flex items-center justify-start gap-2">
-                  <TinyNumeric
-                    v-model="filters.minCostPrice"
-                    :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                  <TinyNumeric
-                    v-model="filters.maxCostPrice"
-                    :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
-                    class="w-full!"
-                    @change="handleGlobalSearch"
-                    @keyup.enter="handleGlobalSearch"
-                  />
-                </div>
-              </AFormItem>
-            </div>
-          </Collapsible>
-        </AForm>
-      </div>
-
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--<JsonViewer :value="basicDataList" boxed copyable />-->
-      <CustomTinyGrid :data="basicDataList" row-key="id" :height="systemStore.tableHeight" :border="true" :row-id="'id'">
-        <CustomTinyGridColumn
-          field="name"
-          :title="t('productName', '商品名稱')"
-          min-width="240"
-          fixed="left"
-          sortable
-          :sort-field="'name'"
-          :current-order="getColumnOrder('name')"
-          @sort="handleColumnSort"
-          @enter="handleGlobalSearch"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('productNameWithCategory', { category: categoryLabel }, `${categoryLabel}商品名稱`) }}</span>
-              <TinyInput v-model="filters.name" :placeholder="t('pleaseEnterName', '請輸入名稱')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="font-medium text-gray-900">{{ row.name }}</span>
-              <span class="text-xs text-gray-500">{{ t('codeColon', '代碼：') }}{{ row.code || '—' }}</span>
-              <span v-if="row.description" class="text-xs text-gray-500">{{ row.description }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <!--<CustomTinyGridColumn
-          field="code"
-          :title="t('productCode', '商品編號')"
-          :width="160"
-          sortable
-          :sort-field="'code'"
-          :current-order="getColumnOrder('code')"
-          @sort="handleColumnSort"
-          @enter="handleGlobalSearch"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('productCode', '商品編號') }}</span>
-              <TinyInput v-model="filters.code" :placeholder="t('pleaseEnterCode', '請輸入編號')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">{{ row.code || '—' }}</template>
-        </CustomTinyGridColumn>-->
-        <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="180" sortable :sort-field="'unit'" :current-order="getColumnOrder('unit')" @sort="handleColumnSort">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('unit', '單位') }}</span>
-              <TinyInput v-model="filters.unit" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
-            </div>
-          </template>
-
-          <template #default="{ row }">{{ row.unit || defaultUnit || '—' }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="basePrice" :title="t('salePrice', '售價')" :width="200" sortable :sort-field="'basePrice'" :current-order="getColumnOrder('basePrice')" @sort="handleColumnSort">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span>{{ t('suggestedRetailPriceColon', '建議售價：') }}{{ row.basePriceAmount }}</span>
-              <span class="text-xs text-gray-500"
-                >{{ t('wholesaleColon', '批發：') }}{{ row.wholesalePriceAmount }} / {{ t('cashColon', '現金：') }}{{ row.cashPriceAmount }} / {{ t('成本：', '成本：')
-                }}{{ row.costPriceAmount }}</span
-              >
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="currentStock"
-          :title="t('currentStock', '目前庫存')"
-          :width="200"
-          sortable
-          :sort-field="'currentStock'"
-          :current-order="getColumnOrder('currentStock')"
-          @sort="handleColumnSort"
-        >
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <div class="flex items-center gap-2">
-                <span class="text-base font-medium text-gray-900">{{ row.currentStock }}</span>
-                <TinyTag :color="['#D4183D', '#fff']" v-if="row.currentStock === 0">{{ t('outOfStock', '缺貨') }}</TinyTag>
-                <TinyTag v-else-if="isLowStock(row)" type="danger">{{ t('belowReorderPoint', '低於補貨點') }}</TinyTag>
-                <!--<TinyTag v-else-if="row.inStock" type="info">有庫存</TinyTag>-->
+    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] px-8 pt-4 pb-1">
+      <AForm auto-label-width>
+        <AFormItem :label="t('stock', '庫存')">
+          <TinyCheckbox :model-value="filters.inStock" @update:model-value="(val) => toggleBooleanFilter('inStock', val)">{{ t('showInStockOnly', '僅顯示有庫存') }}</TinyCheckbox>
+          <TinyCheckbox :model-value="filters.lowStock" @update:model-value="(val) => toggleBooleanFilter('lowStock', val)">{{ t('lowReorderPoint', '低於補貨點') }}</TinyCheckbox>
+          <TinyCheckbox :model-value="filters.isPerishable" @update:model-value="(val) => toggleBooleanFilter('isPerishable', val)">{{ t('refrigeration', '冷藏需求') }}</TinyCheckbox>
+        </AFormItem>
+        <Collapsible :isOpen="showMoreSearch">
+          <div class="grid grid-cols-2 gap-2">
+            <AFormItem :label="t('salePriceAmount', '售價金額')">
+              <div class="flex items-center justify-start gap-2">
+                <TinyNumeric v-model="filters.minPrice" :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+                <TinyNumeric v-model="filters.maxPrice" :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
               </div>
-              <span class="text-xs text-gray-500">{{ t('reorderPointColon', '補貨點：') }}{{ row.reorderPoint || '—' }} · {{ t('minStockColon', '最低庫存：') }}{{ row.minStock || '—' }}</span>
+            </AFormItem>
+            <AFormItem :label="t('wholesalePrice', '批發價')">
+              <div class="flex items-center justify-start gap-2">
+                <TinyNumeric
+                  v-model="filters.minWholesalePrice"
+                  :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')"
+                  class="w-full!"
+                  @change="handleGlobalSearch"
+                  @keyup.enter="handleGlobalSearch"
+                />
+                <TinyNumeric
+                  v-model="filters.maxWholesalePrice"
+                  :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')"
+                  class="w-full!"
+                  @change="handleGlobalSearch"
+                  @keyup.enter="handleGlobalSearch"
+                />
+              </div>
+            </AFormItem>
+            <AFormItem :label="t('cashPrice', '現金價')">
+              <div class="flex items-center justify-start gap-2">
+                <TinyNumeric v-model="filters.minCashPrice" :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+                <TinyNumeric v-model="filters.maxCashPrice" :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+              </div>
+            </AFormItem>
+            <AFormItem :label="t('costPrice', '成本價')">
+              <div class="flex items-center justify-start gap-2">
+                <TinyNumeric v-model="filters.minCostPrice" :placeholder="t('pleaseEnterMinAmount', '請輸入最低金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+                <TinyNumeric v-model="filters.maxCostPrice" :placeholder="t('pleaseEnterMaxAmount', '請輸入最高金額')" class="w-full!" @change="handleGlobalSearch" @keyup.enter="handleGlobalSearch" />
+              </div>
+            </AFormItem>
+          </div>
+        </Collapsible>
+      </AForm>
+    </div>
+
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" row-key="id" :height="TableScrollY" :border="true" :row-id="'id'">
+      <CustomTinyGridColumn
+        field="name"
+        :title="t('productName', '商品名稱')"
+        min-width="240"
+        fixed="left"
+        sortable
+        :sort-field="'name'"
+        :current-order="getColumnOrder('name')"
+        @sort="handleColumnSort"
+        @enter="handleGlobalSearch"
+      >
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('productNameWithCategory', { category: categoryLabel }, `${categoryLabel}商品名稱`) }}</span>
+            <TinyInput v-model="filters.name" :placeholder="t('pleaseEnterName', '請輸入名稱')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span class="font-medium text-gray-900">{{ row.name }}</span>
+            <span class="text-xs text-gray-500">{{ t('codeColon', '代碼：') }}{{ row.code || '—' }}</span>
+            <span v-if="row.description" class="text-xs text-gray-500">{{ row.description }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <!--<CustomTinyGridColumn
+        field="code"
+        :title="t('productCode', '商品編號')"
+        :width="160"
+        sortable
+        :sort-field="'code'"
+        :current-order="getColumnOrder('code')"
+        @sort="handleColumnSort"
+        @enter="handleGlobalSearch"
+      >
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('productCode', '商品編號') }}</span>
+            <TinyInput v-model="filters.code" :placeholder="t('pleaseEnterCode', '請輸入編號')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">{{ row.code || '—' }}</template>
+      </CustomTinyGridColumn>-->
+      <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="180" sortable :sort-field="'unit'" :current-order="getColumnOrder('unit')" @sort="handleColumnSort">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('unit', '單位') }}</span>
+            <TinyInput v-model="filters.unit" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" clearable />
+          </div>
+        </template>
+
+        <template #default="{ row }">{{ row.unit || defaultUnit || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="basePrice" :title="t('salePrice', '售價')" :width="200" sortable :sort-field="'basePrice'" :current-order="getColumnOrder('basePrice')" @sort="handleColumnSort">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span>{{ t('suggestedRetailPriceColon', '建議售價：') }}{{ row.basePriceAmount }}</span>
+            <span class="text-xs text-gray-500"
+              >{{ t('wholesaleColon', '批發：') }}{{ row.wholesalePriceAmount }} / {{ t('cashColon', '現金：') }}{{ row.cashPriceAmount }} / {{ t('costColon', '成本：')
+              }}{{ row.costPriceAmount }}</span
+            >
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn
+        field="currentStock"
+        :title="t('currentStock', '目前庫存')"
+        :width="200"
+        sortable
+        :sort-field="'currentStock'"
+        :current-order="getColumnOrder('currentStock')"
+        @sort="handleColumnSort"
+      >
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <div class="flex items-center gap-2">
+              <span class="text-base font-medium text-gray-900">{{ row.currentStock }}</span>
+              <TinyTag :color="['#D4183D', '#fff']" v-if="row.currentStock === 0">{{ t('outOfStock', '缺貨') }}</TinyTag>
+              <TinyTag v-else-if="isLowStock(row)" type="danger">{{ t('belowReorderPoint', '低於補貨點') }}</TinyTag>
+              <!--<TinyTag v-else-if="row.inStock" type="info">有庫存</TinyTag>-->
             </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="vendor"
-          :title="t('vendor', '供應商')"
-          min-width="250"
-          sortable
-          :sort-field="'primaryVendorId'"
-          :current-order="getColumnOrder('primaryVendorId')"
-          @sort="handleColumnSort"
-        >
-          <template #header>
-            <div class="flex w-47.5 flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('vendor', '供應商') }}</span>
-              <InfiniteSelect
-                v-model="filters.primaryVendorId"
-                dataSource="vendors"
-                type="outline"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                allowClear
-                :filters="{ status: 'active' }"
-                @change="handleVendorFilterChange"
-                class="w-45"
-              />
-              <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
-            </div>
-          </template>
-          <template #default="{ row }">{{ row.primaryVendor?.name || '—' }} </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="isPerishable"
-          :title="t('refrigeration', '冷藏需求')"
-          :width="160"
-          align="center"
-          sortable
-          :sort-field="'isPerishable'"
-          :current-order="getColumnOrder('isPerishable')"
-          @sort="handleColumnSort"
-        >
-          <template #default="{ row }">
-            <TinyBadge :type="row.isPerishable ? 'info' : 'success'">{{ row.isPerishable ? t('needsRefrigeration', '需冷藏') : t('roomTemperature', '常溫') }}</TinyBadge>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('tags', '標籤') }}</span>
-              <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnterKeyword', '請輸入關鍵字')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex flex-wrap gap-1 text-xs text-gray-700">
-              <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
-              <span v-if="!row.tags?.length">—</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="updatedAt"
-          :title="t('updatedAt', '更新時間')"
-          :width="160"
-          sortable
-          :sort-field="'updatedAt'"
-          :current-order="getColumnOrder('updatedAt')"
-          @sort="handleColumnSort"
-        >
-          <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn
-          field="status"
-          :title="t('status', '狀態')"
-          fixed="right"
-          :width="150"
-          align="center"
-          sortable
-          :sort-field="'status'"
-          :current-order="getColumnOrder('status')"
-          @sort="handleColumnSort"
-        >
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
-              <TinySelect :model-value="filters.status" :options="statusFilterOptions" :placeholder="t('all', '全部')" class="h-8 text-xs" @update:model-value="updateStatusFilter" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <a-tag :color="statusColorMap[row.status] || 'arcoblue'" size="large">{{ statusLabelMap[row.status] || row.status }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions', '操作')" :width="200" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('PRODUCT', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button v-if="permissionStore.hasPermission('PRODUCT', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+            <span class="text-xs text-gray-500">{{ t('reorderPointColon', '補貨點：') }}{{ row.reorderPoint || '—' }} · {{ t('minStockColon', '最低庫存：') }}{{ row.minStock || '—' }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn
+        field="vendor"
+        :title="t('vendor', '供應商')"
+        min-width="250"
+        sortable
+        :sort-field="'primaryVendorId'"
+        :current-order="getColumnOrder('primaryVendorId')"
+        @sort="handleColumnSort"
+      >
+        <template #header>
+          <div class="flex w-47.5 flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('vendor', '供應商') }}</span>
+            <InfiniteSelect
+              v-model="filters.primaryVendorId"
+              dataSource="vendors"
+              type="outline"
+              :placeholder="t('pleaseSelect', '請選擇')"
+              allowClear
+              :filters="{ status: 'active' }"
+              @change="handleVendorFilterChange"
+              class="w-45"
+            />
+            <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
+          </div>
+        </template>
+        <template #default="{ row }">{{ row.primaryVendor?.name || '—' }} </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn
+        field="isPerishable"
+        :title="t('refrigeration', '冷藏需求')"
+        :width="160"
+        align="center"
+        sortable
+        :sort-field="'isPerishable'"
+        :current-order="getColumnOrder('isPerishable')"
+        @sort="handleColumnSort"
+      >
+        <template #default="{ row }">
+          <TinyBadge :type="row.isPerishable ? 'info' : 'success'">{{ row.isPerishable ? t('needsRefrigeration', '需冷藏') : t('roomTemperature', '常溫') }}</TinyBadge>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="tags" :title="t('tags', '標籤')" min-width="220">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('tags', '標籤') }}</span>
+            <TinyInput v-model="filters.tags" :placeholder="t('pleaseEnterKeyword', '請輸入關鍵字')" class="h-8 text-xs" @keyup.enter="handleGlobalSearch" @change="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="flex flex-wrap gap-1 text-xs text-gray-700">
+            <span v-for="tag in row.tags" :key="`${row.id}-${tag}`" class="rounded-full bg-gray-100 px-2 py-0.5">{{ tag }}</span>
+            <span v-if="!row.tags?.length">—</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt', '更新時間')" :width="160" sortable :sort-field="'updatedAt'" :current-order="getColumnOrder('updatedAt')" @sort="handleColumnSort">
+        <template #default="{ row }">{{ formatDate(row.updatedAt) }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn
+        field="status"
+        :title="t('status', '狀態')"
+        fixed="right"
+        :width="150"
+        align="center"
+        sortable
+        :sort-field="'status'"
+        :current-order="getColumnOrder('status')"
+        @sort="handleColumnSort"
+      >
+        <template #header>
+          <div class="flex flex-col gap-1 text-center">
+            <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
+            <TinySelect :model-value="filters.status" :options="statusFilterOptions" :placeholder="t('all', '全部')" class="h-8 text-xs" @update:model-value="updateStatusFilter" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <a-tag :color="statusColorMap[row.status] || 'arcoblue'" size="large">{{ statusLabelMap[row.status] || row.status }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="200" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('PRODUCT', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            <button v-if="permissionStore.hasPermission('PRODUCT', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <a-modal v-model:visible="dialogVisible" draggable :mask-closable="false" :closable="false" width="720px" title-align="start" :fullscreen="fullscreen">
@@ -368,7 +330,7 @@ import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { ProductCreatePost, ProductDeleteById, ProductGetByID, ProductListGet, ProductUpdatePatch } from '@/assets/API/Product';
 import { VendorListGet } from '@/assets/API/Vendor';
 import { TinyBadge, TinyButton, TinyCheckbox, TinyInput, TinyNumeric, TinySelect, TinyTag } from '@opentiny/vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Collapsible } from '@kousum/semi-ui-vue';
@@ -385,10 +347,15 @@ import { debounce } from 'lodash';
 import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 import { usePermissionStore } from '@/stores/PermissionStore';
-import { JsonViewer } from 'vue3-json-viewer';
 
 const permissionStore = usePermissionStore();
-
+const mainStore = useMainStore();
+const timezoneStore = useTimezoneStore();
+const currencyStore = useCurrencyStore();
+const systemStore = useSystemStore();
+const { containerRef } = useContentWidth();
+const { formatCurrencyNumber } = currencyStore;
+const { t } = useI18n();
 const props = defineProps({
   categoryId: { type: Number, required: true },
   categoryLabel: { type: String, required: true },
@@ -397,13 +364,11 @@ const props = defineProps({
   productTypeCode: { type: String, default: 'FINISHED_GOOD' },
   fakeDataType: { type: String, default: '' },
 });
-const { containerRef } = useContentWidth();
-const mainStore = useMainStore();
-const timezoneStore = useTimezoneStore();
-const currencyStore = useCurrencyStore();
-const systemStore = useSystemStore();
-const { t } = useI18n();
-const { formatCurrencyNumber } = currencyStore;
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - (showMoreSearch.value ? 450 : 360), 100));
 
 /** 常數相關 **/
 const isCreate = computed(() => dialogMode.value === 'create'); //是否為新增模式
@@ -649,8 +614,6 @@ const loadVendorOptions = async () => {
 const showMoreSearch = ref(false); //其他篩選展開收合
 const toggleSearch = () => {
   showMoreSearch.value = !showMoreSearch.value;
-  if (showMoreSearch.value) systemStore.updateTableHeight(580);
-  if (!showMoreSearch.value) systemStore.updateTableHeight(360);
 }; //展開收合
 const sortField = ref('createdAt'); //排序欄位
 const sortDirection = ref('desc'); //排序方向
@@ -928,7 +891,6 @@ onMounted(async () => {
   await getAPI();
 
   await nextTick();
-  systemStore.updateTableHeight(420);
 });
 </script>
 

@@ -36,18 +36,18 @@
       </template>
     </a-tabs>
 
-    <CardContent class="flex flex-col gap-2">
+    <div class="flex flex-col gap-2">
       <InvoicesTab v-if="activeKey === TAB_KEYS.INVOICES" ref="invoicesTabRef" @open-payment="handleOpenPayment" />
       <PaymentsTab v-else-if="activeKey === TAB_KEYS.PAYMENTS" ref="paymentsTabRef" />
       <CreditsTab v-else-if="activeKey === TAB_KEYS.CREDIT_MEMOS" ref="creditMemosTabRef" />
       <ReportsTab v-else-if="activeKey === TAB_KEYS.REPORTS" ref="reportsTabRef" />
-    </CardContent>
+    </div>
   </Card>
 </template>
 
 <script setup>
 import { ref } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import InvoicesTab from './components/InvoicesTab.vue';
 import PaymentsTab from './components/PaymentsTab.vue';
 import CreditsTab from './components/CreditsTab.vue';

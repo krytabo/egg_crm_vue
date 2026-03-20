@@ -15,117 +15,121 @@
         </div>
       </template>
     </a-tabs>
-    <CardContent class="flex flex-col gap-4">
-      <!-- 篩選區塊 -->
-      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <AFormItem field="orderDate" :label="t('orderDate', '訂單日期')">
-            <div class="flex items-center gap-2">
-              <TinyDatePicker v-model="filters.orderDateFrom" :placeholder="t('pleaseSelectDate', '請選擇日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-              <span>-</span>
-              <TinyDatePicker v-model="filters.orderDateTo" :placeholder="t('pleaseSelectDate', '請選擇日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
 
-              <TinyButton type="danger" plain @click="clearHireDateFilter">{{ t('clearDate', '清除日期') }}</TinyButton>
-            </div>
-          </AFormItem>
-        </AForm>
-      </div>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--         篩選區塊         -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomForm :col="1">
+      <CustomFormItem :label="t('orderDate', '訂單日期')">
+        <div class="flex items-center gap-2">
+          <TinyDatePicker v-model="filters.orderDateFrom" :placeholder="t('pleaseSelectDate', '請選擇日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+          <span>-</span>
+          <TinyDatePicker v-model="filters.orderDateTo" :placeholder="t('pleaseSelectDate', '請選擇日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+          <TinyButton type="danger" plain @click="clearHireDateFilter">{{ t('clearDate', '清除日期') }}</TinyButton>
+        </div>
+      </CustomFormItem>
+    </CustomForm>
 
-      <!-- 訂單列表 -->
-      <CustomTinyGrid ref="orderGridRef" :data="basicDataList" :height="520" :border="true" row-key="id">
-        <CustomTinyGridColumn field="" type="selection" title="" :width="50" />
-        <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="220">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('orderNumber', '訂單編號') }}</span>
-              <TinyInput v-model="filters.orderNumber" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn v-if="isCustomer" field="targetName" :title="t('customer', '客戶')" :width="220">
-          <template #header>
-            <div class="flex w-full flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('customer', '客戶') }}</span>
-              <InfiniteSelect
-                v-model="filters.customerId"
-                emitValue
-                dataSource="customers"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                type="outline"
-                class="w-[185px]!"
-                allowClear
-                :filters="{ status: 'active' }"
-                @change="handleFiltersChange"
-              />
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn v-if="isVendor" field="targetName" :title="t('vendor', '廠商')" :width="220">
-          <template #header>
-            <div class="flex w-full flex-col gap-1">
-              <span class="text-[16px] text-[#111827]">{{ t('vendor', '廠商') }}</span>
-              <InfiniteSelect
-                v-model="filters.vendorId"
-                emitValue
-                dataSource="vendors"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                type="outline"
-                class="w-46.25!"
-                allowClear
-                :filters="{ status: 'active' }"
-                @change="handleFiltersChange"
-              />
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="contact" :title="t('contact', '聯絡人')" :width="120" />
-        <CustomTinyGridColumn field="phone" :title="t('phone', '電話')" :width="170" />
-        <CustomTinyGridColumn field="orderDate" :title="t('orderDate', '訂單日期')" :width="140" />
-        <CustomTinyGridColumn field="shipDate" :title="t('shipDate', '出貨日期')" :width="140" />
-        <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" :width="100" />
-        <CustomTinyGridColumn field="shipMethod" :title="t('shipMethodLabel', '出貨方式')" :width="100" />
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="180" align="center">
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-[#111827]">{{ t('status', '狀態') }}</span>
-              <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('pleaseSelect', '請選擇')" class="h-8 text-xs" clearable @change="handleFiltersChange" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <a-tag size="large" v-if="row.status === 'PENDING'">{{ row.statusLabel }}</a-tag>
-            <a-tag size="large" v-else-if="row.status === 'PROCESSING'" color="green">{{ row.statusLabel }}</a-tag>
-            <a-tag size="large" v-else-if="row.status === 'DELIVERED'" color="arcoblue">{{ row.statusLabel }}</a-tag>
-            <a-tag size="large" v-else-if="row.status === 'CANCELLED'" color="red">{{ row.statusLabel }}</a-tag>
-            <a-tag size="large" v-else>{{ row.statusLabel }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="150" align="right" header-align="right">
-          <template #default="{ row }">{{ formatCurrencyNumber(row.totalAmount) }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center" header-align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('ORDER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button class="table-button" @click="printReport(row)"><Printer class="size-4 text-green-500" /></button>
-              <button v-if="categoryCode" class="table-button" :title="t('printTriplicate', '列印三聯單')" @click="printTriplicate(row)"><ScrollText class="size-4 text-blue-500" /></button>
-              <button v-if="permissionStore.hasPermission('ORDER', 'UPDATE')" class="table-button" @click="editData(row)">
-                <Eye v-if="['DELIVERED', 'CANCELLED'].includes(row.status)" class="size-4" />
-                <SquarePen v-else class="size-4" />
-              </button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid ref="orderGridRef" :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
+      <CustomTinyGridColumn field="" type="selection" title="" :width="50" />
+      <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="220">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('orderNumber', '訂單編號') }}</span>
+            <TinyInput v-model="filters.orderNumber" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn v-if="isCustomer" field="targetName" :title="t('customer', '客戶')" :width="220">
+        <template #header>
+          <div class="flex w-full flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('customer', '客戶') }}</span>
+            <InfiniteSelect
+              v-model="filters.customerId"
+              emitValue
+              dataSource="customers"
+              :placeholder="t('pleaseSelect', '請選擇')"
+              type="outline"
+              class="w-46.25!"
+              allowClear
+              :filters="{ status: 'active' }"
+              @change="handleFiltersChange"
+            />
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn v-if="isVendor" field="targetName" :title="t('vendor', '廠商')" :width="220">
+        <template #header>
+          <div class="flex w-full flex-col gap-1">
+            <span class="text-[16px] text-[#111827]">{{ t('vendor', '廠商') }}</span>
+            <InfiniteSelect
+              v-model="filters.vendorId"
+              emitValue
+              dataSource="vendors"
+              :placeholder="t('pleaseSelect', '請選擇')"
+              type="outline"
+              class="w-46.25!"
+              allowClear
+              :filters="{ status: 'active' }"
+              @change="handleFiltersChange"
+            />
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="contact" :title="t('contact', '聯絡人')" :width="120" />
+      <CustomTinyGridColumn field="phone" :title="t('phone', '電話')" :width="170" />
+      <CustomTinyGridColumn field="orderDate" :title="t('orderDate', '訂單日期')" :width="140" />
+      <CustomTinyGridColumn field="shipDate" :title="t('shipDate', '出貨日期')" :width="140" />
+      <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" :width="100">
+        <template #default="{ row }">{{ paymentDisplayMap[row.paymentMethod] || row.paymentMethod || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="shipMethod" :title="t('shipMethodLabel', '出貨方式')" :width="100">
+        <template #default="{ row }">{{ shipDisplayMap[row.shipMethod] || row.shipMethod || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="150" align="right" header-align="right">
+        <template #default="{ row }">{{ formatCurrencyNumber(row.totalAmount) }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="180" align="center" fixed="right">
+        <template #header>
+          <div class="flex flex-col gap-1 text-center">
+            <span class="text-[16px] text-[#111827]">{{ t('status', '狀態') }}</span>
+            <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('pleaseSelect', '請選擇')" class="h-8 text-xs" clearable @change="handleFiltersChange" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <a-tag size="large" v-if="row.status === 'PENDING'">{{ row.statusLabel }}</a-tag>
+          <a-tag size="large" v-else-if="row.status === 'PROCESSING'" color="green">{{ row.statusLabel }}</a-tag>
+          <a-tag size="large" v-else-if="row.status === 'DELIVERED'" color="arcoblue">{{ row.statusLabel }}</a-tag>
+          <a-tag size="large" v-else-if="row.status === 'CANCELLED'" color="red">{{ row.statusLabel }}</a-tag>
+          <a-tag size="large" v-else>{{ row.statusLabel }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center" header-align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('ORDER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            <button class="table-button" @click="printReport(row)"><Printer class="size-4 text-green-500" /></button>
+            <button v-if="categoryCode" class="table-button" :title="t('printTriplicate', '列印三聯單')" @click="printTriplicate(row)"><ScrollText class="size-4 text-blue-500" /></button>
+            <button v-if="permissionStore.hasPermission('ORDER', 'UPDATE')" class="table-button" @click="editData(row)">
+              <Eye v-if="['DELIVERED', 'CANCELLED'].includes(row.status)" class="size-4" />
+              <SquarePen v-else class="size-4" />
+            </button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!-- 列印訂單 -->
@@ -155,10 +159,10 @@
             <div class="section-title">{{ t('orderBasicInfo', '訂單基本資訊') }}</div>
 
             <a-form-item v-if="showAllCategories" :label="t('productCategory', '商品種類')" field="categoryCode">
-              <a-select v-model="basicForm.categoryCode" :options="categoryOptions" :disabled="!canModifyTarget" @change="handleCategoryChange" />
+              <CustomField type="select" v-model="basicForm.categoryCode" :options="categoryOptions" :readonly="!canModifyTarget" @change="handleCategoryChange" />
             </a-form-item>
             <a-form-item :label="t('targetType', '對象類型')" field="targetType">
-              <a-select v-model="basicForm.targetType" :options="targetTypeOptions" :disabled="!canModifyTarget" @change="changeTargetType" />
+              <CustomField type="select" v-model="basicForm.targetType" :options="targetTypeOptions" :readonly="!canModifyTarget" @change="changeTargetType" />
             </a-form-item>
             <a-form-item v-if="basicForm.targetType === 'CUSTOMER'" :label="t('customer', '客戶')" field="targetId">
               <InfiniteSelect
@@ -198,10 +202,10 @@
               <a-select v-model="basicForm.paymentTerm" :options="orderPaymentTermOptions" :disabled="isReadOnly" />
             </a-form-item>
             <a-form-item :label="t('shipMethodLabel', '出貨方式')" field="shipMethod">
-              <a-select v-model="basicForm.shipMethod" :options="shipMethodOptions" :disabled="isReadOnly" @change="basicForm.driverId = {}" />
+              <a-select v-model="basicForm.shipMethod" :options="shipMethodOptions" :disabled="isReadOnly" @change="basicForm.driverId = ''" />
             </a-form-item>
             <a-form-item v-if="basicForm.shipMethod === 'DRIVER_DELIVERY'" :label="t('driver', '司機')" field="driverId">
-              <InfiniteSelect v-model="basicForm.driverId" dataSource="users" :placeholder="t('pleaseSelect', '請選擇')" :readonly="isReadOnly" allowClear />
+              <InfiniteSelect v-model="basicForm.driverId" dataSource="drivers" :placeholder="t('pleaseSelect', '請選擇')" :readonly="isReadOnly" allowClear />
             </a-form-item>
           </div>
 
@@ -243,8 +247,8 @@
           <div class="section-header">
             <div class="section-title">{{ t('orderItems', '訂單明細') }}</div>
 
-            <a-form-item v-if="isEdite" :label="t('status', '狀態')" field="status" class="w-[300px]!">
-              <a-select v-model="basicForm.status" :options="editableStatusOptions" :disabled="isReadOnly" class="w-[300px]" />
+            <a-form-item v-if="isEdite" :label="t('status', '狀態')" field="status" class="w-75!">
+              <a-select v-model="basicForm.status" :options="editableStatusOptions" :disabled="isReadOnly" class="w-75" />
             </a-form-item>
           </div>
           <!-- 商品選擇表格 -->
@@ -278,6 +282,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { OrderCreatePost, OrderDeleteById, OrderGetByID, OrderListGet, OrderUpdatePatch, OrderStatusUpdatePatch } from '@/assets/API/Order';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import CustomField from '@/components/Form/CustomField.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTable.vue';
 import OrderPrintSlip from '@/components/dialogs/OrderPrintSlip.vue';
@@ -286,7 +292,7 @@ import EggTriplicateSlip from '@/components/dialogs/EggTriplicateSlip.vue';
 import { useVueToPrint } from 'vue-to-print';
 import { Button } from '@/components/ui/button';
 import { TinyButton, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
@@ -301,6 +307,11 @@ import { usePermissionStore } from '@/stores/PermissionStore';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { CATEGORIES, getCategoryIdByCode } from '@/constants/categories';
 
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 350, 100));
+
 const permissionStore = usePermissionStore();
 const {
   targetTypeOptions,
@@ -313,7 +324,10 @@ const {
   paymentMethodLabelMap,
   shipMethodLabelMap,
   buildSelectOptionsWithAll,
+  buildLabelMap,
 } = useSelectOptions();
+const paymentDisplayMap = computed(() => buildLabelMap(orderPaymentTermOptions.value));
+const shipDisplayMap = computed(() => buildLabelMap(shipMethodOptions.value));
 
 const props = defineProps({
   pageTitle: { type: String, required: true },
@@ -329,7 +343,6 @@ const { containerRef } = useContentWidth();
 const { t } = useI18n();
 const { formatNumber, formatCurrencyNumber } = currencyStore;
 const formatDate = (value, format = 'YYYY-MM-DD HH:mm') => timezoneStore.formatDate(value, format);
-
 const isCreate = computed(() => dialogMode.value === 'create');
 const isEdite = computed(() => dialogMode.value === 'edit');
 const EMPTY_PLACEHOLDER = t('unset', '未設定');
@@ -662,7 +675,7 @@ const editData = async (row) => {
       paymentTerm: paymentTermValue,
       shipMethod: shipMethodValue,
       shipDate: orderData.shipDate ? new Date(orderData.shipDate) : null,
-      driverId: orderData.driverId || orderData.employeeId || '',
+      driverId: { id: orderData.employeeId, name: orderData.employeeName },
       items: [], // 先設為空，等商品加載完再設置
       discountAmount: Number(orderData.discount ?? orderData.discountAmount?.amount ?? 0),
       shippingAmount: Number(orderData.shippingFee ?? orderData.shippingAmount?.amount ?? 0),

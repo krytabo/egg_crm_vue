@@ -16,114 +16,112 @@
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--          列表            -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id" :row-id="'id'">
-        <!--<CustomTinyGridColumn field="employeeId" :title="t('employeeId', '員工編號')" :width="140" fixed="left">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('employeeId', '員工編號') }}</span>
-              <TinyInput
-                v-model="searchFields.employeeId"
-                :placeholder="t('enterEmployeeId', '輸入員工編號')"
-                class="h-8 text-xs"
-                clearable
-                @keyup.enter="handleGlobalSearch"
-                @clear="handleGlobalSearch"
-              />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <span class="font-medium text-gray-900">{{ row.employeeId }}</span>
-          </template>
-        </CustomTinyGridColumn>-->
-        <CustomTinyGridColumn field="fullName" :title="t('fullName', '姓名')" :min-width="160" fixed="left">
-          <template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('fullName', '姓名') }}</span>
-              <TinyInput v-model="searchFields.fullName" :placeholder="t('enterName', '輸入姓名')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <div class="flex flex-col gap-0.5">
-              <span class="font-medium text-gray-900">{{ row.fullName }}</span>
-              <span class="text-xs text-gray-500">{{ row.phone || '—' }}</span>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="licenseNumber" :title="t('licenseNumber', '駕照號碼')" :width="160">
-          <!--<template #header>
-            <div class="flex flex-col gap-1">
-              <span class="text-[16px] text-gray-600">{{ t('licenseNumber', '駕照號碼') }}</span>
-              <TinyInput
-                v-model="searchFields.licenseNumber"
-                :placeholder="t('enterLicenseNumber', '輸入駕照號碼')"
-                class="h-8 text-xs"
-                clearable
-                @keyup.enter="handleGlobalSearch"
-                @clear="handleGlobalSearch"
-              />
-            </div>
-          </template>-->
-          <template #default="{ row }">
-            <span class="text-sm text-gray-900">{{ row.licenseNumber || '—' }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="licenseExpiry" :title="t('licenseExpiry', '駕照到期日')" :width="160">
-          <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <span :class="getLicenseExpiryClass(row.licenseExpiry)">{{ formatDate(row.licenseExpiry) }}</span>
-              <a-tag v-if="isLicenseExpiringSoon(row.licenseExpiry)" color="orange" size="small">{{ t('expiringSoon', '即將到期') }}</a-tag>
-              <a-tag v-if="isLicenseExpired(row.licenseExpiry)" color="red" size="small">{{ t('expired', '已過期') }}</a-tag>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="phone" :title="t('phone', '聯絡電話')" :width="140">
-          <template #default="{ row }">{{ row.phone || '—' }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="email" :title="t('email', '電子郵件')" min-width="200">
-          <template #default="{ row }">{{ row.email || '—' }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="address" :title="t('address', '地址')" min-width="200">
-          <template #default="{ row }">{{ row.address || '—' }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="hireDate" :title="t('hireDate', '入職日期')" :width="140">
-          <template #default="{ row }">{{ formatDate(row.hireDate) }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" :width="160">
-          <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="130" align="center" fixed="right">
-          <template #header>
-            <div class="flex flex-col gap-1 text-center">
-              <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
-              <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('all', '全部')" class="h-8 text-xs" @change="handleFiltersChange" />
-            </div>
-          </template>
-          <template #default="{ row }">
-            <a-tag :color="getStatusColor(row.status)" size="large">{{ getStatusLabel(row.status) }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <!--<CustomTinyGridColumn title="操作" :width="120" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>-->
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id" :row-id="'id'">
+      <!--<CustomTinyGridColumn field="employeeId" :title="t('employeeId', '員工編號')" :width="140" fixed="left">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('employeeId', '員工編號') }}</span>
+            <TinyInput
+              v-model="searchFields.employeeId"
+              :placeholder="t('enterEmployeeId', '輸入員工編號')"
+              class="h-8 text-xs"
+              clearable
+              @keyup.enter="handleGlobalSearch"
+              @clear="handleGlobalSearch"
+            />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <span class="font-medium text-gray-900">{{ row.employeeId }}</span>
+        </template>
+      </CustomTinyGridColumn>-->
+      <CustomTinyGridColumn field="fullName" :title="t('fullName', '姓名')" :min-width="160" fixed="left">
+        <template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('fullName', '姓名') }}</span>
+            <TinyInput v-model="searchFields.fullName" :placeholder="t('enterName', '輸入姓名')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <div class="flex flex-col gap-0.5">
+            <span class="font-medium text-gray-900">{{ row.fullName }}</span>
+            <span class="text-xs text-gray-500">{{ row.phone || '—' }}</span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="licenseNumber" :title="t('licenseNumber', '駕照號碼')" :width="160">
+        <!--<template #header>
+          <div class="flex flex-col gap-1">
+            <span class="text-[16px] text-gray-600">{{ t('licenseNumber', '駕照號碼') }}</span>
+            <TinyInput
+              v-model="searchFields.licenseNumber"
+              :placeholder="t('enterLicenseNumber', '輸入駕照號碼')"
+              class="h-8 text-xs"
+              clearable
+              @keyup.enter="handleGlobalSearch"
+              @clear="handleGlobalSearch"
+            />
+          </div>
+        </template>-->
+        <template #default="{ row }">
+          {{ row.licenseNumber || '—' }}
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="licenseExpiry" :title="t('licenseExpiry', '駕照到期日')" :width="160">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <span :class="getLicenseExpiryClass(row.licenseExpiry)">{{ formatDate(row.licenseExpiry) }}</span>
+            <a-tag v-if="isLicenseExpiringSoon(row.licenseExpiry)" color="orange" size="small">{{ t('expiringSoon', '即將到期') }}</a-tag>
+            <a-tag v-if="isLicenseExpired(row.licenseExpiry)" color="red" size="small">{{ t('expired', '已過期') }}</a-tag>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="phone" :title="t('phone', '聯絡電話')" :width="140">
+        <template #default="{ row }">{{ row.phone || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="email" :title="t('email', '電子郵件')" min-width="200">
+        <template #default="{ row }">{{ row.email || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="address" :title="t('address', '地址')" min-width="200">
+        <template #default="{ row }">{{ row.address || '—' }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="hireDate" :title="t('hireDate', '入職日期')" :width="140">
+        <template #default="{ row }">{{ formatDate(row.hireDate) }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" :width="160">
+        <template #default="{ row }">{{ formatDate(row.createdAt) }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="130" align="center" fixed="right">
+        <template #header>
+          <div class="flex flex-col gap-1 text-center">
+            <span class="text-[16px] text-gray-600">{{ t('status', '狀態') }}</span>
+            <TinySelect v-model="filters.status" :options="statusFilterOptions" :placeholder="t('all', '全部')" class="h-8 text-xs" @change="handleFiltersChange" />
+          </div>
+        </template>
+        <template #default="{ row }">
+          <a-tag :color="getStatusColor(row.status)" size="large">{{ getStatusLabel(row.status) }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <!--<CustomTinyGridColumn title="操作" :width="120" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            <button class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>-->
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <a-modal v-model:visible="dialogVisible" :top="30" draggable :maskClosable="false" :closable="false" width="700px" :fullscreen="fullscreen">
@@ -191,9 +189,9 @@
 </template>
 
 <script setup>
-import { nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
 import { TinyInput, TinySelect } from '@opentiny/vue';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import CustomField from '@/components/Form/CustomField.vue';
@@ -210,25 +208,31 @@ const { containerRef } = useContentWidth();
 const { t } = useI18n();
 const fullscreen = ref(false);
 
-// 使用共用邏輯
+/** Table高度 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 280, 100));
+
 const {
-  // 狀態選項
+  //狀態選項
   getStatusLabel,
   getStatusColor,
   statusFilterOptions,
   statusSelectOptions,
-  // 駕照到期
+
+  //駕照到期
   isLicenseExpired,
   isLicenseExpiringSoon,
   getLicenseExpiryClass,
-  // 工具函式
+
+  //篩選與查詢
   formatDate,
-  // 篩選與查詢
   searchFields,
   handleGlobalSearch,
   handleFiltersChange,
   clearFilter,
-  // 列表資料
+
+  //列表資料
   basicDataList,
   filters,
   pagination,
@@ -236,7 +240,8 @@ const {
   getAPI,
   CurrentChange,
   SizeChange,
-  // 新增編輯
+
+  //新增編輯
   dialogVisible,
   basicFormRef,
   isSaving,
@@ -252,6 +257,5 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(320);
 });
 </script>

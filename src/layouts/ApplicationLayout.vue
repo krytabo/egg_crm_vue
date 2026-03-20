@@ -28,7 +28,7 @@
             <TopBanner class="flex-1" @toggle-sidebar="onCollapse" :collapsed="collapsed" />
           </a-layout-header>
           <a-layout class="app-inner">
-            <perfect-scrollbar class="h-[calc(100vh-90px)] pt-5">
+            <perfect-scrollbar class="h-[calc(100vh-60px)] pt-5">
               <!--麵包屑-->
               <!--<a-breadcrumb v-if="!isMobile" class="app-breadcrumb" separator="/">
                 <a-breadcrumb-item v-for="(crumb, index) in breadcrumbItems" :key="`${crumb.label}-${index}`">
@@ -164,7 +164,7 @@ const breadcrumbItems = computed(() => {
 }
 
 .app-inner {
-  padding: 0 24px 24px;
+  padding: 0 24px 0 24px;
   min-height: calc(100vh - 64px);
 }
 
@@ -203,7 +203,7 @@ const breadcrumbItems = computed(() => {
 }
 
 .app-content {
-  min-height: calc(100vh - 160px);
+  min-height: calc(100vh - 140px);
   background: var(--color-bg-3);
   border-radius: 8px;
   overflow: auto;

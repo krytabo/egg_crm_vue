@@ -141,6 +141,14 @@ const appChildren = [
     component: () => import('@/pages/Finance/index.vue'),
     meta: { requiresAuth: true, sidebarId: 'finance-billing', title: '帳務管理' },
   },
+
+  // ===== CTI 通話管理 =====
+  {
+    path: 'cti/calls',
+    name: 'cti-calls',
+    component: () => import('@/pages/CTI/DataList/DesktopView.vue'),
+    meta: { requiresAuth: true, sidebarId: 'cti-calls', title: '通話記錄' },
+  },
   {
     path: '/manual',
     name: 'manual',

@@ -33,7 +33,7 @@
 
           <!-- 庫存警示 Tab 操作按鈕 -->
           <template v-if="isAlerts">
-            <a-button v-if="permissionStore.hasPermission('INVENTORY', 'CREATE')" type="primary" @click="alertsTabRef?.openQuickStockIn()">{{ t('入庫', '入庫') }}</a-button>
+            <a-button v-if="permissionStore.hasPermission('INVENTORY', 'CREATE')" type="primary" @click="alertsTabRef?.openQuickStockIn()">{{ t('stockIn', '入庫') }}</a-button>
           </template>
 
           <!-- 庫存調撥 Tab 操作按鈕 -->
@@ -53,13 +53,11 @@
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <!--         Tab 內容          -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-2">
-      <InventoryOverviewTab v-if="isOverview" ref="overviewTabRef" />
-      <InventoryMovementsTab v-else-if="isMovements" ref="movementsTabRef" />
-      <InventoryAlertsTab v-else-if="isAlerts" ref="alertsTabRef" />
-      <InventoryTransferTab v-else-if="isTransfer" ref="transferTabRef" />
-      <InventoryReportsTab v-else-if="isReports" ref="reportsTabRef" />
-    </CardContent>
+    <InventoryOverviewTab v-if="isOverview" ref="overviewTabRef" />
+    <InventoryMovementsTab v-else-if="isMovements" ref="movementsTabRef" />
+    <InventoryAlertsTab v-else-if="isAlerts" ref="alertsTabRef" />
+    <InventoryTransferTab v-else-if="isTransfer" ref="transferTabRef" />
+    <InventoryReportsTab v-else-if="isReports" ref="reportsTabRef" />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -70,7 +68,7 @@
 
 <script setup>
 import { ref, computed } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import InventoryOverviewTab from './components/InventoryOverviewTab.vue';
 import InventoryMovementsTab from './components/InventoryMovementsTab.vue';
 import InventoryAlertsTab from './components/InventoryAlertsTab.vue';

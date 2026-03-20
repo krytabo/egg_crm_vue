@@ -1,65 +1,60 @@
 <!-- src/pages/inventory-reports/components/InventoryMovementsTab.vue 異動記錄 -->
 <template>
-  <div class="flex flex-col gap-4">
-    <!-- 篩選區塊 -->
-    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <AForm layout="vertical">
-        <AFormItem :label="t('transactionDate', '異動日期')">
-          <div class="flex items-center gap-2">
-            <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-            <span>-</span>
-            <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-          </div>
-        </AFormItem>
-      </AForm>
-    </div>
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--         篩選區塊         -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <CustomForm :col="1">
+    <CustomFormItem :label="t('transactionDate', '異動日期')">
+      <div class="flex items-center gap-2">
+        <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+        <span>-</span>
+        <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+      </div>
+    </CustomFormItem>
+  </CustomForm>
 
-    <!-- 列表 -->
-    <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
-      <CustomTinyGridColumn field="productName" :title="t('product', '商品')" min-width="200" fixed="left" />
-      <!--<CustomTinyGridColumn field="id" :title="t('id', 'ID')" width="200" />-->
-      <CustomTinyGridColumn field="type" :title="t('transactionType', '異動類型')" width="160">
-        <template #header>
-          <div class="flex flex-col gap-1">
-            <span class="text-[16px] text-[#111827]">{{ t('transactionType', '異動類型') }}</span>
-            <TinySelect v-model="filters.type" :options="typeOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
-          </div>
-        </template>
-        <template #default="{ row }">
-          <TinyBadge :type="getTypeColor(row.type)">{{ getTypeLabel(row.type) }}</TinyBadge>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="location" :title="t('location', '位置')" width="120" />
-      <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" width="100" align="right">
-        <template #default="{ row }">
-          <span :class="row.quantity > 0 ? 'text-green-600' : 'text-red-600'">{{ row.quantity > 0 ? '+' : '' }}{{ row.quantity }}</span>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="reason" :title="t('reason', '原因')" min-width="150" />
-      <CustomTinyGridColumn
-        field="createdAt"
-        :title="t('createdAt', '建立時間')"
-        width="160"
-        sortable
-        :sort-field="'createdAt'"
-        :current-order="getColumnOrder('createdAt')"
-        @sort="handleColumnSort"
-      />
-      <CustomTinyGridColumn field="createdBy" :title="t('operator', '操作人員')" width="120" fixed="right">
-        <template #default="{ row }">{{ row.createdBy?.name }}</template>
-      </CustomTinyGridColumn>
-    </CustomTinyGrid>
-    <AppPagination
-      class="md:w-auto"
-      :current="pagination.page"
-      :page-size="pagination.limit"
-      :total="pagination.total"
-      :page-size-options="pageSizeOptions"
-      @change="CurrentChange"
-      @page-size-change="SizeChange"
-    />
-  </div>
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--          列表            -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
+    <CustomTinyGridColumn field="productName" :title="t('product', '商品')" min-width="200" fixed="left" />
+    <!--<CustomTinyGridColumn field="id" :title="t('id', 'ID')" width="200" />-->
+    <CustomTinyGridColumn field="type" :title="t('transactionType', '異動類型')" width="160">
+      <template #header>
+        <div class="flex flex-col gap-1">
+          <span class="text-[16px] text-[#111827]">{{ t('transactionType', '異動類型') }}</span>
+          <TinySelect v-model="filters.type" :options="typeOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
+        </div>
+      </template>
+      <template #default="{ row }">
+        <TinyBadge :type="getTypeColor(row.type)">{{ getTypeLabel(row.type) }}</TinyBadge>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="location" :title="t('location', '位置')" width="120" />
+    <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" width="100" align="right">
+      <template #default="{ row }">
+        <span :class="row.quantity > 0 ? 'text-green-600' : 'text-red-600'">{{ row.quantity > 0 ? '+' : '' }}{{ row.quantity }}</span>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="reason" :title="t('reason', '原因')" min-width="150" />
+    <CustomTinyGridColumn field="createdAt" :title="t('createdAt', '建立時間')" width="160" sortable :sort-field="'createdAt'" :current-order="getColumnOrder('createdAt')" @sort="handleColumnSort" />
+    <CustomTinyGridColumn field="createdBy" :title="t('operator', '操作人員')" width="120" fixed="right">
+      <template #default="{ row }">{{ row.createdBy?.name }}</template>
+    </CustomTinyGridColumn>
+  </CustomTinyGrid>
+  <AppPagination
+    class="md:w-auto"
+    :current="pagination.page"
+    :page-size="pagination.limit"
+    :total="pagination.total"
+    :page-size-options="pageSizeOptions"
+    @change="CurrentChange"
+    @page-size-change="SizeChange"
+  />
 
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--          彈窗            -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <!-- 新增異動彈窗 -->
   <a-modal v-model:visible="createDialogVisible" :title="t('addTransaction', '新增異動')" :width="1300" :maskClosable="false" :closable="false" :fullscreen="fullscreen">
     <template #title>
@@ -148,6 +143,8 @@ import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomT
 import AppPagination from '@/components/ui/AppPagination.vue';
 import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTable.vue';
 import CustomField from '@/components/Form/CustomField.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
@@ -161,6 +158,11 @@ const systemStore = useSystemStore();
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const { t } = useI18n();
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 340, 100));
 
 const fullscreen = ref(false);
 
@@ -459,9 +461,5 @@ onUnmounted(cleanupResize);
 
 onMounted(async () => {
   await Promise.all([getAPI(), getOption()]);
-
-  /** Table高度相關 **/
-  await nextTick();
-  systemStore.updateTableHeight(440); //修改table高度
 });
 </script>

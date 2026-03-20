@@ -20,7 +20,7 @@
       <!--        保養記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="maintenance" :title="t('maintenanceHistory', '保養記錄')">
-        <CustomTinyGrid :data="maintenanceList" :loading="maintenanceLoading" :height="systemStore.tableHeight" :border="true">
+        <CustomTinyGrid :data="maintenanceList" :loading="maintenanceLoading" :height="TableScrollY" :border="true">
           <CustomTinyGridColumn field="type" :title="t('type', '類型')" :width="100" fixed="left" align="center">
             <template #default="{ row }">
               <a-tag>{{ maintenanceTypeMap[row.type] || row.type }}</a-tag>
@@ -52,7 +52,7 @@
       <!--        維修記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="repairs" :title="t('repairHistory', '維修記錄')">
-        <CustomTinyGrid :data="repairList" :loading="repairLoading" :height="systemStore.tableHeight" :border="true">
+        <CustomTinyGrid :data="repairList" :loading="repairLoading" :height="TableScrollY" :border="true">
           <CustomTinyGridColumn field="type" :title="t('type', '類型')" :width="100" fixed="left" align="center">
             <template #default="{ row }">
               <a-tag>{{ repairTypeMap[row.type] || row.type }}</a-tag>
@@ -93,7 +93,7 @@
       <!--        行程記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="trips" :title="t('tripHistory', '行程記錄')">
-        <CustomTinyGrid :data="tripList" :loading="tripLoading" :height="systemStore.tableHeight" :border="true">
+        <CustomTinyGrid :data="tripList" :loading="tripLoading" :height="TableScrollY" :border="true">
           <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="140" fixed="left" />
           <CustomTinyGridColumn field="customerName" :title="t('customerName', '客戶名稱')" :width="120" />
           <CustomTinyGridColumn field="deliveryAddress" :title="t('deliveryAddress', '配送地址')" :min-width="160" show-overflow="tooltip">
@@ -117,7 +117,7 @@
       <!--        保險記錄 Tab        -->
       <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
       <a-tab-pane key="insurance" :title="t('insuranceHistory', '保險記錄')">
-        <CustomTinyGrid :data="insuranceList" :loading="insuranceLoading" :height="systemStore.tableHeight" :border="true">
+        <CustomTinyGrid :data="insuranceList" :loading="insuranceLoading" :height="TableScrollY" :border="true">
           <CustomTinyGridColumn field="insurer" :title="t('insurer', '保險公司')" :min-width="120" fixed="left" />
           <CustomTinyGridColumn field="policyNumber" :title="t('policyNumber', '保單號碼')" :min-width="140">
             <template #default="{ row }">{{ row.policyNumber || '-' }}</template>
@@ -293,7 +293,7 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { IconPlus, IconEdit, IconDelete } from '@arco-design/web-vue/es/icon';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -314,11 +314,12 @@ import {
 } from '@/assets/API/Vehicle';
 import CustomField from '@/components/Form/CustomField.vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
-import { useSystemStore } from '@/stores/system';
+import { useWindowSize } from '@vueuse/core';
 
 const { t } = useI18n();
 const mainStore = useMainStore();
-const systemStore = useSystemStore();
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 450, 100))
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
@@ -341,7 +342,6 @@ watch(
       insurancePagination.value = { page: 1, limit: 20, total: 0 };
 
       await nextTick();
-      systemStore.updateTableHeight(190);
 
       // 載入資料
       fetchMaintenanceHistory();
@@ -419,16 +419,16 @@ const repairStatusOptions = [
 ];
 const repairStatusMap = Object.fromEntries(repairStatusOptions.map((o) => [o.value, o.label]));
 const repairStatusColorMap = { PENDING: 'orange', IN_PROGRESS: 'blue', COMPLETED: 'green', CANCELLED: 'gray' };
-const orderStatusMap = {
-  DRAFT: '草稿',
-  PENDING: '待處理',
-  CONFIRMED: '已確認',
-  PROCESSING: '處理中',
-  SHIPPED: '已出貨',
-  DELIVERED: '已送達',
-  CANCELLED: '已取消',
-  RETURNED: '已退貨',
-};
+const orderStatusMap = computed(() => ({
+  DRAFT: t('draft', '草稿'),
+  PENDING: t('pending', '待處理'),
+  CONFIRMED: t('confirmed', '已確認'),
+  PROCESSING: t('processing', '處理中'),
+  SHIPPED: t('shipped', '已出貨'),
+  DELIVERED: t('delivered', '已送達'),
+  CANCELLED: t('cancelled', '已取消'),
+  RETURNED: t('returned', '已退貨'),
+}));
 const orderStatusColorMap = {
   DRAFT: 'gray',
   PENDING: 'orange',

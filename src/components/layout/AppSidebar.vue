@@ -104,6 +104,12 @@ const menuSections = [
     items: [{ id: 'finance-billing', label: '帳務管理', remixIcon: 'ri-money-dollar-circle-line', role: 'BILLING' }],
   },
   {
+    key: 'section-cti',
+    label: '通話管理',
+    remixIcon: 'ri-phone-line',
+    items: [{ id: 'cti-calls', label: '通話記錄', remixIcon: 'ri-phone-incoming-line' }],
+  },
+  {
     key: 'section-settings',
     label: '參數設定',
     remixIcon: 'ri-settings-3-line',

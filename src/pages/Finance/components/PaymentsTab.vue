@@ -2,29 +2,25 @@
 <template>
   <div class="flex flex-col gap-4">
     <!-- 篩選區塊 -->
-    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <AForm layout="vertical">
-        <div class="grid grid-cols-3 gap-2">
-          <AFormItem :label="t('paymentDate', '付款日期')">
-            <div class="flex items-center gap-2">
-              <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-              <span>-</span>
-              <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-            </div>
-          </AFormItem>
-          <AFormItem :label="t('customer', '客戶')">
-            <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" :filters="{ status: 'active' }" />
-          </AFormItem>
-          <AFormItem :label="t('search', '關鍵字')">
-            <CustomField v-model="filters.search" type="input" :placeholder="t('匯款帳號', '匯款帳號')" @keyup.enter="handleFiltersChange" />
-          </AFormItem>
+    <CustomForm :col="3">
+      <CustomFormItem :label="t('paymentDate', '付款日期')">
+        <div class="flex items-center gap-2">
+          <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+          <span>-</span>
+          <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
         </div>
-      </AForm>
-    </div>
+      </CustomFormItem>
+      <CustomFormItem :label="t('customer', '客戶')">
+        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" :filters="{ status: 'active' }" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('search', '關鍵字')">
+        <CustomField v-model="filters.search" type="input" :placeholder="t('remittanceAccount', '匯款帳號')" @keyup.enter="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
     <!-- 付款記錄列表 -->
     <!--<JsonViewer :value="basicDataList" boxed copyable />-->
-    <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
       <CustomTinyGridColumn field="customer" :title="t('customer', '客戶')" min-width="180" fixed="left">
         <template #default="{ row }">{{ row.customer?.name }}</template>
       </CustomTinyGridColumn>
@@ -38,7 +34,7 @@
           <TinyBadge :type="getMethodType(row.method)">{{ getMethodLabel(row.method) }}</TinyBadge>
         </template>
       </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="reference" :title="t('匯款帳號', '匯款帳號')" width="150">
+      <CustomTinyGridColumn field="reference" :title="t('remittanceAccount', '匯款帳號')" width="150">
         <template #default="{ row }">{{ row.reference || EMPTY_PLACEHOLDER }}</template>
       </CustomTinyGridColumn>
       <CustomTinyGridColumn field="paidAt" :title="t('paidAt', '付款時間')" width="160" />
@@ -75,7 +71,7 @@
   <a-modal v-model:visible="dialogVisible" :title="t('processPayment', '處理付款')" width="500px" :mask-closable="false">
     <perfect-scrollbar class="max-h-[calc(100vh-400px)] pr-4">
       <AForm ref="formRef" :model="basicForm" :rules="basicFormRules" layout="vertical" auto-label-width>
-        <!--<AFormItem :label="t('發票號碼', '發票號碼')" field="invoiceId">
+        <!--<AFormItem :label="t('invoiceNumber', '發票號碼')" field="invoiceId">
           &lt;!&ndash;<InfiniteSelect
             v-model="basicForm.invoiceId"
             dataSource="invoices"
@@ -84,7 +80,7 @@
             :filter-params="{ status: ['SENT', 'PARTIAL', 'OVERDUE'] }"
             @change="handleInvoiceChange"
           />&ndash;&gt;
-          <CustomField v-model="basicForm.invoiceId" :placeholder="t('請輸入已開立的發票號碼', '請輸入已開立的發票號碼')" />
+          <CustomField v-model="basicForm.invoiceId" :placeholder="t('invoiceNumberPlaceholder', '請輸入已開立的發票號碼')" />
         </AFormItem>-->
 
         <!-- 發票資訊顯示 -->
@@ -103,13 +99,13 @@
           </div>
         </div>
 
-        <AFormItem :label="t('收款金額', '收款金額')" field="amount">
+        <AFormItem :label="t('receivedAmount', '收款金額')" field="amount">
           <CustomField v-model="basicForm.amount" type="number" :min="0" :max="selectedInvoiceInfo?.remainingAmount || 999999999" />
         </AFormItem>
         <AFormItem :label="t('paymentMethod', '付款方式')" field="method">
           <TinySelect v-model="basicForm.method" :options="methodOptions" :placeholder="t('pleaseSelect', '請選擇')" />
         </AFormItem>
-        <AFormItem :label="t('匯款帳號', '匯款帳號')">
+        <AFormItem :label="t('remittanceAccount', '匯款帳號')">
           <CustomField v-model="basicForm.reference" type="input" :placeholder="t('referenceHint', '如：銀行轉帳編號')" />
         </AFormItem>
         <AFormItem :label="t('paidAt', '付款時間')" field="paidAt">
@@ -130,18 +126,21 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue';
 import { PaymentListGet, PaymentProcessPost, PaymentGetById } from '@/assets/API/Billing';
 import { InvoiceGetById } from '@/assets/API/Billing';
 import { TinySelect, TinyBadge, TinyDatePicker } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue'
+import CustomFormItem from '@/components/Form/CustomFormItem.vue'
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useSystemStore } from '@/stores/system';
+import { useWindowSize } from '@vueuse/core';
 import { useCurrencyStore } from '@/stores/currency';
 import { useI18n } from 'vue-i18n';
 import { endOfDay, format } from 'date-fns';
@@ -150,6 +149,8 @@ import { debounce } from 'lodash';
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const systemStore = useSystemStore();
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 440, 100));
 const currencyStore = useCurrencyStore();
 const { formatNumber, formatCurrencyNumber } = currencyStore;
 const { t } = useI18n();
@@ -343,6 +344,5 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(440);
 });
 </script>

@@ -27,7 +27,7 @@
 
         <div class="relative mt-4">
           <div v-if="!basicForm.driver || basicForm.weekDays.length === 0" class="bg-black/80 absolute w-full z-10 h-full rounded-[10px] flex items-center justify-center">
-            <p class="text-white text-[20px]">{{ t('請先選擇上方欄位') }}</p>
+            <p class="text-white text-[20px]">{{ t('pleaseSelectFieldsAbove', '請先選擇上方欄位') }}</p>
           </div>
 
           <!-- 批量選擇模式 -->

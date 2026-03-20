@@ -251,7 +251,16 @@ defineExpose({
   getSelectRecords,
   clearSelection,
   reloadData,
-  refreshData
+  refreshData,
+  // 展開收合相關
+  setAllRowExpansion: (expanded) => gridRef.value?.setAllRowExpansion(expanded),
+  setRowExpansion: (rows, expanded) => gridRef.value?.setRowExpansion(rows, expanded),
+  toggleRowExpansion: (row) => gridRef.value?.toggleRowExpansion(row),
+  clearRowExpand: () => gridRef.value?.clearRowExpand(),
+  // 樹狀展開相關
+  setAllTreeExpansion: (expanded) => gridRef.value?.setAllTreeExpansion(expanded),
+  setTreeExpansion: (rows, expanded) => gridRef.value?.setTreeExpansion(rows, expanded),
+  toggleTreeExpansion: (row) => gridRef.value?.toggleTreeExpansion(row),
 });
 </script>
 

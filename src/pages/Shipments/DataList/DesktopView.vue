@@ -2,7 +2,7 @@
 <template>
   <Card>
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--        統計卡片區          -->
+    <!--        統計卡片區         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <div class="grid grid-cols-4 gap-3 rounded-md bg-[#f5f7fb] p-4">
       <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
@@ -17,142 +17,144 @@
         <p class="text-2xl font-semibold text-blue-600">NT$ {{ formatNumber(summaryData.todayAmount) }}</p>
       </div>
       <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('totalReports', '總報表數') }}</p>
+        <div class="flex gap-1 items-end">
+          <p class="text-[18px]">{{ t('totalReports', '總報表數') }}</p>
+          <p class="text-xs text-gray-400">{{ t('(搜尋加總)', '(搜尋加總)') }}</p>
+        </div>
         <div class="flex items-end gap-2">
           <p class="text-2xl font-semibold text-gray-900">{{ summaryData.totalReports }}</p>
           <p class="text-gray-500">{{ t('count', '筆') }}</p>
         </div>
       </div>
       <div class="flex flex-col items-center justify-start gap-2 rounded-md bg-white p-2">
-        <p class="text-[18px]">{{ t('totalAmount', '累計金額') }}</p>
+        <div class="flex gap-1 items-end">
+          <p class="text-[18px]">{{ t('totalAmount', '累計金額') }}</p>
+          <p class="text-xs text-gray-400">{{ t('(搜尋加總)', '(搜尋加總)') }}</p>
+        </div>
+
         <p class="text-2xl font-semibold text-green-600">NT$ {{ formatNumber(summaryData.totalAmount) }}</p>
-        <p class="text-xs text-gray-400">{{ t('currentPageTotal', '（當頁加總）') }}</p>
       </div>
     </div>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容區           -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-2 h-[calc(100vh-300px)]">
-      <!-- 篩選區塊 -->
-      <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <div class="grid grid-cols-4 gap-4">
-            <AFormItem :label="t('driver', '司機')">
-              <InfiniteSelect v-model="filters.driverId" dataSource="drivers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" />
-            </AFormItem>
-            <AFormItem :label="t('startDate', '起始日期')">
-              <TinyDatePicker v-model="filters.reportDateFrom" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFiltersChange" class="w-full" />
-            </AFormItem>
-            <AFormItem :label="t('endDate', '結束日期')">
-              <TinyDatePicker v-model="filters.reportDateTo" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFiltersChange" class="w-full" />
-            </AFormItem>
-            <AFormItem :label="t('status', '狀態')">
-              <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
-            </AFormItem>
+    <CustomForm :col="4">
+      <CustomFormItem :label="t('driver', '司機')">
+        <InfiniteSelect v-model="filters.driverId" dataSource="drivers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('startDate', '起始日期')">
+        <TinyDatePicker v-model="filters.reportDateFrom" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFiltersChange" class="w-full" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('endDate', '結束日期')">
+        <TinyDatePicker v-model="filters.reportDateTo" :placeholder="t('selectDate', '請選擇日期')" value-format="yyyy-MM-dd" clearable @change="handleFiltersChange" class="w-full" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('status', '狀態')">
+        <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
+    <div class="flex items-center gap-2 mt-2">
+      <a-button @click="toggleAllRowExpansion">{{ allExpanded ? t('collapseAll', '全部收合') : t('expandAll', '全部展開') }}</a-button>
+
+      <TinyTooltip type="info" :content="t('deliveryReportHint', '點擊列表行展開明細，可將未轉入的商品使用「轉入訂單」建立或加入訂單。')" placement="right">
+        <i class="ri-question-fill text-[20px] text-rose-500" />
+      </TinyTooltip>
+
+      <div class="flex items-center gap-2 flex-1 justify-end">
+        <a-button @click="batchPrintSlip" class="flex items-center gap-1">
+          <Printer :size="14" />
+          {{ t('batchPrintSlip', '批次列印三聯單') }}
+        </a-button>
+        <a-button @click="openExportDialog">{{ t('exportExcel', '匯出Excel') }}</a-button>
+        <a-button status="danger" @click="clearFilter">{{ t('clearFilter', '清除篩選') }}</a-button>
+        <a-button type="primary" @click="openCreateDialog">
+          <i class="ri-add-line mr-1" />
+          {{ t('addDeliveryReport', '新增出貨日報表') }}
+        </a-button>
+      </div>
+    </div>
+
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!-- trigger: 'row' 代表整列都可以點擊展開收合 -->
+    <CustomTinyGrid ref="reportGridRef" :data="basicDataList" :height="TableScrollY" row-key="id" :expand-config="{ trigger: 'cell' }" @toggle-expand-change="handleExpandChange">
+      <CustomTinyGridColumn field="" title="" type="selection" :width="50" />
+      <CustomTinyGridColumn field="" title="" type="expand" :width="50">
+        <template #default="{ row }">
+          <div class="bg-gray-50 p-4 flex flex-col gap-2">
+            <div class="flex gap-2 items-center">
+              <p class="text-[17px]">{{ t('productDetails', '商品明細') }}</p>
+              <a-button status="success" @click="handleConvertToOrder(row)">{{ t('convertToOrder', '轉入訂單') }}</a-button>
+            </div>
+            <a-table :data="row.products" :bordered="false" :pagination="false" size="small">
+              <template #columns>
+                <a-table-column :title="t('customer', '客戶')" data-index="customer" fixed="left" :min-width="200">
+                  <template #cell="{ record }">{{ record.customer?.name }}</template>
+                </a-table-column>
+                <a-table-column :title="t('productName', '商品名稱')" data-index="product" :min-width="200">
+                  <template #cell="{ record }">{{ record.product?.name }}</template>
+                </a-table-column>
+
+                <a-table-column :title="t('quantity', '數量')" data-index="quantity" :width="120" align="right" />
+                <a-table-column :title="t('unitPrice', '單價')" :width="150" align="right">
+                  <template #cell="{ record }">NT$ {{ formatNumber(record.unitPrice) }}</template>
+                </a-table-column>
+                <a-table-column :title="t('amount', '金額')" :width="150" align="right">
+                  <template #cell="{ record }">NT$ {{ formatNumber(record.amount) }}</template>
+                </a-table-column>
+                <a-table-column :title="t('paymentMethod', '付款方式')" :width="150">
+                  <template #cell="{ record }">{{ paymentDisplayMap[record.paymentMethod] || record.paymentMethod || '—' }}</template>
+                </a-table-column>
+                <a-table-column :title="t('status', '狀態')" :width="180" align="center">
+                  <template #cell="{ record }">
+                    <a-tag v-if="record.isConvertedToOrder" color="green">{{ t('converted', '已轉入') }}</a-tag>
+                    <a-tag v-else color="orange">{{ t('notConverted', '未轉入') }}</a-tag>
+                  </template>
+                </a-table-column>
+              </template>
+            </a-table>
           </div>
-        </AForm>
-      </div>
-
-      <!-- 操作按鈕區 -->
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2 text-sm text-gray-500">
-          <i class="ri-information-line" />
-          <span>{{ t('deliveryReportHint', '使用編輯按鈕進入報表編輯頁面；複製鏈接可分享給其他裝置；使用「轉入訂單」將商品建立或加入訂單。') }}</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <a-button @click="batchPrintSlip" class="flex items-center gap-1">
-            <ScrollText :size="14" />
-            {{ t('batchPrintSlip', '批次列印三聯單') }}
-          </a-button>
-          <a-button @click="openExportDialog">{{ t('exportExcel', '匯出Excel') }}</a-button>
-          <a-button status="danger" @click="clearFilter">{{ t('clearFilter', '清除篩選') }}</a-button>
-          <a-button type="primary" @click="openCreateDialog">
-            <i class="ri-add-line mr-1" />
-            {{ t('addDeliveryReport', '新增出貨日報表') }}
-          </a-button>
-        </div>
-      </div>
-
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         報表列表          -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid ref="reportGridRef" :data="basicDataList" :height="systemStore.tableHeight" row-key="id" :expand-config="{ trigger: 'row', accordion: true }">
-        <CustomTinyGridColumn field="" title="" type="selection" width="50" />
-        <CustomTinyGridColumn field="" title="" type="expand" width="50">
-          <template #default="{ row }">
-            <div class="bg-gray-50 p-4 flex flex-col gap-2">
-              <div class="flex gap-2 items-center">
-                <p class="text-[17px]">{{ t('productDetails', '商品明細') }}</p>
-
-                <a-button status="success" @click="handleConvertToOrder(row)">{{ t('convertToOrder', '轉入訂單') }}</a-button>
-              </div>
-              <a-table :data="row.products" :bordered="false" :pagination="false" size="small">
-                <template #columns>
-                  <a-table-column :title="t('customer', '客戶')" data-index="customer" fixed="left" :min-width="200">
-                    <template #cell="{ record }">{{ record.customer?.name }}</template>
-                  </a-table-column>
-                  <a-table-column :title="t('productName', '商品名稱')" data-index="product" :min-width="200">
-                    <template #cell="{ record }">{{ record.product?.name }}</template>
-                  </a-table-column>
-
-                  <a-table-column :title="t('quantity', '數量')" data-index="quantity" :width="120" align="right" />
-                  <a-table-column :title="t('unitPrice', '單價')" :width="150" align="right">
-                    <template #cell="{ record }">NT$ {{ formatNumber(record.unitPrice) }}</template>
-                  </a-table-column>
-                  <a-table-column :title="t('amount', '金額')" :width="150" align="right">
-                    <template #cell="{ record }">NT$ {{ formatNumber(record.amount) }}</template>
-                  </a-table-column>
-                  <a-table-column :title="t('paymentMethod', '付款方式')" data-index="paymentMethod" :width="150" />
-                  <a-table-column :title="t('status', '狀態')" :width="180" align="center">
-                    <template #cell="{ record }">
-                      <a-tag v-if="record.isConvertedToOrder" color="green">{{ t('converted', '已轉入') }}</a-tag>
-                      <a-tag v-else color="orange">{{ t('notConverted', '未轉入') }}</a-tag>
-                    </template>
-                  </a-table-column>
-                </template>
-              </a-table>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="employeeName" :title="t('employeeName', '員工姓名')" min-width="120" />
-        <CustomTinyGridColumn field="reportDate" :title="t('reportDate', '報表日期')" width="180" sortable />
-        <CustomTinyGridColumn field="weekDays" :title="t('deliveryDays', '出貨星期')" min-width="150" />
-        <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" width="180" align="right" sortable>
-          <template #default="{ row }">NT$ {{ formatNumber(row.totalAmount) }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="120" align="center">
-          <template #default="{ row }">
-            <a-tag v-if="row.status === '草稿'" color="gray">{{ t('draft', '草稿') }}</a-tag>
-            <a-tag v-else-if="row.status === '已提交'" color="blue">{{ t('submitted', '已提交') }}</a-tag>
-            <a-tag v-else-if="row.status === '已審核'" color="green">{{ t('approved', '已審核') }}</a-tag>
-            <a-tag v-else-if="row.status === '已退回'" color="red">{{ t('rejected', '已退回') }}</a-tag>
-            <span v-else>{{ row.status }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="210" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <a-button :disabled="!canReviewReport(row)" class="px-0.5!" type="text" status="success" @click.stop="handleCheck(row)">{{ t('review', '審核') }}</a-button>
-              <a-button :disabled="!canDeleteReport(row)" class="px-0.5!" type="text" status="danger" @click.stop="handleDelete(row)">{{ t('delete', '刪除') }}</a-button>
-              <a-button class="px-0.5! flex items-center gap-0.5" type="text" status="normal" @click.stop="printSlip(row)" :title="t('printSlip', '列印三聯單')">
-                <ScrollText :size="14" />
-              </a-button>
-              <a-button class="px-0.5!" type="text" status="normal" @click.stop="handleEdit(row)">{{ isViewOnlyReport(row) ? t('view', '檢視') : t('edit', '編輯') }}</a-button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="employeeName" :title="t('employeeName', '員工姓名')" :min-width="120" />
+      <CustomTinyGridColumn field="reportDate" :title="t('reportDate', '報表日期')" :width="180" sortable />
+      <CustomTinyGridColumn field="weekDays" :title="t('deliveryDays', '出貨星期')" min-width="150" />
+      <CustomTinyGridColumn field="totalAmount" :title="t('totalAmount', '總金額')" :width="180" align="right" sortable>
+        <template #default="{ row }">NT$ {{ formatNumber(row.totalAmount) }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="status" :title="t('status', '狀態')" :width="120" align="center">
+        <template #default="{ row }">
+          <a-tag v-if="row.status === '草稿'" color="gray" size="large">{{ t('draft', '草稿') }}</a-tag>
+          <a-tag v-else-if="row.status === '已提交'" color="blue" size="large">{{ t('submitted', '已提交') }}</a-tag>
+          <a-tag v-else-if="row.status === '已審核'" color="green" size="large">{{ t('approved', '已審核') }}</a-tag>
+          <a-tag v-else-if="row.status === '已退回'" color="red" size="large">{{ t('rejected', '已退回') }}</a-tag>
+          <span v-else>{{ row.status }}</span>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="210" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <a-button :disabled="!canReviewReport(row)" class="px-0.5!" type="text" status="success" @click.stop="handleCheck(row)">{{ t('review', '審核') }}</a-button>
+            <a-button :disabled="!canDeleteReport(row)" class="px-0.5!" type="text" status="danger" @click.stop="handleDelete(row)">{{ t('delete', '刪除') }}</a-button>
+            <a-button class="px-0.5! flex items-center gap-0.5" type="text" status="normal" @click.stop="printSlip(row)" :title="t('printSlip', '列印三聯單')">
+              <!--<Printer :size="14" />-->
+              {{ t('triplicateSlip', '三聯單') }}
+            </a-button>
+            <a-button class="px-0.5!" type="text" status="normal" @click.stop="handleEdit(row)">{{ isViewOnlyReport(row) ? t('view', '檢視') : t('edit', '編輯') }}</a-button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -198,7 +200,9 @@
           <a-table-column :title="t('amount', '金額')" :width="150" align="right">
             <template #cell="{ record }">NT$ {{ formatNumber(record.amount) }}</template>
           </a-table-column>
-          <a-table-column :title="t('paymentMethod', '付款方式')" data-index="paymentMethod" :width="150" />
+          <a-table-column :title="t('paymentMethod', '付款方式')" :width="150">
+            <template #cell="{ record }">{{ paymentDisplayMap[record.paymentMethod] || record.paymentMethod || '—' }}</template>
+          </a-table-column>
           <a-table-column :title="t('status', '狀態')" :width="180" align="center">
             <template #cell="{ record }">
               <a-tag v-if="record.isConvertedToOrder" color="green">{{ t('converted', '已轉入') }}</a-tag>
@@ -265,7 +269,7 @@
             <template #cell="{ record }">NT$ {{ formatNumber(record.amount) }}</template>
           </a-table-column>
           <a-table-column :title="t('paymentMethod', '付款方式')" :width="100">
-            <template #cell="{ record }">{{ record.paymentMethod || '—' }}</template>
+            <template #cell="{ record }">{{ paymentDisplayMap[record.paymentMethod] || record.paymentMethod || '—' }}</template>
           </a-table-column>
           <a-table-column :title="t('convertStatus', '轉入狀態')" :width="100" align="center">
             <template #cell="{ record }">
@@ -512,19 +516,30 @@
 
 <script setup>
 import { nextTick, onMounted, onUnmounted, computed, ref } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
-import { TinyInput, TinySelect, TinyDatePicker } from '@opentiny/vue';
+import { Card } from '@/components/ui/card';
+import { TinyInput, TinySelect, TinyDatePicker, TinyTooltip } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import DailyShippingReportEnhanced from '@/components/dialogs/DailyShippingReportEnhanced.vue';
 import DeliveryReportSlip from '../components/DeliveryReportSlip.vue';
 import { useI18n } from 'vue-i18n';
+import { useSelectOptions } from '@/composables/useSelectOptions';
 import { useDataList } from './useDataList';
 import { useVueToPrint } from 'vue-to-print';
-import { Expand, Shrink, ScrollText } from 'lucide-vue-next';
+import { Expand, Shrink, Printer } from 'lucide-vue-next';
 
 const { t } = useI18n();
+const { orderPaymentTermOptions, buildLabelMap } = useSelectOptions();
+const paymentDisplayMap = computed(() => buildLabelMap(orderPaymentTermOptions.value));
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 440, 100));
+
 const printFullscreen = ref(false);
 const convertFullscreen = ref(false);
 const {
@@ -610,21 +625,15 @@ const {
   handleOrderPageChange,
   handleSelectExistingOrder,
 
-  //窗口調整
-  cleanupResize,
-
-  //初始化
-  initializeData,
-
-  //Store 引用
-  systemStore,
+  cleanupResize, //窗口調整
+  initializeData, //初始化
+  systemStore, //Store 引用
 } = useDataList(t);
 
 /** 三聯單列印 **/
 const reportGridRef = ref(null);
 const slipRef = ref(null);
 const slipReports = ref([]);
-
 const triplicatePageStyle = `@page { size: 241mm 140mm; margin: 0; } body { margin: 0; }`;
 const { handlePrint: handleTriplicatePrint } = useVueToPrint({
   content: () => slipRef.value?.printContentRef,
@@ -633,13 +642,11 @@ const { handlePrint: handleTriplicatePrint } = useVueToPrint({
   removeAfterPrint: true,
   suppressErrors: true,
 });
-
 const printSlip = async (row) => {
   slipReports.value = [row.raw];
   await nextTick();
   handleTriplicatePrint();
 };
-
 const batchPrintSlip = async () => {
   const selected = reportGridRef.value?.getSelectRecords?.() ?? [];
   if (!selected.length) {
@@ -648,6 +655,23 @@ const batchPrintSlip = async () => {
   slipReports.value = selected.map((r) => r.raw);
   await nextTick();
   handleTriplicatePrint();
+};
+
+/** 展開收合相關 **/
+const allExpanded = ref(false);
+const toggleAllRowExpansion = () => {
+  allExpanded.value = !allExpanded.value;
+  reportGridRef.value.setAllRowExpansion(allExpanded.value);
+};
+const handleExpandChange = ({ $table }) => {
+  if (!$table) return;
+  const expandedCount = $table.expandeds?.length ?? 0;
+  const totalCount = $table.tableFullData?.length ?? 0;
+  if (expandedCount === 0) {
+    allExpanded.value = false;
+  } else if (totalCount > 0 && expandedCount >= totalCount) {
+    allExpanded.value = true;
+  }
 };
 
 /** 日期相關 **/
@@ -697,6 +721,5 @@ onMounted(async () => {
   await initializeData();
 
   await nextTick();
-  systemStore.updateTableHeight(525);
 });
 </script>

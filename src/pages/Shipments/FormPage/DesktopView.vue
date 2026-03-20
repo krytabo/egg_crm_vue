@@ -24,118 +24,122 @@
       </div>
     </CardHeader>
 
-    <div class="flex flex-col gap-2">
-      <!-- 報表資訊區塊 -->
-      <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm autoLabelWidth :labelAlign="'left'">
-          <AFormItem :label="t('deliveryDays', '出貨星期')">
-            <TinyCheckboxGroup v-model="basicForm.deliveryDays" :options="weekDayOptions" :disabled="isReadOnly" />
-          </AFormItem>
-          <AFormItem :label="t('notes', '備註')">
-            <TinyInput type="textarea" v-model="basicForm.note" :displayOnly="isReadOnly" />
-          </AFormItem>
-        </AForm>
-      </div>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--         報表資訊         -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomForm :col="1" :labelWidth="80">
+      <CustomFormItem :label="t('deliveryDays', '出貨星期')">
+        <TinyCheckboxGroup v-model="basicForm.deliveryDays" :options="weekDayOptions" :disabled="isReadOnly" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('notes', '備註')">
+        <TinyInput type="textarea" v-model="basicForm.note" :displayOnly="isReadOnly" />
+      </CustomFormItem>
+    </CustomForm>
 
-      <!-- 商品列表 -->
-      <CustomTinyGrid :data="editedProducts" :height="systemStore.tableHeight" row-key="rowKey" :edit-config="{ trigger: 'click', mode: 'cell', showStatus: true }" :row-span="rowSpanConfig">
-        <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="200" fixed="left">
-          <template #default="{ row, rowIndex }">
-            <InfiniteSelect
-              v-model="row.customerId"
-              dataSource="customers"
-              :placeholder="row.customerName || t('selectCustomer', '選擇客戶')"
-              type="outline"
-              allowClear
-              :readonly="isReadOnly"
-              @change="(val) => handleCustomerChange(rowIndex, val)"
-              :filters="{ deliveryDays: basicForm.deliveryDays }"
-            />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="productName" :title="t('productName', '商品名稱')" min-width="250">
-          <template #default="{ row }">
-            <div class="flex items-center gap-2">
-              <a-tag :color="getProductCategoryColor(row.productCategory)" size="small">{{ row.productCategory || '—' }}</a-tag>
-              {{ row.productName }}
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" :width="150" align="right">
-          <template #default="{ row, rowIndex }">
-            <TinyCustomField type="number" v-model="row.quantity" :min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="unitPrice" :title="t('unitPrice', '單價')" :width="180" align="right">
-          <template #default="{ row, rowIndex }">
-            <TinyCustomField type="number" v-model="row.unitPrice" :min="0" :precision="1" thousands :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="amount" :title="t('amount', '金額')" :width="150" align="right">
-          <template #default="{ row }">
-            <span class="text-gray-600">NT$ {{ formatNumber(row.amount) }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="actualAmount" :title="t('actualPayment', '實際收付')" :width="180" align="right">
-          <template #default="{ row }">
-            <TinyCustomField type="number" v-model="row.actualAmount" :min="0" :precision="1" :displayOnly="isReadOnly" />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" width="150">
-          <template #default="{ row }">
-            <TinySelect v-model="row.paymentMethod" :options="paymentOptions" :displayOnly="isReadOnly" />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="note" :title="t('note', '備註')" min-width="150">
-          <template #default="{ row }">
-            <TinyInput v-model="row.note" :placeholder="t('enterNote', '輸入備註...')" :displayOnly="isReadOnly" />
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn v-if="!isReadOnly" field="" :title="t('actions', '操作')" width="150" fixed="right" align="center">
-          <template #header>
-            <div class="flex gap-1 items-center">
-              <p>{{ t('actions', '操作') }}</p>
-              <a-button type="text" @click="openAddProductDialog">{{ t('new') }}</a-button>
-            </div>
-          </template>
-          <template #default="{ rowIndex }">
-            <a-button type="text" size="small" status="danger" @click="handleDeleteRow(rowIndex)">
-              <i class="ri-delete-bin-line" />
-            </a-button>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="editedProducts" :height="TableScrollY" row-key="rowKey" :edit-config="{ trigger: 'click', mode: 'cell', showStatus: true }" :row-span="rowSpanConfig">
+      <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="200" fixed="left">
+        <template #default="{ row, rowIndex }">
+          <InfiniteSelect
+            v-model="row.customerId"
+            dataSource="customers"
+            :placeholder="row.customerName || t('selectCustomer', '選擇客戶')"
+            type="outline"
+            allowClear
+            :readonly="isReadOnly"
+            @change="(val) => handleCustomerChange(rowIndex, val)"
+            :filters="{ deliveryDays: basicForm.deliveryDays }"
+          />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="productName" :title="t('productName', '商品名稱')" min-width="250">
+        <template #default="{ row }">
+          <div class="flex items-center gap-2">
+            <a-tag :color="getProductCategoryColor(row.productCategory)" size="small">{{ row.productCategory || '—' }}</a-tag>
+            {{ row.productName }}
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="quantity" :title="t('quantity', '數量')" :width="150" align="right">
+        <template #default="{ row, rowIndex }">
+          <TinyCustomField type="number" v-model="row.quantity" :min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="unitPrice" :title="t('unitPrice', '單價')" :width="180" align="right">
+        <template #default="{ row, rowIndex }">
+          <TinyCustomField type="number" v-model="row.unitPrice" :min="0" :precision="1" thousands :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="amount" :title="t('amount', '金額')" :width="150" align="right">
+        <template #default="{ row }">
+          <span class="text-gray-600">NT$ {{ formatNumber(row.amount) }}</span>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="actualAmount" :title="t('actualPayment', '實際收付')" :width="180" align="right">
+        <template #default="{ row }">
+          <TinyCustomField type="number" v-model="row.actualAmount" :min="0" :precision="1" :displayOnly="isReadOnly" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="paymentMethod" :title="t('paymentMethod', '付款方式')" width="150">
+        <template #default="{ row }">
+          <TinySelect v-model="row.paymentMethod" :options="paymentOptions" :displayOnly="isReadOnly" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="note" :title="t('note', '備註')" min-width="150">
+        <template #default="{ row }">
+          <TinyInput v-model="row.note" :placeholder="t('enterNote', '輸入備註...')" :displayOnly="isReadOnly" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn v-if="!isReadOnly" field="" :title="t('actions', '操作')" width="150" fixed="right" align="center">
+        <template #header>
+          <div class="flex gap-1 items-center">
+            <p>{{ t('actions', '操作') }}</p>
+            <a-button type="text" @click="openAddProductDialog">{{ t('new') }}</a-button>
+          </div>
+        </template>
+        <template #default="{ rowIndex }">
+          <a-button type="text" size="small" status="danger" @click="handleDeleteRow(rowIndex)">
+            <i class="ri-delete-bin-line" />
+          </a-button>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
 
-      <!-- 底部結算區 -->
-      <div class="flex justify-end">
-        <div class="flex flex-col justify-end gap-1">
-          <div class="flex items-center justify-between text-sm text-gray-600">
-            <p class="text-sm text-gray-500">{{ t('subtotalAmount', '商品總金額') }}</p>
-            <p class="text-lg font-medium text-gray-700">NT$ {{ formatNumber(totalAmount) }}</p>
-          </div>
-          <div class="flex items-center justify-between text-base">
-            <p class="text-sm text-gray-500">{{ t('actualPaymentTotal', '實際收付') }}</p>
-            <p class="text-lg font-semibold text-blue-600">NT$ {{ formatNumber(totalActualAmount) }}</p>
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <span class="text-gray-700">{{ t('fuelExpense', '加油支出') }}</span>
-            <CustomField v-model="fuelExpense" type="number" min="0" thousands allowClear :readonly="isReadOnly" />
-          </div>
-          <div class="flex items-center justify-between gap-4">
-            <span class="text-gray-700">{{ t('otherExpense', '其他支出') }}</span>
-            <CustomField v-model="otherExpense" type="number" min="0" thousands allowClear :readonly="isReadOnly" />
-          </div>
-          <a-divider />
-          <div class="flex items-center justify-between text-base font-semibold">
-            <p class="text-[18px] text-gray-500">{{ t('totalAmount', '金額總計') }}</p>
-            <p class="text-xl font-bold text-green-600">NT$ {{ formatNumber(finalTotal) }}</p>
-          </div>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--         結算區塊         -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <div class="flex justify-end">
+      <div class="flex flex-col justify-end gap-1">
+        <div class="flex items-center justify-between text-sm text-gray-600">
+          <p class="text-sm text-gray-500">{{ t('subtotalAmount', '商品總金額') }}</p>
+          <p class="text-lg font-medium text-gray-700">NT$ {{ formatNumber(totalAmount) }}</p>
+        </div>
+        <div class="flex items-center justify-between text-base">
+          <p class="text-sm text-gray-500">{{ t('actualPaymentTotal', '實際收付') }}</p>
+          <p class="text-lg font-semibold text-blue-600">NT$ {{ formatNumber(totalActualAmount) }}</p>
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <span class="text-gray-700">{{ t('fuelExpense', '加油支出') }}</span>
+          <CustomField v-model="fuelExpense" type="number" min="0" thousands allowClear :readonly="isReadOnly" />
+        </div>
+        <div class="flex items-center justify-between gap-4">
+          <span class="text-gray-700">{{ t('otherExpense', '其他支出') }}</span>
+          <CustomField v-model="otherExpense" type="number" min="0" thousands allowClear :readonly="isReadOnly" />
+        </div>
+        <a-divider />
+        <div class="flex items-center justify-between text-base font-semibold">
+          <p class="text-[18px] text-gray-500">{{ t('totalAmount', '金額總計') }}</p>
+          <p class="text-xl font-bold text-green-600">NT$ {{ formatNumber(finalTotal) }}</p>
         </div>
       </div>
     </div>
   </Card>
 
-  <!-- 新增商品彈窗 -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--         新增彈窗         -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <a-modal v-model:visible="addProductDialogVisible" width="720px" :closable="false" :fullscreen="fullscreen">
     <template #title>
       <div class="flex w-full gap-2">
@@ -200,9 +204,9 @@
 </template>
 
 <script setup>
-import { onMounted, nextTick, onUnmounted, ref } from 'vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TinyCheckboxGroup, TinyInput, TinySelect } from '@opentiny/vue';
+import { onMounted, nextTick, onUnmounted, ref, computed } from 'vue';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { TinyCheckboxGroup, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import TinyCustomField from '@/components/Form/TinyCustomField.vue';
@@ -219,6 +223,13 @@ const props = defineProps({
 const systemStore = useSystemStore();
 const { t } = useI18n();
 const fullscreen = ref(false);
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 620, 100));
 
 const showMessage = (type, content) => {
   if (type === 'success') Message.success(content);
@@ -267,7 +278,5 @@ const cleanupResize = systemStore.initializeWindowResize();
 onUnmounted(cleanupResize);
 onMounted(async () => {
   await getData();
-  await nextTick();
-  systemStore.updateTableHeight(680);
 });
 </script>

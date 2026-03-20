@@ -2,41 +2,37 @@
 <template>
   <div class="flex flex-col gap-4">
     <!-- 篩選區塊 -->
-    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <AForm layout="vertical">
-        <div class="grid grid-cols-2 gap-x-2">
-          <AFormItem :label="t('billingRequestDate', '請款單日期')">
-            <div class="flex items-center gap-2">
-              <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-              <span>-</span>
-              <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
-            </div>
-          </AFormItem>
-          <AFormItem :label="t('status', '狀態')">
-            <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
-          </AFormItem>
-          <AFormItem :label="t('customer', '客戶')">
-            <InfiniteSelect
-              v-model="filters.customerId"
-              dataSource="customers"
-              type="outline"
-              :placeholder="t('all', '全部')"
-              allowClear
-              class="w-48"
-              @change="handleFiltersChange"
-              :filters="{ status: 'active' }"
-            />
-          </AFormItem>
-          <AFormItem :label="t('search', '關鍵字')">
-            <TinyInput v-model="filters.search" :placeholder="t('searchBillingRequest', '請款單號碼/客戶')" @keyup.enter="handleFiltersChange" />
-          </AFormItem>
+    <CustomForm :col="2">
+      <CustomFormItem :label="t('billingRequestDate', '請款單日期')">
+        <div class="flex items-center gap-2">
+          <TinyDatePicker v-model="filters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
+          <span>-</span>
+          <TinyDatePicker v-model="filters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" @change="handleFiltersChange" />
         </div>
-      </AForm>
-    </div>
+      </CustomFormItem>
+      <CustomFormItem :label="t('status', '狀態')">
+        <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('customer', '客戶')">
+        <InfiniteSelect
+          v-model="filters.customerId"
+          dataSource="customers"
+          type="outline"
+          :placeholder="t('all', '全部')"
+          allowClear
+          class="w-48"
+          @change="handleFiltersChange"
+          :filters="{ status: 'active' }"
+        />
+      </CustomFormItem>
+      <CustomFormItem :label="t('search', '關鍵字')">
+        <TinyInput v-model="filters.search" :placeholder="t('searchBillingRequest', '請款單號碼/客戶')" @keyup.enter="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
     <!-- 請款單列表 -->
     <!--<JsonViewer :value="basicDataList" boxed copyable />-->
-    <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
       <CustomTinyGridColumn field="id" :title="t('billingRequestNumber', '請款單號碼')" width="200" fixed="left">
         <template #default="{ row }">
           <a-link @click="openDetailDrawer(row)">{{ row.invoiceNumber }}</a-link>
@@ -220,7 +216,7 @@
           <div v-if="basicForm.items.length === 0" class="py-4 text-center text-gray-400">{{ t('noItems', '尚無項目，請點擊新增') }}</div>
         </div>-->
         <div class="grid grid-cols-2 gap-4">
-          <AFormItem :label="t('付款日期', '付款日期')" field="dueDate" class="col-span-2">
+          <AFormItem :label="t('paymentDate', '付款日期')" field="dueDate" class="col-span-2">
             <TinyDatePicker v-model="basicForm.dueDate" :placeholder="t('pleaseSelect', '請選擇')" value-format="yyyy-MM-dd" class="w-full" />
           </AFormItem>
           <AFormItem :label="t('taxRate', '稅率 (%)')" field="taxRate">
@@ -230,7 +226,7 @@
             <CustomField v-model="basicForm.discount" type="number" :min="0" />
           </AFormItem>
           <AFormItem :label="t('notes', '備註')" class="col-span-2">
-            <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('請輸入已開立的統一發票號碼或者其他備註', '請輸入已開立的統一發票號碼或者其他備註')" />
+            <CustomField v-model="basicForm.notes" type="textarea" :placeholder="t('invoiceNumberOrNotePlaceholder', '請輸入已開立的統一發票號碼或者其他備註')" />
           </AFormItem>
         </div>
 
@@ -422,6 +418,8 @@ import { TinyBadge, TinyDatePicker, TinySelect, TinyInput } from '@opentiny/vue'
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue'
+import CustomFormItem from '@/components/Form/CustomFormItem.vue'
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -432,12 +430,15 @@ import { addDays, endOfDay, format } from 'date-fns';
 import { debounce } from 'lodash';
 import { useCurrencyStore } from '@/stores/currency';
 import { Expand, Shrink } from 'lucide-vue-next';
+import { useWindowSize } from '@vueuse/core';
 
 const emit = defineEmits(['open-payment']);
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const currencyStore = useCurrencyStore();
 const systemStore = useSystemStore();
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 520, 100));
 const { t } = useI18n();
 
 const { formatNumber, formatCurrencyNumber } = currencyStore;
@@ -819,6 +820,5 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(520);
 });
 </script>

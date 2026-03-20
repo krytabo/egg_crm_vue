@@ -10,76 +10,67 @@
         <p class="text-sm text-gray-500">{{ t('totalCount', { total: pagination.total }) }}</p>
       </div>
       <div class="flex items-center gap-3">
-        <Button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</Button>
-        <Button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addPermission') }}</Button>
+        <a-button type="danger" plain @click="clearFilter">{{ t('clearAllSearch') }}</a-button>
+        <a-button v-if="permissionStore.hasPermission('ROLE', 'CREATE')" type="primary" @click="openCreateDialog">{{ t('addPermission') }}</a-button>
       </div>
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--         其他搜尋         -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <div class="mb-4 flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <div class="grid gap-3 md:grid-cols-3">
-            <AFormItem :label="t('keyword')">
-              <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterResourceOrAction')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-            </AFormItem>
-            <AFormItem :label="t('resource')">
-              <TinySelect v-model="filters.resource" :options="resourceFilterOptions" :placeholder="t('all')" clearable class="h-9 text-sm" @update:model-value="handleFiltersChange" />
-            </AFormItem>
-            <AFormItem :label="t('action')">
-              <TinySelect v-model="filters.action" :options="actionFilterOptions" :placeholder="t('all')" clearable class="h-9 text-sm" @update:model-value="handleFiltersChange" />
-            </AFormItem>
-          </div>
-        </AForm>
-      </div>
+    <CustomForm :col="3" class="mb-4">
+      <CustomFormItem :label="t('keyword')">
+        <TinyInput v-model="filters.keyword" :placeholder="t('pleaseEnterResourceOrAction')" clearable class="h-9 text-sm" @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('resource')">
+        <TinySelect v-model="filters.resource" :options="resourceFilterOptions" :placeholder="t('all')" clearable class="h-9 text-sm" @update:model-value="handleFiltersChange" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('action')">
+        <TinySelect v-model="filters.action" :options="actionFilterOptions" :placeholder="t('all')" clearable class="h-9 text-sm" @update:model-value="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <!--          列表            -->
-      <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-      <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
-        <CustomTinyGridColumn field="resource" :title="t('resource')" min-width="200">
-          <template #default="{ row }">
-            <div class="flex flex-col">
-              <span class="text-base font-semibold text-gray-900">{{ row.resourceLabel }}</span>
-              <TinyTag type="primary" size="mini">{{ row.actionLabel }}</TinyTag>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="conditions" :title="t('conditions')" min-width="260">
-          <template #default="{ row }">
-            <span class="text-gray-700">{{ row.ownOnlyLabel }}</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="160">
-          <template #default="{ row }">{{ row.createdAt }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
-          <template #default="{ row }">{{ row.updatedAt }}</template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn :title="t('actions')" :width="200" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-              <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id" :row-id="'id'">
+      <CustomTinyGridColumn field="resource" :title="t('resource')" min-width="200">
+        <template #default="{ row }">
+          <div class="flex flex-col">
+            <span class="text-base font-semibold text-gray-900">{{ row.resourceLabel }}</span>
+            <TinyTag type="primary" size="mini">{{ row.actionLabel }}</TinyTag>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="conditions" :title="t('conditions')" min-width="260">
+        <template #default="{ row }">
+          <span class="text-gray-700">{{ row.ownOnlyLabel }}</span>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="createdAt" :title="t('createdAt')" :width="160">
+        <template #default="{ row }">{{ row.createdAt }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="updatedAt" :title="t('updatedAt')" :width="160">
+        <template #default="{ row }">{{ row.updatedAt }}</template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions')" :width="200" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('ROLE', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            <button v-if="permissionStore.hasPermission('ROLE', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -118,8 +109,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { PermissionListGet, PermissionCreatePost, PermissionUpdatePatch, PermissionDeleteById, PermissionGetByID } from '@/assets/API/Permission';
 import AppPagination from '@/components/ui/AppPagination.vue';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import { TinyForm, TinyFormItem, TinyInput, TinyTag, TinySelect } from '@opentiny/vue';
-import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Button } from '@/components/ui/button';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -139,14 +132,7 @@ const { containerRef } = useContentWidth();
 const { t } = useI18n();
 
 // 使用共用選項
-const {
-  permissionResourceOptions,
-  permissionResourceLabelMap,
-  permissionActionOptions,
-  permissionActionLabelMap,
-  permissionOwnOnlyOptions,
-  buildSelectOptionsWithAll,
-} = useSelectOptions();
+const { permissionResourceOptions, permissionResourceLabelMap, permissionActionOptions, permissionActionLabelMap, permissionOwnOnlyOptions, buildSelectOptionsWithAll } = useSelectOptions();
 
 /** 常數相關 **/
 const isCreate = computed(() => dialogMode.value === 'create'); //是否為新增模式

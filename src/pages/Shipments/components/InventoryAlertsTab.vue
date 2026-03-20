@@ -1,68 +1,64 @@
 <!-- src/pages/inventory-reports/components/InventoryAlertsTab.vue 庫存警示 -->
 <template>
-  <div class="flex flex-col gap-4">
-    <!-- 子分類切換 -->
-    <div class="flex items-center gap-4">
-      <a-radio-group v-model="alertType" type="button" @change="handleAlertTypeChange">
-        <a-radio value="lowStock">
-          <div class="flex items-center gap-2">
-            <p>{{ t('lowStock', '低庫存') }}</p>
-            <p>({{ counts.lowStock }})</p>
-          </div>
-        </a-radio>
-        <a-radio value="outOfStock">
-          <div class="flex items-center gap-2">
-            <p>{{ t('outOfStock', '缺貨') }}</p>
-            <p>({{ counts.outOfStock }})</p>
-          </div>
-        </a-radio>
-        <a-radio value="reorder">
-          <div class="flex items-center gap-2">
-            <p>{{ t('needReorder', '需補貨') }}</p>
-            <p>({{ counts.reorder }})</p>
-          </div>
-        </a-radio>
-      </a-radio-group>
-    </div>
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--          頁籤            -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <a-radio-group v-model="alertType" type="button" @change="handleAlertTypeChange" class="w-fit">
+    <a-radio value="lowStock">
+      <div class="flex items-center gap-2">
+        <p>{{ t('lowStock', '低庫存') }}</p>
+        <p>({{ counts.lowStock }})</p>
+      </div>
+    </a-radio>
+    <a-radio value="outOfStock">
+      <div class="flex items-center gap-2">
+        <p>{{ t('outOfStock', '缺貨') }}</p>
+        <p>({{ counts.outOfStock }})</p>
+      </div>
+    </a-radio>
+    <a-radio value="reorder">
+      <div class="flex items-center gap-2">
+        <p>{{ t('needReorder', '需補貨') }}</p>
+        <p>({{ counts.reorder }})</p>
+      </div>
+    </a-radio>
+  </a-radio-group>
 
-    <!-- 列表 -->
-    <CustomTinyGrid :data="alertList" :height="systemStore.tableHeight" :border="true" row-key="productId">
-      <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" :min-width="200" fixed="left" />
-      <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" :width="150" />
-      <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="80" align="center" />
-      <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" :width="100" align="right">
-        <template #default="{ row }">
-          <span :class="row.currentStock === 0 ? 'font-semibold text-red-600' : 'text-orange-600'">{{ row.currentStock }}</span>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" :width="100" align="right" />
-      <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" :width="100" align="right" />
-      <CustomTinyGridColumn field="shortfall" :title="t('shortfall', '缺口數量')" :width="100" align="right">
-        <template #default="{ row }">
-          <span class="text-red-600">{{ row.shortfall }}</span>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="suggestedOrderQuantity" :title="t('suggestedOrderQuantity', '建議訂購量')" :width="120" align="right">
-        <template #default="{ row }">
-          <span class="font-semibold text-blue-600">{{ row.suggestedOrderQuantity }}</span>
-        </template>
-      </CustomTinyGridColumn>
-      <CustomTinyGridColumn field="vendorName" :title="t('vendor', '供應商')" :min-width="200" />
-      <!--<CustomTinyGridColumn field="" :title="t('actions', '操作')" width="120" fixed="right" align="center">
-        <template #default="{ row }">
-          <a-button type="text" @click="handleQuickStockIn(row)">{{ t('quickStockIn', '快速入庫') }}</a-button>
-        </template>
-      </CustomTinyGridColumn>-->
-    </CustomTinyGrid>
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--          列表            -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <CustomTinyGrid :data="alertList" :height="TableScrollY" :border="true" row-key="productId">
+    <CustomTinyGridColumn field="productName" :title="t('productName', '產品名稱')" :min-width="200" fixed="left" />
+    <CustomTinyGridColumn field="productCode" :title="t('productCode', '產品編號')" :width="150" />
+    <CustomTinyGridColumn field="unit" :title="t('unit', '單位')" :width="80" align="center" />
+    <CustomTinyGridColumn field="currentStock" :title="t('currentStock', '目前庫存')" :width="100" align="right">
+      <template #default="{ row }">
+        <span :class="row.currentStock === 0 ? 'font-semibold text-red-600' : 'text-orange-600'">{{ row.currentStock }}</span>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="minStock" :title="t('minStock', '最低庫存')" :width="100" align="right" />
+    <CustomTinyGridColumn field="reorderPoint" :title="t('reorderPoint', '補貨點')" :width="100" align="right" />
+    <CustomTinyGridColumn field="shortfall" :title="t('shortfall', '缺口數量')" :width="100" align="right">
+      <template #default="{ row }">
+        <span class="text-red-600">{{ row.shortfall }}</span>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="suggestedOrderQuantity" :title="t('suggestedOrderQuantity', '建議訂購量')" :width="120" align="right">
+      <template #default="{ row }">
+        <span class="font-semibold text-blue-600">{{ row.suggestedOrderQuantity }}</span>
+      </template>
+    </CustomTinyGridColumn>
+    <CustomTinyGridColumn field="vendorName" :title="t('vendor', '供應商')" :min-width="200" />
+    <!--<CustomTinyGridColumn field="" :title="t('actions', '操作')" width="120" fixed="right" align="center">
+      <template #default="{ row }">
+        <a-button type="text" @click="handleQuickStockIn(row)">{{ t('quickStockIn', '快速入庫') }}</a-button>
+      </template>
+    </CustomTinyGridColumn>-->
+  </CustomTinyGrid>
 
-    <!-- 空狀態提示 -->
-    <div v-if="alertList.length === 0 && !isLoading" class="flex flex-col items-center justify-center py-12 text-gray-500">
-      <IconCheckCircle class="mb-4 size-16 text-green-500" />
-      <p class="text-lg">{{ getEmptyMessage() }}</p>
-    </div>
-  </div>
-
-  <!-- 入庫彈窗 -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+  <!--         入庫彈窗         -->
+  <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
   <a-modal v-model:visible="stockInDialogVisible" width="1300px" :mask-closable="false" :closable="false" :fullscreen="fullscreen">
     <template #title>
       <div class="flex w-full gap-2">
@@ -117,7 +113,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, nextTick, onUnmounted, watch } from 'vue';
+import { ref, onMounted, reactive, computed, nextTick, onUnmounted, watch } from 'vue';
 import { InventoryLocationsGet, InventoryLowStockGet, InventoryOutOfStockGet, InventoryReorderAlertsGet, InventoryStockInPost } from '@/assets/API/Inventory';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import CustomField from '@/components/Form/CustomField.vue';
@@ -131,6 +127,11 @@ import { debounce } from 'lodash';
 const mainStore = useMainStore();
 const systemStore = useSystemStore();
 const { t } = useI18n();
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 280, 100));
 
 const EMPTY_PLACEHOLDER = '—';
 const alertType = ref('lowStock');
@@ -208,14 +209,6 @@ const loadAllCounts = async () => {
   }
 }; //載入所有分類數量
 const handleAlertTypeChange = () => loadAlertData(); //切換子分類
-const getEmptyMessage = () => {
-  const messages = {
-    lowStock: t('noLowStockItems', '目前沒有低庫存項目'),
-    outOfStock: t('noOutOfStockItems', '目前沒有缺貨項目'),
-    reorder: t('noReorderItems', '目前沒有需補貨項目'),
-  };
-  return messages[alertType.value];
-}; //取得空狀態訊息
 
 /** 入庫彈窗 **/
 const fullscreen = ref(false);
@@ -353,9 +346,5 @@ onUnmounted(cleanupResize);
 
 onMounted(async () => {
   await getAPI();
-
-  /** Table高度相關 **/
-  await nextTick();
-  systemStore.updateTableHeight(340); //修改table高度
 });
 </script>

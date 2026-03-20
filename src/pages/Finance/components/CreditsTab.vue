@@ -2,30 +2,26 @@
 <template>
   <div class="flex flex-col gap-4">
     <!-- 篩選區塊 -->
-    <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-      <AForm layout="vertical">
-        <div class="grid grid-cols-2 gap-2">
-          <AFormItem :label="t('status', '狀態')">
-            <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
-          </AFormItem>
-          <AFormItem :label="t('invoice', '發票')">
-            <InfiniteSelect
-              v-model="filters.invoiceId"
-              dataSource="Invoice"
-              :placeholder="t('all', '全部')"
-              allowClear
-              class="w-48"
-              @change="handleFiltersChange"
-              emitValue
-              :filters="{ status: 'active' }"
-            />
-          </AFormItem>
-        </div>
-      </AForm>
-    </div>
+    <CustomForm :col="2">
+      <CustomFormItem :label="t('status', '狀態')">
+        <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('invoice', '發票')">
+        <InfiniteSelect
+          v-model="filters.invoiceId"
+          dataSource="Invoice"
+          :placeholder="t('all', '全部')"
+          allowClear
+          class="w-48"
+          @change="handleFiltersChange"
+          emitValue
+          :filters="{ status: 'active' }"
+        />
+      </CustomFormItem>
+    </CustomForm>
 
     <!-- 折讓單列表 -->
-    <CustomTinyGrid :data="basicDataList" :height="systemStore.tableHeight" :border="true" row-key="id">
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
       <CustomTinyGridColumn field="creditMemoNumber" :title="t('creditMemoNumber', '折讓單號')" width="220" fixed="left" />
       <!--<CustomTinyGridColumn field="invoiceNumber" :title="t('invoiceNumber', '發票號碼')" width="160" />-->
       <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="180" />
@@ -128,24 +124,29 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, onUnmounted } from 'vue';
+import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue';
 import { CreditMemoListGet, CreditMemoCreatePost, CreditMemoGetById, CreditMemoApplyPost, CreditMemoCancelPost, InvoiceSendPost } from '@/assets/API/Billing';
 import { InvoiceGetById } from '@/assets/API/Billing';
 import { TinySelect, TinyBadge } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue'
+import CustomFormItem from '@/components/Form/CustomFormItem.vue'
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useSystemStore } from '@/stores/system';
+import { useWindowSize } from '@vueuse/core';
 import { useI18n } from 'vue-i18n';
 import { debounce } from 'lodash';
 
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const systemStore = useSystemStore();
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 440, 100));
 const { t } = useI18n();
 
 /** 常數相關 **/
@@ -357,6 +358,5 @@ onUnmounted(cleanupResize);
 onMounted(async () => {
   await getAPI();
   await nextTick();
-  systemStore.updateTableHeight(440);
 });
 </script>

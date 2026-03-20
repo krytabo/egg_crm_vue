@@ -86,11 +86,10 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   };
   const calculateSummary = (response) => {
-    const pagination = response?.data?.pagination ?? response?.data?.meta;
-    summaryData.totalReports = pagination?.total ?? 0;
-    const items = response?.data?.data || response?.data?.items || [];
-    summaryData.totalAmount = Array.isArray(items) ? items.reduce((sum, item) => sum + (item.totalAmount || 0), 0) : 0;
-  };
+    const pagination = response?.data?.data;
+    summaryData.totalReports = pagination?.pagination?.total ?? 0; //總報表筆數
+    summaryData.totalAmount = pagination?.summary.totalAmount ?? 0; //總報表金額
+  }; //搜尋總結果
 
   /** 取得資料 **/
   const responseDataToList = (item = {}) => ({
@@ -117,14 +116,14 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     const now = new Date();
     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
     const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
+
     const formatDate = (d) => {
       const year = d.getFullYear();
       const month = String(d.getMonth() + 1).padStart(2, '0');
       const day = String(d.getDate()).padStart(2, '0');
       return `${year}-${month}-${day}`;
     };
-    
+
     return {
       reportDateFrom: formatDate(firstDay),
       reportDateTo: formatDate(lastDay),
@@ -510,9 +509,9 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
 
     if (row.status !== '已審核') {
       if (isMobile.value && showMessage) {
-        showMessage('warning', t('該報表尚未審核通過，請先審核後再轉入訂單', '該報表尚未審核通過，請先審核後再轉入訂單'));
+        showMessage('warning', t('reportNotApprovedYet', '該報表尚未審核通過，請先審核後再轉入訂單'));
       } else {
-        await mainStore.SWAL_Error(t('該報表尚未審核通過，請先審核後再轉入訂單', '該報表尚未審核通過，請先審核後再轉入訂單'));
+        await mainStore.SWAL_Error(t('reportNotApprovedYet', '該報表尚未審核通過，請先審核後再轉入訂單'));
       }
       return;
     }

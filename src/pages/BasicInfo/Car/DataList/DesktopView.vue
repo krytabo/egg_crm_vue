@@ -16,73 +16,73 @@
     </CardHeader>
 
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <!--          內容            -->
+    <!--         篩選區塊         -->
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
-    <CardContent class="flex flex-col gap-4">
-      <!-- 篩選區塊 -->
-      <TinyForm label-width="100px" label-position="left" class="grid gap-3 rounded-[10px] bg-[#f5f7fb] px-5 py-4 md:grid-cols-2">
-        <TinyFormItem :label="t('keyword', '關鍵字')">
-          <TinyInput v-model="filters.search" :placeholder="t('searchVehiclePlaceholder', '搜尋車牌、品牌、型號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
-        </TinyFormItem>
-        <TinyFormItem :label="t('status', '狀態')">
-          <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
-        </TinyFormItem>
-      </TinyForm>
+    <CustomForm :col="2">
+      <CustomFormItem :label="t('keyword', '關鍵字')">
+        <TinyInput v-model="filters.search" :placeholder="t('searchVehiclePlaceholder', '搜尋車牌、品牌、型號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
+      </CustomFormItem>
+      <CustomFormItem :label="t('status', '狀態')">
+        <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
+      </CustomFormItem>
+    </CustomForm>
 
-      <CustomTinyGrid :data="basicDataList" :height="520" :border="true" row-key="id">
-        <CustomTinyGridColumn field="licensePlate" :title="t('licensePlate', '車牌號碼')" min-width="120" fixed="left" />
-        <CustomTinyGridColumn field="makeModel" :title="t('makeModel', '品牌/型號')" min-width="220">
-          <template #default="{ row }">
-            {{ row.brand }} - {{ row.model }} <span v-if="row.year">({{ row.year }})</span>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="fuelType" :title="t('fuelType', '燃料類型')" width="100">
-          <template #default="{ row }">
-            {{ fuelTypeMap[row.fuelType] || row.fuelType || '-' }}
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="capacity" :title="t('capacity', '載重量')" width="100" align="right">
-          <template #default="{ row }">
-            {{ row.capacity ? `${row.capacity} kg` : '-' }}
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="assignedDriver" :title="t('assignedDriver', '指派司機')" min-width="120">
-          <template #default="{ row }">
-            {{ row.assignedDriver?.user?.fullName || '-' }}
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center">
-          <template #default="{ row }">
-            <a-tag :color="getStatusColor(row.status)" size="large">{{ statusMap[row.status] || row.status }}</a-tag>
-          </template>
-        </CustomTinyGridColumn>
-        <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
-          <template #default="{ row }">
-            <div class="flex items-center justify-center gap-2">
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'READ')" class="table-button" :title="t('viewDetail', '詳細資料')" @click="openDetailDrawer(row)">
-                <FileText class="size-4 text-gray-500" />
-              </button>
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('assignDriver', '指派司機')" @click="openDriverDialog(row)">
-                <UserCheck class="size-4 text-blue-500" />
-              </button>
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" :title="t('disable', '停用')" @click="deleteData(row.id)">
-                <PowerOff class="size-4 text-orange-500" />
-              </button>
-              <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('edit', '編輯')" @click="editData(row)"><SquarePen class="size-4" /></button>
-            </div>
-          </template>
-        </CustomTinyGridColumn>
-      </CustomTinyGrid>
-      <AppPagination
-        class="md:w-auto"
-        :current="pagination.page"
-        :page-size="pagination.limit"
-        :total="pagination.total"
-        :page-size-options="pageSizeOptions"
-        @change="CurrentChange"
-        @page-size-change="SizeChange"
-      />
-    </CardContent>
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <!--          列表            -->
+    <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
+    <CustomTinyGrid :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
+      <CustomTinyGridColumn field="licensePlate" :title="t('licensePlate', '車牌號碼')" min-width="120" fixed="left" />
+      <CustomTinyGridColumn field="makeModel" :title="t('makeModel', '品牌/型號')" min-width="220">
+        <template #default="{ row }">
+          {{ row.brand }} - {{ row.model }} <span v-if="row.year">({{ row.year }})</span>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="fuelType" :title="t('fuelType', '燃料類型')" width="100">
+        <template #default="{ row }">
+          {{ fuelTypeMap[row.fuelType] || row.fuelType || '-' }}
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="capacity" :title="t('capacity', '載重量')" width="100" align="right">
+        <template #default="{ row }">
+          {{ row.capacity ? `${row.capacity} kg` : '-' }}
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="assignedDriver" :title="t('assignedDriver', '指派司機')" min-width="120">
+        <template #default="{ row }">
+          {{ row.assignedDriver?.user?.fullName || '-' }}
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="status" :title="t('status', '狀態')" width="100" align="center">
+        <template #default="{ row }">
+          <a-tag :color="getStatusColor(row.status)" size="large">{{ statusMap[row.status] || row.status }}</a-tag>
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="" :title="t('actions', '操作')" width="180" fixed="right" align="center">
+        <template #default="{ row }">
+          <div class="flex items-center justify-center gap-2">
+            <button v-if="permissionStore.hasPermission('VEHICLE', 'READ')" class="table-button" :title="t('viewDetail', '詳細資料')" @click="openDetailDrawer(row)">
+              <FileText class="size-4 text-gray-500" />
+            </button>
+            <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('assignDriver', '指派司機')" @click="openDriverDialog(row)">
+              <UserCheck class="size-4 text-blue-500" />
+            </button>
+            <button v-if="permissionStore.hasPermission('VEHICLE', 'DELETE')" class="table-button" :title="t('disable', '停用')" @click="deleteData(row.id)">
+              <PowerOff class="size-4 text-orange-500" />
+            </button>
+            <button v-if="permissionStore.hasPermission('VEHICLE', 'UPDATE')" class="table-button" :title="t('edit', '編輯')" @click="editData(row)"><SquarePen class="size-4" /></button>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
+    </CustomTinyGrid>
+    <AppPagination
+      class="md:w-auto"
+      :current="pagination.page"
+      :page-size="pagination.limit"
+      :total="pagination.total"
+      :page-size-options="pageSizeOptions"
+      @change="CurrentChange"
+      @page-size-change="SizeChange"
+    />
   </Card>
 
   <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
@@ -204,12 +204,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { TinyInput, TinySelect, TinyForm, TinyFormItem } from '@opentiny/vue';
+import { ref, onMounted, computed } from 'vue';
+import { TinyInput, TinySelect, TinyForm, TinyFormItem, TinyDatePicker } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Trash2, SquarePen, UserCheck, FileText, Expand, Shrink, PowerOff } from 'lucide-vue-next';
+import { SquarePen, UserCheck, FileText, Expand, Shrink, PowerOff } from 'lucide-vue-next';
 import VehicleDetailDrawer from './VehicleDetailDrawer.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import AppPagination from '@/components/ui/AppPagination.vue';
@@ -220,6 +220,13 @@ import { useI18n } from 'vue-i18n';
 
 const { t } = useI18n();
 const permissionStore = usePermissionStore();
+
+/** Table高度 **/
+import { useWindowSize } from '@vueuse/core';
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 340, 100));
 
 const {
   //選項

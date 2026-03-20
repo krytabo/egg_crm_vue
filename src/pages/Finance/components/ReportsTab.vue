@@ -10,66 +10,62 @@
     <!-- 營收報表 -->
     <template v-if="reportType === 'revenue'">
       <!-- 篩選區塊 -->
-      <div class="flex items-end gap-3 rounded-md bg-[#f5f7fb] p-4">
-        <AForm layout="vertical">
-          <div class="grid grid-cols-3 gap-2">
-            <AFormItem :label="t('dateRange', '日期範圍')">
-              <div class="flex items-center gap-2">
-                <TinyDatePicker v-model="revenueFilters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" />
-                <span>-</span>
-                <TinyDatePicker v-model="revenueFilters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" />
-              </div>
-            </AFormItem>
-            <AFormItem :label="t('groupBy', '分組方式')">
-              <TinySelect v-model="revenueFilters.groupBy" :options="groupByOptions" />
-            </AFormItem>
-            <AFormItem :label="t('customer', '客戶')">
-              <div class="flex gap-2 w-full">
-                <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" :filters="{ status: 'active' }" />
-                <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
-              </div>
-            </AFormItem>
+      <CustomForm :col="3">
+        <CustomFormItem :label="t('dateRange', '日期範圍')">
+          <div class="flex items-center gap-2">
+            <TinyDatePicker v-model="revenueFilters.startDate" :placeholder="t('startDate', '開始日期')" value-format="yyyy-MM-dd" />
+            <span>-</span>
+            <TinyDatePicker v-model="revenueFilters.endDate" :placeholder="t('endDate', '結束日期')" value-format="yyyy-MM-dd" />
           </div>
-        </AForm>
-      </div>
+        </CustomFormItem>
+        <CustomFormItem :label="t('groupBy', '分組方式')">
+          <TinySelect v-model="revenueFilters.groupBy" :options="groupByOptions" />
+        </CustomFormItem>
+        <CustomFormItem :label="t('customer', '客戶')">
+          <div class="flex gap-2 w-full">
+            <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" :filters="{ status: 'active' }" />
+            <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
+          </div>
+        </CustomFormItem>
+      </CustomForm>
 
       <!-- 營收摘要卡片 -->
       <div class="grid gap-4 md:grid-cols-3 xl:grid-cols-6">
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('totalRevenue', '總營收') }}</div>
             <div class="mt-1 text-2xl font-semibold text-blue-600">NT$ {{ formatNumber(revenueData.summary.totalRevenue) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('totalInvoices', '總發票數') }}</div>
             <div class="mt-1 text-2xl font-semibold">{{ formatNumber(revenueData.summary.totalInvoices) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('paidInvoices', '已付款發票') }}</div>
             <div class="mt-1 text-2xl font-semibold text-green-600">{{ formatNumber(revenueData.summary.paidInvoices) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('paidAmount', '已收款金額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-green-600">NT$ {{ formatNumber(revenueData.summary.paidAmount) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('pendingAmount', '待收款金額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-orange-600">NT$ {{ formatNumber(revenueData.summary.pendingAmount) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('overdueAmount', '逾期金額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-red-600">NT$ {{ formatNumber(revenueData.summary.overdueAmount) }}</div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
@@ -78,7 +74,7 @@
         <CardHeader>
           <CardTitle>{{ t('periodRevenue', '期間營收明細') }}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <div>
           <CustomTinyGrid :data="revenueData.periodData" :height="250" row-key="period">
             <CustomTinyGridColumn field="period" :title="t('period', '期間')" width="150" />
             <CustomTinyGridColumn field="revenue" :title="t('revenue', '營收')" width="150" align="right">
@@ -86,7 +82,7 @@
             </CustomTinyGridColumn>
             <CustomTinyGridColumn field="invoiceCount" :title="t('invoiceCount', '發票數')" width="120" align="right" />
           </CustomTinyGrid>
-        </CardContent>
+        </div>
       </Card>
 
       <div class="grid gap-4 lg:grid-cols-2">
@@ -95,7 +91,7 @@
           <CardHeader>
             <CardTitle>{{ t('topCustomers', '客戶營收排行') }}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <div>
             <CustomTinyGrid :data="revenueData.customerStats" :height="250" row-key="customerId">
               <CustomTinyGridColumn type="index" :title="t('rank', '排名')" width="60" align="center" />
               <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="150" />
@@ -104,7 +100,7 @@
               </CustomTinyGridColumn>
               <CustomTinyGridColumn field="invoiceCount" :title="t('invoiceCount', '發票數')" width="100" align="right" />
             </CustomTinyGrid>
-          </CardContent>
+          </div>
         </Card>
 
         <!-- 產品營收排行 -->
@@ -112,7 +108,7 @@
           <CardHeader>
             <CardTitle>{{ t('topProducts', '產品營收排行') }}</CardTitle>
           </CardHeader>
-          <CardContent>
+          <div>
             <CustomTinyGrid :data="revenueData.productStats" :height="250" row-key="productId">
               <CustomTinyGridColumn type="index" :title="t('rank', '排名')" width="60" align="center" />
               <CustomTinyGridColumn field="productName" :title="t('product', '產品')" min-width="150" />
@@ -121,7 +117,7 @@
                 <template #default="{ row }">NT$ {{ formatNumber(row.revenue) }}</template>
               </CustomTinyGridColumn>
             </CustomTinyGrid>
-          </CardContent>
+          </div>
         </Card>
       </div>
     </template>
@@ -131,34 +127,34 @@
       <!-- 未收款摘要卡片 -->
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('totalOutstanding', '未收款總額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-orange-600">NT$ {{ formatNumber(outstandingData.summary.totalOutstanding) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('overdueAmount', '逾期金額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-red-600">NT$ {{ formatNumber(outstandingData.summary.overdueAmount) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('currentAmount', '未到期金額') }}</div>
             <div class="mt-1 text-2xl font-semibold text-blue-600">NT$ {{ formatNumber(outstandingData.summary.currentAmount) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('customersWithOutstanding', '有未收款客戶數') }}</div>
             <div class="mt-1 text-2xl font-semibold">{{ formatNumber(outstandingData.summary.customersWithOutstanding) }}</div>
-          </CardContent>
+          </div>
         </Card>
         <Card>
-          <CardContent class="pt-4">
+          <div class="pt-4">
             <div class="text-sm text-gray-500">{{ t('invoicesCount', '未收款發票數') }}</div>
             <div class="mt-1 text-2xl font-semibold">{{ formatNumber(outstandingData.summary.invoicesCount) }}</div>
-          </CardContent>
+          </div>
         </Card>
       </div>
 
@@ -167,7 +163,7 @@
         <CardHeader>
           <CardTitle>{{ t('agingAnalysis', '帳齡分析') }}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <div>
           <div class="grid gap-4 md:grid-cols-5">
             <div v-for="bracket in outstandingData.agingBrackets" :key="bracket.range" class="rounded-lg border p-4 text-center" :class="getAgingBracketClass(bracket.range)">
               <div class="text-sm text-gray-600">{{ getAgingRangeLabel(bracket.range) }}</div>
@@ -175,7 +171,7 @@
               <div class="mt-1 text-sm text-gray-500">{{ bracket.count }} {{ t('invoices', '張發票') }}</div>
             </div>
           </div>
-        </CardContent>
+        </div>
       </Card>
 
       <!-- 未收款客戶排行 -->
@@ -183,7 +179,7 @@
         <CardHeader>
           <CardTitle>{{ t('topOutstandingCustomers', '未收款客戶排行') }}</CardTitle>
         </CardHeader>
-        <CardContent>
+        <div>
           <CustomTinyGrid :data="outstandingData.topOutstandingCustomers" :height="300" row-key="customerId">
             <CustomTinyGridColumn type="index" :title="t('rank', '排名')" width="60" align="center" />
             <CustomTinyGridColumn field="customerName" :title="t('customer', '客戶')" min-width="180" />
@@ -197,7 +193,7 @@
               <template #default="{ row }">{{ formatDate(row.oldestInvoiceDate, 'YYYY-MM-DD') }}</template>
             </CustomTinyGridColumn>
           </CustomTinyGrid>
-        </CardContent>
+        </div>
       </Card>
     </template>
   </div>
@@ -207,9 +203,11 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import { ReportRevenueGet, ReportOutstandingGet } from '@/assets/API/Billing';
 import { TinySelect, TinyDatePicker } from '@opentiny/vue';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
+import CustomForm from '@/components/Form/CustomForm.vue'
+import CustomFormItem from '@/components/Form/CustomFormItem.vue'
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';
