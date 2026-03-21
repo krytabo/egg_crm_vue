@@ -539,8 +539,8 @@ export function useBasePage(props, t, showMessage = () => {}) {
       productId: '',
       productName: '',
       unit: '',
-      quantity: null,
-      amount: null,
+      quantity: 0,
+      amount: 0,
       remainingQuantity: null,
       remainingAmount: null,
     });
