@@ -52,7 +52,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const EMPTY_PLACEHOLDER = '未設定';
   const orderPageSizeOptions = [5, 10, 20];
   const FORM_TEMPLATES = {
-    contact: { isPrimary: true, name: '', phone: '', address: '', email: '' },
+    contact: { isPrimary: true, sameAsCompanyName: false, name: '', phone: '', address: '', email: '' },
     company: { companyName: '', companyPhone: '', companyEmail: '', companyAddress: '', taxId: '', registeredDate: '' },
     other: { paymentMethod: 'CASH', deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
     meta: { type: 'COMPANY', segment: 'RETAIL', source: 'OTHER', salesRepId: '', tags: '', status: 'ACTIVE' },
@@ -352,9 +352,10 @@ export function useBasePage(props, t, showMessage = () => {}) {
     sameAsCompanyInfo.value = false;
   };
   const fillFormFromRecord = (record = {}) => {
-    basicForm.value.contactsForm = (record.contacts?.length ? record.contacts : [{ isPrimary: true, name: '', phone: '', address: '', email: '' }]).map((contact, index) => ({
+    basicForm.value.contactsForm = (record.contacts?.length ? record.contacts : [{ isPrimary: true, sameAsCompanyName: false, name: '', phone: '', address: '', email: '' }]).map((contact, index) => ({
       id: contact.id ?? index + 1,
       isPrimary: contact.isPrimary ?? index === 0,
+      sameAsCompanyName: false,
       name: contact.name || '',
       phone: contact.phone || '',
       address: contact.address || '',
@@ -492,7 +493,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
 
   //聯絡人操作
   const addContact = () => {
-    const nextItem = { ...FORM_TEMPLATES.contact, isPrimary: false, id: Date.now() };
+    const nextItem = { ...FORM_TEMPLATES.contact, isPrimary: true, id: Date.now() };
     basicForm.value.contactsForm.push(nextItem);
   };
   const removeContact = (index) => {
@@ -641,6 +642,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       closeDialog();
     } catch (error) {
       await mainStore.SWAL_Error(error);
+      isSaving.value = false;
     }
   };
   const saveData = debounce(_submitForm, 300, { leading: true, trailing: false });

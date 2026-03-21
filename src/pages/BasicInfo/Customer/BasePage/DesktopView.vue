@@ -276,18 +276,18 @@
       </div>
     </template>
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
-      <a-tab-pane key="infoData" :title="t('capitalInfo', '資本資料')"></a-tab-pane>
+      <a-tab-pane key="infoData" :title="t('基本資料', '基本資料')"></a-tab-pane>
+      <a-tab-pane key="company" :title="isCompanyType ? t('companyTab', '公司資訊') : t('customerInfoTab', '客戶資訊')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
       <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
-      <a-tab-pane v-if="basicForm.metaForm?.type === 'COMPANY'" key="company" :title="t('companyTab', '公司資訊')"></a-tab-pane>
       <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
-    <perfect-scrollbar :class="['px-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-400px)]']">
+    <perfect-scrollbar ref="dialogScrollbarRef" :class="['px-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-400px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
         <!--資本資料-->
         <template v-if="activeTab === 'infoData'">
-          <div class="grid gap-3 md:grid-cols-2">
+          <div class="grid gap-3 grid-cols-3">
             <AFormItem :label="t('customerType', '客戶類型')">
               <CustomField v-model="basicForm.metaForm.type" type="select" allowClear :options="customerTypeOptions" />
             </AFormItem>
@@ -306,20 +306,20 @@
             <AFormItem :label="t('tagsWithHint', '標籤 (輸入後按 Enter)')">
               <TinyTextPopup v-model="basicForm.metaForm.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full!" />
             </AFormItem>
-            <AFormItem :label="t('categoriesMulti', '客戶類別（可多選）')" class="col-span-2">
+            <AFormItem :label="t('categoriesMulti', '客戶類別（可多選）')" class="col-span-3">
               <div class="flex items-center gap-0.5">
                 <TinyCheckboxGroup v-model="categoriesForm" :options="customerCategories" />
               </div>
             </AFormItem>
-            <AFormItem :label="t('deliveryDaysMulti', '出貨星期（可多選）')" class="col-span-2">
+            <AFormItem :label="t('deliveryDaysMulti', '出貨星期（可多選）')" class="col-span-3">
               <TinyCheckboxGroup v-model="deliveryDaysForm" :options="weekDayOptions" />
             </AFormItem>
             <AFormItem :label="t('paymentMethod', '收付方式')">
               <CustomField v-model="basicForm.otherForm.paymentMethod" type="select" allowClear :options="paymentOptions" />
             </AFormItem>
-            <AFormItem :label="t('deposit', '訂金')">
+            <!--<AFormItem :label="t('deposit', '訂金')">
               <CustomField v-model="basicForm.otherForm.deposit" type="number" :min="0" thousands allowClear />
-            </AFormItem>
+            </AFormItem>-->
             <AFormItem :label="t('invoiceTitle', '發票抬頭')">
               <CustomField v-model="basicForm.otherForm.invoiceTitle" type="input" allowClear />
             </AFormItem>
@@ -331,7 +331,7 @@
                 {{ t('invoiceSameAsCompany', '同公司資訊') }}
               </TinyCheckbox>
             </AFormItem>-->
-            <AFormItem :label="t('note', '備註')" class="col-span-2">
+            <AFormItem :label="t('note', '備註')" class="col-span-3">
               <CustomField v-model="basicForm.otherForm.note" type="textarea" allowClear />
             </AFormItem>
           </div>
@@ -436,9 +436,16 @@
                 <TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />
                 <a-button v-if="basicForm.contactsForm.length > 1" type="text" @click="removeContact(index)">{{ t('remove', '移除') }}</a-button>
               </div>
-              <div class="grid gap-3 md:grid-cols-2">
+              <div class="grid gap-3 grid-cols-3">
                 <AFormItem :label="t('name', '姓名')">
-                  <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear />
+                  <div class="flex items-center gap-2">
+                    <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear :disabled="contact.sameAsCompanyName" class="flex-1" />
+                    <TinyCheckbox
+                      v-model="basicForm.contactsForm[index].sameAsCompanyName"
+                      :label="isCompanyType ? t('sameAsCompanyName', '同公司名稱') : t('sameAsCustomerName', '同客戶名稱')"
+                      @update:model-value="(val) => handleSameAsCompanyName(index, val)"
+                    />
+                  </div>
                 </AFormItem>
                 <AFormItem :label="t('phone', '電話')">
                   <CustomField v-model="basicForm.contactsForm[index].phone" type="input" :placeholder="t('phone', '電話')" allowClear />
@@ -454,24 +461,30 @@
           </template>
         </div>
 
-        <!--公司資訊-->
+        <!--公司/客戶資訊-->
         <template v-if="activeTab === 'company'">
-          <AFormItem :label="t('companyName', '公司名稱')">
-            <CustomField v-model="basicForm.companyForm.companyName" type="input" :placeholder="t('companyName', '公司名稱')" allowClear />
+          <AFormItem :label="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')">
+            <CustomField
+              v-model="basicForm.companyForm.companyName"
+              type="input"
+              :placeholder="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')"
+              allowClear
+              class="w-full"
+            />
           </AFormItem>
-          <div class="grid gap-3 md:grid-cols-2">
-            <AFormItem :label="t('companyPhone', '公司電話')">
-              <CustomField v-model="basicForm.companyForm.companyPhone" type="input" :placeholder="t('companyPhone', '公司電話')" allowClear />
+          <div class="grid gap-3 grid-cols-3">
+            <AFormItem :label="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')">
+              <CustomField v-model="basicForm.companyForm.companyPhone" type="input" :placeholder="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')" allowClear />
             </AFormItem>
-            <AFormItem :label="t('companyEmail', '公司信箱')">
-              <CustomField v-model="basicForm.companyForm.companyEmail" type="email" :placeholder="t('companyEmail', '公司信箱')" allowClear />
+            <AFormItem :label="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')">
+              <CustomField v-model="basicForm.companyForm.companyEmail" type="email" :placeholder="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')" allowClear />
+            </AFormItem>
+            <AFormItem :label="t('taxId', '統一編號')">
+              <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
             </AFormItem>
           </div>
-          <AFormItem :label="t('companyAddress', '公司地址')">
-            <CustomField v-model="basicForm.companyForm.companyAddress" type="input" :placeholder="t('companyAddress', '公司地址')" allowClear />
-          </AFormItem>
-          <AFormItem :label="t('taxId', '統一編號')">
-            <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
+          <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')">
+            <CustomField v-model="basicForm.companyForm.companyAddress" type="input" :placeholder="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" allowClear />
           </AFormItem>
           <AFormItem :label="t('registeredDate', '註冊日期')">
             <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
@@ -481,19 +494,19 @@
     </perfect-scrollbar>
 
     <template #footer>
-      <a-button @click="getInfo">取得儲值紀錄</a-button>
+      <!--<a-button @click="getInfo">取得儲值紀錄</a-button>-->
       <div class="flex flex-1 items-center justify-center gap-2">
         <a-button size="large" @click="closeDialog">{{ t('cancel', '取消') }}</a-button>
-        <Button :disabled="isSaving" @click="saveData" :loading="isSaving">
+        <a-button type="primary" :disabled="isSaving" @click="saveData" :loading="isSaving">
           {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
-        </Button>
+        </a-button>
       </div>
     </template>
   </a-modal>
 </template>
 
 <script setup>
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 const route = useRoute();
@@ -526,6 +539,7 @@ const { height: windowHeight } = useWindowSize();
 const TableScrollY = computed(() => Math.max(windowHeight.value - 280, 100));
 
 const fullscreen = ref(false);
+const dialogScrollbarRef = ref(null);
 
 const {
   //頁面類型
@@ -637,10 +651,55 @@ const {
   generateFakeCustomer,
 } = useBasePage(props, t);
 
+watch(activeTab, () => {
+  nextTick(() => {
+    if (dialogScrollbarRef.value?.$el) {
+      dialogScrollbarRef.value.$el.scrollTop = 0;
+    }
+  });
+});
+
 const getInfo = async () => {
   const res = await CustomersStoredGetByID(editingCustomerId.value);
   console.log(res.data);
 };
+
+const isCompanyType = computed(() => basicForm.value.metaForm?.type === 'COMPANY');
+
+const handleSameAsCompanyName = (index, checked) => {
+  if (checked) {
+    basicForm.value.contactsForm[index].name = basicForm.value.companyForm?.companyName || '';
+  }
+};
+
+watch(
+  () => basicForm.value.companyForm?.companyName,
+  (newName) => {
+    basicForm.value.contactsForm?.forEach((contact) => {
+      if (contact.sameAsCompanyName) contact.name = newName || '';
+    });
+  },
+);
+
+let isSyncingTaxId = false;
+watch(
+  () => basicForm.value.companyForm?.taxId,
+  (val) => {
+    if (isSyncingTaxId) return;
+    isSyncingTaxId = true;
+    if (basicForm.value.otherForm) basicForm.value.otherForm.invoiceTaxId = val || '';
+    isSyncingTaxId = false;
+  },
+);
+watch(
+  () => basicForm.value.otherForm?.invoiceTaxId,
+  (val) => {
+    if (isSyncingTaxId) return;
+    isSyncingTaxId = true;
+    if (basicForm.value.companyForm) basicForm.value.companyForm.taxId = val || '';
+    isSyncingTaxId = false;
+  },
+);
 const tableHeight = computed(() => {
   const height = window.innerHeight || document.documentElement.clientHeight;
   return height - 600;
