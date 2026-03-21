@@ -277,7 +277,7 @@
     </template>
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
       <a-tab-pane key="infoData" :title="t('基本資料', '基本資料')"></a-tab-pane>
-      <a-tab-pane key="company" :title="isCompanyType ? t('companyTab', '公司資訊') : t('customerInfoTab', '客戶資訊')"></a-tab-pane>
+      <!--<a-tab-pane key="company" :title="isCompanyType ? t('companyTab', '公司資訊') : t('customerInfoTab', '客戶資訊')"></a-tab-pane>-->
       <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
@@ -288,17 +288,39 @@
         <!--資本資料-->
         <template v-if="activeTab === 'infoData'">
           <div class="grid gap-3 grid-cols-3">
+            <AFormItem :label="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')">
+              <CustomField
+                v-model="basicForm.companyForm.companyName"
+                type="input"
+                :placeholder="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')"
+                allowClear
+                class="w-full"
+              />
+            </AFormItem>
+            <AFormItem :label="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')">
+              <CustomField v-model="basicForm.companyForm.companyPhone" type="input" :placeholder="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')" allowClear />
+            </AFormItem>
+            <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" class="col-span-3">
+              <CustomField v-model="basicForm.companyForm.companyAddress" type="input" :placeholder="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" allowClear />
+            </AFormItem>
             <AFormItem :label="t('customerType', '客戶類型')">
               <CustomField v-model="basicForm.metaForm.type" type="select" allowClear :options="customerTypeOptions" />
+            </AFormItem>
+            <AFormItem :label="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')">
+              <CustomField v-model="basicForm.companyForm.companyEmail" type="email" :placeholder="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')" allowClear />
+            </AFormItem>
+            <!--<AFormItem :label="t('taxId', '統一編號')">
+              <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
+            </AFormItem>-->
+
+            <AFormItem :label="t('registeredDate', '註冊日期')">
+              <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
             </AFormItem>
             <AFormItem :label="t('segmentWithHint', '客戶分類')">
               <CustomField v-model="basicForm.metaForm.segment" type="select" allowClear :options="customerSegmentOptions" />
             </AFormItem>
             <AFormItem :label="t('customerSource', '客戶來源')">
               <CustomField v-model="basicForm.metaForm.source" type="select" allowClear :options="customerSourceOptions" />
-            </AFormItem>
-            <AFormItem v-if="isEdite && !isProspect" :label="t('status', '狀態')">
-              <CustomField v-model="basicForm.metaForm.status" type="select" allowClear :options="customerStatusOptions" />
             </AFormItem>
             <AFormItem :label="t('salesRep', '業務負責')">
               <InfiniteSelect v-model="basicForm.metaForm.salesRepId" dataSource="users" labelKey="fullName" :placeholder="t('salesRepPlaceholder', '選擇業務人員')" allowClear />
@@ -333,6 +355,9 @@
             </AFormItem>-->
             <AFormItem :label="t('note', '備註')" class="col-span-3">
               <CustomField v-model="basicForm.otherForm.note" type="textarea" allowClear />
+            </AFormItem>
+            <AFormItem v-if="isEdite && !isProspect" :label="t('status', '狀態')">
+              <CustomField v-model="basicForm.metaForm.status" type="select" allowClear :options="customerStatusOptions" />
             </AFormItem>
           </div>
         </template>
@@ -538,7 +563,7 @@ const { t } = useI18n();
 const { height: windowHeight } = useWindowSize();
 const TableScrollY = computed(() => Math.max(windowHeight.value - 280, 100));
 
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const dialogScrollbarRef = ref(null);
 
 const {
