@@ -31,7 +31,7 @@
         <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('customer', '客戶')">
-        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" :filters="{ status: 'active' }" />
+        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" />
       </CustomFormItem>
     </CustomForm>
 

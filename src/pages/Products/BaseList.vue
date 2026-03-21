@@ -176,7 +176,6 @@
               type="outline"
               :placeholder="t('pleaseSelect', '請選擇')"
               allowClear
-              :filters="{ status: 'active' }"
               @change="handleVendorFilterChange"
               class="w-45"
             />
@@ -299,7 +298,7 @@
             <CustomField v-model="basicForm.reorderPoint" type="number" placeholder="0" :min="0" allowClear />
           </AFormItem>
           <AFormItem :label="t('vendorId', '供應商 ID')">
-            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear :filters="{ status: 'active' }" />
+            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear />
           </AFormItem>
           <AFormItem :label="t('tags', '標籤')">
             <CustomField v-model="basicForm.tags" type="input" :placeholder="t('tagsCommaSeparated', '標籤（以逗號分隔）')" allowClear />

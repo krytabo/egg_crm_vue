@@ -39,15 +39,7 @@
       <TinyInput v-model="filters.search" :placeholder="t('searchProductNameOrCode', '搜尋產品名稱或編號')" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
     </CustomFormItem>
     <CustomFormItem :label="t('location', '存放位置')">
-      <InfiniteSelect
-        v-model="filters.location"
-        dataSource="InventoryLocations"
-        :placeholder="t('all', '全部')"
-        type="outline"
-        allowClear
-        :filters="{ status: 'active' }"
-        @change="handleFiltersChange"
-      />
+      <InfiniteSelect v-model="filters.location" dataSource="InventoryLocations" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" />
     </CustomFormItem>
     <CustomFormItem :label="t('stockStatus', '庫存狀態')">
       <TinySelect v-model="filters.stockStatus" :options="stockStatusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />

@@ -291,15 +291,7 @@
       <!-- 建立新訂單：選擇產品種類 -->
       <div v-if="convertMode === 'new'" class="flex flex-col gap-2 rounded-[10px] border bg-[#f2f3f5] p-3">
         <AFormItem :label="t('productCategory', '產品種類')" required>
-          <InfiniteSelect
-            v-model="convertCategoryId"
-            emitValue
-            dataSource="productTypes"
-            :placeholder="t('pleaseSelectCategory', '請選擇產品種類')"
-            type="outline"
-            class="w-full"
-            :filters="{ status: 'active' }"
-          />
+          <InfiniteSelect v-model="convertCategoryId" emitValue dataSource="productTypes" :placeholder="t('pleaseSelectCategory', '請選擇產品種類')" type="outline" class="w-full" />
         </AFormItem>
       </div>
 

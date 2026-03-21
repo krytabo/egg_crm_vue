@@ -154,13 +154,7 @@
           <InfiniteSelect v-model="selectedProduct" dataSource="products" :filters="{ status: 'ACTIVE' }" :placeholder="t('pleaseSelectProduct', '請選擇商品')" type="outline" />
         </AFormItem>
         <AFormItem :label="t('selectCustomer', '選擇客戶')" required>
-          <InfiniteSelect
-            v-model="selectedCustomer"
-            dataSource="customers"
-            :placeholder="t('pleaseSelectCustomer', '請選擇客戶')"
-            type="outline"
-            :filters="{ deliveryDays: basicForm.deliveryDays, status: 'active' }"
-          />
+          <InfiniteSelect v-model="selectedCustomer" dataSource="customers" :placeholder="t('pleaseSelectCustomer', '請選擇客戶')" type="outline" :filters="{ deliveryDays: basicForm.deliveryDays }" />
         </AFormItem>
         <AFormItem :label="t('quantity', '數量')">
           <TinyCustomField type="number" v-model="newProductQuantity" :min="0" />

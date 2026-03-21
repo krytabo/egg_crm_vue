@@ -7,16 +7,7 @@
         <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('invoice', '發票')">
-        <InfiniteSelect
-          v-model="filters.invoiceId"
-          dataSource="Invoice"
-          :placeholder="t('all', '全部')"
-          allowClear
-          class="w-48"
-          @change="handleFiltersChange"
-          emitValue
-          :filters="{ status: 'active' }"
-        />
+        <InfiniteSelect v-model="filters.invoiceId" dataSource="Invoice" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" emitValue />
       </CustomFormItem>
     </CustomForm>
 
@@ -131,8 +122,8 @@ import { TinySelect, TinyBadge } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
-import CustomForm from '@/components/Form/CustomForm.vue'
-import CustomFormItem from '@/components/Form/CustomFormItem.vue'
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';

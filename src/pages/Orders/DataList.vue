@@ -55,7 +55,6 @@
               type="outline"
               class="w-46.25!"
               allowClear
-              :filters="{ status: 'active' }"
               @change="handleFiltersChange"
             />
           </div>
@@ -73,7 +72,6 @@
               type="outline"
               class="w-46.25!"
               allowClear
-              :filters="{ status: 'active' }"
               @change="handleFiltersChange"
             />
           </div>
@@ -172,7 +170,6 @@
                 :readonly="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'customer')"
                 class="w-full"
-                :filters="{ status: 'active' }"
               />
             </a-form-item>
             <a-form-item v-else-if="basicForm.targetType === 'VENDOR'" :label="t('vendor', '廠商')" field="targetId">
@@ -183,7 +180,6 @@
                 :disabled="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'vendor')"
                 class="w-full"
-                :filters="{ status: 'active' }"
               />
             </a-form-item>
             <a-form-item :label="t('contact', '聯絡人')" field="contact">

@@ -23,7 +23,7 @@
         </CustomFormItem>
         <CustomFormItem :label="t('customer', '客戶')">
           <div class="flex gap-2 w-full">
-            <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" :filters="{ status: 'active' }" />
+            <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" />
             <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
           </div>
         </CustomFormItem>
@@ -206,8 +206,8 @@ import { TinySelect, TinyDatePicker } from '@opentiny/vue';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
-import CustomForm from '@/components/Form/CustomForm.vue'
-import CustomFormItem from '@/components/Form/CustomFormItem.vue'
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';

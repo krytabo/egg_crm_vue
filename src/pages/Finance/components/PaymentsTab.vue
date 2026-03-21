@@ -11,7 +11,7 @@
         </div>
       </CustomFormItem>
       <CustomFormItem :label="t('customer', '客戶')">
-        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" :filters="{ status: 'active' }" />
+        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('search', '關鍵字')">
         <CustomField v-model="filters.search" type="input" :placeholder="t('remittanceAccount', '匯款帳號')" @keyup.enter="handleFiltersChange" />
@@ -133,8 +133,8 @@ import { TinySelect, TinyBadge, TinyDatePicker } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
-import CustomForm from '@/components/Form/CustomForm.vue'
-import CustomFormItem from '@/components/Form/CustomFormItem.vue'
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';

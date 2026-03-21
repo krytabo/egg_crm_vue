@@ -61,15 +61,7 @@
         <template #header>
           <div class="flex flex-col gap-1">
             <span class="text-[16px] text-[#111827]">{{ t('role') }}</span>
-            <InfiniteSelect
-              v-model="filters.role"
-              dataSource="roles"
-              type="outline"
-              :placeholder="t('pleaseSelectPermission')"
-              allowClear
-              @change="handleFilterChange"
-              :filters="{ status: 'active' }"
-            />
+            <InfiniteSelect v-model="filters.role" dataSource="roles" type="outline" :placeholder="t('pleaseSelectPermission')" allowClear @change="handleFilterChange" />
           </div>
         </template>
         <template #default="{ row }">

@@ -14,16 +14,7 @@
         <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('customer', '客戶')">
-        <InfiniteSelect
-          v-model="filters.customerId"
-          dataSource="customers"
-          type="outline"
-          :placeholder="t('all', '全部')"
-          allowClear
-          class="w-48"
-          @change="handleFiltersChange"
-          :filters="{ status: 'active' }"
-        />
+        <InfiniteSelect v-model="filters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('search', '關鍵字')">
         <TinyInput v-model="filters.search" :placeholder="t('searchBillingRequest', '請款單號碼/客戶')" @keyup.enter="handleFiltersChange" />
@@ -146,13 +137,7 @@
         </div>
 
         <AFormItem v-if="createMode === 'manual'" :label="t('customer', '客戶')" field="customerId" class="col-span-2">
-          <InfiniteSelect
-            v-model="basicForm.customerId"
-            dataSource="customers"
-            :placeholder="t('pleaseSelect', '請選擇')"
-            :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)"
-            :filters="{ status: 'active' }"
-          />
+          <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('pleaseSelect', '請選擇')" :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)" />
         </AFormItem>
         <AFormItem :label="t('billingRequestItems', '請款單項目')" field="">
           <template #label>
@@ -418,8 +403,8 @@ import { TinyBadge, TinyDatePicker, TinySelect, TinyInput } from '@opentiny/vue'
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
-import CustomForm from '@/components/Form/CustomForm.vue'
-import CustomFormItem from '@/components/Form/CustomFormItem.vue'
+import CustomForm from '@/components/Form/CustomForm.vue';
+import CustomFormItem from '@/components/Form/CustomFormItem.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { useMainStore } from '@/stores/LoadingStore';

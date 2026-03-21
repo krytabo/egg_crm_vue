@@ -13,7 +13,7 @@
         <!-- 基本資訊 -->
         <div class="mb-4 grid gap-4 md:grid-cols-2">
           <AFormItem :label="t('countLocation', '盤點位置')" field="location">
-            <InfiniteSelect v-model="basicForm.location" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" @change="handleLocationChange" :filters="{ status: 'active' }" />
+            <InfiniteSelect v-model="basicForm.location" dataSource="InventoryLocations" :placeholder="t('pleaseSelect', '請選擇')" @change="handleLocationChange" />
           </AFormItem>
           <AFormItem :label="t('countedBy', '盤點人員')" field="countedBy">
             <InfiniteSelect v-model="basicForm.countedBy" dataSource="users" :placeholder="t('pleaseSelect', '請選擇')" />
