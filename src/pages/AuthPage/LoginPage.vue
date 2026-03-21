@@ -1,6 +1,6 @@
 <!-- src/pages/auth/LoginPage.vue -->
 <template>
-  <div class="flex w-full max-w-[400px] flex-col gap-10 rounded-[20px] bg-white p-8 shadow-xl">
+  <div class="flex w-full max-w-100 flex-col gap-10 rounded-[20px] bg-white p-8 shadow-xl">
     <p class="text-center text-[28px] font-semibold text-gray-900">登入</p>
 
     <div class="flex flex-col gap-4">
@@ -107,14 +107,10 @@ const handleLogin = async () => {
       clearRememberedCredentials();
     }
 
-    let profile = authData?.user; //取得個人資料
-    if (!profile) {
-      const profileResponse = await AuthProfileGet();
-      profile = unwrapResponse(profileResponse);
-    }
+    const profileResponse = await AuthProfileGet();
+    const profile = unwrapResponse(profileResponse);
     if (profile) {
       setUserInfo(profile);
-      // 儲存使用者權限到 PermissionStore
       if (profile.permissions && Array.isArray(profile.permissions)) {
         permissionStore.setPermissions(profile.permissions);
       }

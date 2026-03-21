@@ -278,9 +278,9 @@
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
       <a-tab-pane key="infoData" :title="t('基本資料', '基本資料')"></a-tab-pane>
       <a-tab-pane key="company" :title="isCompanyType ? t('companyTab', '公司資訊') : t('customerInfoTab', '客戶資訊')"></a-tab-pane>
+      <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
-      <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
       <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
     <perfect-scrollbar ref="dialogScrollbarRef" :class="['px-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-400px)]']">
@@ -433,10 +433,10 @@
           <template v-for="(contact, index) in basicForm.contactsForm" :key="contact.id || index">
             <div class="rounded-[20px] border border-gray-300 px-4 py-3">
               <div class="mb-4 flex items-center gap-2">
-                <TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />
+                <!--<TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />-->
                 <a-button v-if="basicForm.contactsForm.length > 1" type="text" @click="removeContact(index)">{{ t('remove', '移除') }}</a-button>
               </div>
-              <div class="grid gap-3 grid-cols-3">
+              <div class="grid gap-3 grid-cols-2">
                 <AFormItem :label="t('name', '姓名')">
                   <div class="flex items-center gap-2">
                     <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear :disabled="contact.sameAsCompanyName" class="flex-1" />

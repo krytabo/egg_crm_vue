@@ -16,6 +16,7 @@ import {
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';
+import { getUserInfo } from '@/utils/auth';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { format } from 'date-fns';
@@ -456,6 +457,10 @@ export function useBasePage(props, t, showMessage = () => {}) {
     dialogMode.value = 'create';
     editingCustomerId.value = null;
     resetForm();
+    const currentUser = getUserInfo();
+    if (currentUser?.id) {
+      basicForm.value.metaForm.salesRepId = { ...currentUser };
+    }
     dialogVisible.value = true;
   };
   const editData = (customer) => {

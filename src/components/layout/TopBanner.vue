@@ -1,7 +1,7 @@
 <!-- src/components/layout/TopBanner.vue -->
 <template>
   <div class="flex h-16 items-center bg-white">
-    <a-button type="text" @click="emit('toggleSidebar')" class="!text-gray-600" :reset-time="0">
+    <a-button type="text" @click="emit('toggleSidebar')" class="text-gray-600!" :reset-time="0">
       <i class="ri-arrow-right-s-line" v-if="props.collapsed" />
       <i class="ri-arrow-left-s-line" v-if="!props.collapsed" />
     </a-button>
@@ -46,8 +46,7 @@ const dropdownOptions = computed(() => ({
 }));
 const displayName = computed(() => {
   if (!userInfo.value) return '—';
-  const name = [userInfo.value.firstName, userInfo.value.lastName].filter(Boolean).join('');
-  return name || userInfo.value.username || userInfo.value.email || '—';
+  return userInfo.value.fullName || userInfo.value.email || '—';
 });
 const userRoleInfo = computed(() => {
   if (!userInfo.value) return '';
