@@ -59,7 +59,7 @@
       <CustomTinyGridColumn field="primaryContact" :title="t('primaryContact', '主要聯絡人')" :min-width="180" fixed="left">
         <template #default="{ row }">
           <div class="flex flex-col">
-            <span>{{ getPrimaryContact(row)?.name || t('unset', '未設定') }}</span>
+            <span>{{ getPrimaryContact(row)?.name || '-' }}</span>
             <span class="text-gray-500">{{ getPrimaryContact(row)?.phone }}</span>
           </div>
         </template>
@@ -283,7 +283,7 @@
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
       <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
-    <perfect-scrollbar ref="dialogScrollbarRef" :class="['px-4', fullscreen ? 'h-[calc(100vh-165px)]' : 'h-[calc(100vh-400px)]']">
+    <perfect-scrollbar ref="dialogScrollbarRef" :class="['px-4', fullscreen ? 'h-[calc(100vh-230px)]' : 'h-[calc(100vh-400px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
         <!--資本資料-->
         <template v-if="activeTab === 'infoData'">
@@ -312,10 +312,6 @@
             <!--<AFormItem :label="t('taxId', '統一編號')">
               <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
             </AFormItem>-->
-
-            <AFormItem :label="t('registeredDate', '註冊日期')">
-              <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
-            </AFormItem>
             <AFormItem :label="t('segmentWithHint', '客戶分類')">
               <CustomField v-model="basicForm.metaForm.segment" type="select" allowClear :options="customerSegmentOptions" />
             </AFormItem>
@@ -358,6 +354,9 @@
             </AFormItem>
             <AFormItem v-if="isEdite && !isProspect" :label="t('status', '狀態')">
               <CustomField v-model="basicForm.metaForm.status" type="select" allowClear :options="customerStatusOptions" />
+            </AFormItem>
+            <AFormItem :label="t('registeredDate', '註冊日期')">
+              <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
             </AFormItem>
           </div>
         </template>
@@ -461,27 +460,29 @@
                 <!--<TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />-->
                 <a-button v-if="basicForm.contactsForm.length > 1" type="text" @click="removeContact(index)">{{ t('remove', '移除') }}</a-button>
               </div>
-              <div class="grid gap-3 grid-cols-2">
-                <AFormItem :label="t('name', '姓名')">
-                  <div class="flex items-center gap-2">
-                    <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear :disabled="contact.sameAsCompanyName" class="flex-1" />
-                    <TinyCheckbox
-                      v-model="basicForm.contactsForm[index].sameAsCompanyName"
-                      :label="isCompanyType ? t('sameAsCompanyName', '同公司名稱') : t('sameAsCustomerName', '同客戶名稱')"
-                      @update:model-value="(val) => handleSameAsCompanyName(index, val)"
-                    />
-                  </div>
-                </AFormItem>
-                <AFormItem :label="t('phone', '電話')">
-                  <CustomField v-model="basicForm.contactsForm[index].phone" type="input" :placeholder="t('phone', '電話')" allowClear />
-                </AFormItem>
-              </div>
-              <AFormItem :label="t('address', '地址')">
-                <CustomField v-model="basicForm.contactsForm[index].address" type="input" :placeholder="t('address', '地址')" allowClear />
-              </AFormItem>
-              <AFormItem :label="t('email', '電子信箱')">
-                <CustomField v-model="basicForm.contactsForm[index].email" type="email" :placeholder="t('email', '電子信箱')" allowClear />
-              </AFormItem>
+              <AForm autoLabelWidth>
+                <div class="grid gap-3 grid-cols-2">
+                  <AFormItem :label="t('name', '姓名')">
+                    <div class="flex items-center gap-2 w-full">
+                      <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear :disabled="contact.sameAsCompanyName" class="flex-1" />
+                      <TinyCheckbox
+                        v-model="basicForm.contactsForm[index].sameAsCompanyName"
+                        :label="isCompanyType ? t('sameAsCompanyName', '同公司名稱') : t('sameAsCustomerName', '同客戶名稱')"
+                        @update:model-value="(val) => handleSameAsCompanyName(index, val)"
+                      />
+                    </div>
+                  </AFormItem>
+                  <AFormItem :label="t('phone', '電話')">
+                    <CustomField v-model="basicForm.contactsForm[index].phone" type="input" :placeholder="t('phone', '電話')" allowClear />
+                  </AFormItem>
+                  <AFormItem :label="t('address', '地址')">
+                    <CustomField v-model="basicForm.contactsForm[index].address" type="input" :placeholder="t('address', '地址')" allowClear />
+                  </AFormItem>
+                  <AFormItem :label="t('email', '電子信箱')">
+                    <CustomField v-model="basicForm.contactsForm[index].email" type="email" :placeholder="t('email', '電子信箱')" allowClear />
+                  </AFormItem>
+                </div>
+              </AForm>
             </div>
           </template>
         </div>
