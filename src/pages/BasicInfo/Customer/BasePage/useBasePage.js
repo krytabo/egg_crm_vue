@@ -576,8 +576,8 @@ export function useBasePage(props, t, showMessage = () => {}) {
       segment: metaForm.segment || FORM_TEMPLATES.meta.segment,
       source: metaForm.source || FORM_TEMPLATES.meta.source,
       contactInfo: {
-        phone: companyForm.companyPhone || '',
-        email: companyForm.companyEmail || '',
+        phone: companyForm.companyPhone || undefined,
+        email: companyForm.companyEmail || undefined,
       },
       taxId: companyForm.taxId || '',
       notes: otherForm.note || '',
