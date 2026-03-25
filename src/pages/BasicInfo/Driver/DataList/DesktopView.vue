@@ -104,14 +104,14 @@
           <a-tag :color="getStatusColor(row.status)" size="large">{{ getStatusLabel(row.status) }}</a-tag>
         </template>
       </CustomTinyGridColumn>
-      <!--<CustomTinyGridColumn title="操作" :width="120" fixed="right" align="center">
+      <CustomTinyGridColumn field="" title="操作" :width="120" fixed="right" align="center">
         <template #default="{ row }">
           <div class="flex items-center justify-center gap-2">
-            <button class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-            <button class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+            <button class="table-button" @click="deleteData(row.id)">刪除</button>
+            <button class="table-button" @click="editData(row)">編輯</button>
           </div>
         </template>
-      </CustomTinyGridColumn>-->
+      </CustomTinyGridColumn>
     </CustomTinyGrid>
     <AppPagination
       class="md:w-auto"
@@ -250,6 +250,8 @@ const {
   basicFormRules,
   closeDialog,
   saveData,
+  editData,
+  deleteData,
 } = useDataList(t);
 
 const cleanupResize = systemStore.initializeWindowResize();

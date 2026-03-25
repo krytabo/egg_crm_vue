@@ -11,6 +11,7 @@
     :border="border"
     :round="round"
     :size="size"
+    :fit="fit"
     :auto-resize="autoResize"
     :sync-resize="syncResize"
     :row-config="rowConfig"
@@ -79,6 +80,10 @@ const props = defineProps({
     default: "medium"
   },
   autoResize: {
+    type: Boolean,
+    default: true
+  },
+  fit: {
     type: Boolean,
     default: true
   },

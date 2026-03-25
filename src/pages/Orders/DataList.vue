@@ -149,7 +149,7 @@
       </div>
     </template>
 
-    <a-form ref="basicFormRef" :model="basicForm" :rules="basicFormRules" class="order-form" auto-label-width>
+    <a-form ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width>
       <div class="grid grid-cols-3 gap-2">
         <div class="flex gap-2 flex-col">
           <!-- 基本資訊區塊 -->
@@ -584,6 +584,7 @@ const changeTarget = (item, type = 'customer') => {
   if (type === 'vendor') basicForm.value.contact = item.contactPerson;
   if (type === 'customer') {
     basicForm.value.contact = item.customFields?.contacts?.find((c) => c.isPrimary)?.name ?? '';
+    basicForm.value.notes = item.notes || '';
   }
   basicForm.value.phone = item.contactInfo?.phone;
 }; //選擇對象變更

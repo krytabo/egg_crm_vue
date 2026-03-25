@@ -8,7 +8,7 @@
     </a-input>
     <a-spin v-if="loading" size="small" />
   </div>
-  <a-table :data="filteredProducts" :pagination="false" :bordered="{ cell: true }" class="products-table" :scroll="{ x: '100%', y: tableScrollY }">
+  <a-table :data="filteredProducts" :pagination="false" :bordered="{ cell: true }" class="products-table" :scroll="{ x: '100%', y: tableScrollY }" :row-class="getRowClass">
     <template #columns>
       <!-- 商品名稱 -->
       <a-table-column v-if="isColumnVisible('name')" :title="t('productName', '商品名稱')" data-index="name" :min-width="150" fixed="left">
@@ -330,6 +330,19 @@ const getProductPrice = (product) => {
   return Number(product.basePriceAmount || 0);
 };
 
+// 判斷該商品是否有客戶自訂價格
+const hasCustomPrice = (product) => {
+  if (!props.targetObject?.customFields?.customPrices) return false;
+  return props.targetObject.customFields.customPrices.some((cp) => {
+    const cpProductId = typeof cp.product === 'object' ? cp.product?.id : cp.productId;
+    return cpProductId === product.id;
+  });
+};
+
+const getRowClass = (record) => {
+  return hasCustomPrice(record) ? 'custom-price-row' : '';
+};
+
 // 格式化貨幣
 const formatCurrency = (amount) => {
   return new Intl.NumberFormat('zh-TW', {
@@ -417,11 +430,7 @@ watch(
 
     if (newVal.length === 0) {
       // 表單重置 - 清除所有內部狀態
-      if (
-        Object.keys(selectedItems.value).length > 0 ||
-        Object.keys(customPrices.value).length > 0 ||
-        Object.keys(extraFields.value).length > 0
-      ) {
+      if (Object.keys(selectedItems.value).length > 0 || Object.keys(customPrices.value).length > 0 || Object.keys(extraFields.value).length > 0) {
         selectedItems.value = {};
         customPrices.value = {};
         extraFields.value = {};
@@ -462,6 +471,21 @@ defineExpose({
 <style scoped>
 .products-table :deep(.arco-table-cell) {
   padding: 8px 12px;
+}
+
+.products-table :deep(.custom-price-row td) {
+  background-color: #fffbe6 !important;
+}
+
+.products-table :deep(.custom-price-row:hover td) {
+  background-color: #fff3cc !important;
+}
+
+.products-table .arco-table-hover:not(.arco-table-dragging) .arco-table-tr:not(.arco-table-tr-empty):not(.arco-table-tr-summary):hover .arco-table-td.arco-table-col-fixed-left::before,
+.arco-table-hover .arco-table-tr-drag .arco-table-td.arco-table-col-fixed-left::before,
+.arco-table-hover:not(.arco-table-dragging) .arco-table-tr:not(.arco-table-tr-empty):not(.arco-table-tr-summary):hover .arco-table-td.arco-table-col-fixed-right::before,
+.arco-table-hover .arco-table-tr-drag .arco-table-td.arco-table-col-fixed-right::before :deep(.custom-price-row:hover td) {
+  background-color: #fff3cc !important;
 }
 
 .line-clamp-2 {

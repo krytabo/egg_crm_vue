@@ -217,7 +217,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       categories: customer.productCategories || [],
       paymentMethod: customer.paymentTerm || '',
       deposit: Number(customFields.deposit ?? 0),
-      invoiceTitle: customFields.invoiceTitle || customer.name || '',
+      invoiceTitle: customFields.invoiceTitle ?? '',
       invoiceTaxId: customFields.invoiceTaxId || customer.taxId || '',
       note: customer.notes || '',
       registeredDate: (customFields.registeredDate || customer.createdAt || '').split('T')[0] || '',
@@ -596,7 +596,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       },
     };
     const tagValues = parseTagsInput(metaForm.tags);
-    if (tagValues.length) payload.tags = tagValues;
+    payload.tags = tagValues;
 
     if (isCreate.value && isProspect.value) {
       payload.status = 'PROSPECT';
