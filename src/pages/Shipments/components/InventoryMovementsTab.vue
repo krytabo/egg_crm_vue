@@ -164,7 +164,7 @@ import { useWindowSize } from '@vueuse/core';
 const { height: windowHeight } = useWindowSize();
 const TableScrollY = computed(() => Math.max(windowHeight.value - 340, 100));
 
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 
 /** 選單相關 **/
 const typeOptions = [

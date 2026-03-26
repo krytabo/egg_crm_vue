@@ -23,7 +23,7 @@
         </CustomFormItem>
         <CustomFormItem :label="t('customer', '客戶')">
           <div class="flex gap-2 w-full">
-            <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" />
+            <InfiniteSelect v-model="revenueFilters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-full" :filters="{ status: 'ACTIVE' }" />
             <a-button type="primary" @click="loadRevenueReport">{{ t('query', '查詢') }}</a-button>
           </div>
         </CustomFormItem>

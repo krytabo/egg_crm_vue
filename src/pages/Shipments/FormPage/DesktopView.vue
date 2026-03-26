@@ -50,7 +50,7 @@
             allowClear
             :readonly="isReadOnly"
             @change="(val) => handleCustomerChange(rowIndex, val)"
-            :filters="{ deliveryDays: basicForm.deliveryDays }"
+            :filters="{ deliveryDays: basicForm.deliveryDays, status: 'ACTIVE' }"
           />
         </template>
       </CustomTinyGridColumn>
@@ -216,7 +216,7 @@ const props = defineProps({
 });
 const systemStore = useSystemStore();
 const { t } = useI18n();
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 
 /** Table高度相關 **/
 import { useWindowSize } from '@vueuse/core';

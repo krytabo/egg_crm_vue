@@ -14,7 +14,16 @@
         <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable class="w-32" @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('customer', '客戶')">
-        <InfiniteSelect v-model="filters.customerId" dataSource="customers" type="outline" :placeholder="t('all', '全部')" allowClear class="w-48" @change="handleFiltersChange" />
+        <InfiniteSelect
+          v-model="filters.customerId"
+          dataSource="customers"
+          type="outline"
+          :placeholder="t('all', '全部')"
+          allowClear
+          class="w-48"
+          @change="handleFiltersChange"
+          :filters="{ status: 'ACTIVE' }"
+        />
       </CustomFormItem>
       <CustomFormItem :label="t('search', '關鍵字')">
         <TinyInput v-model="filters.search" :placeholder="t('searchBillingRequest', '請款單號碼/客戶')" @keyup.enter="handleFiltersChange" />
@@ -137,7 +146,13 @@
         </div>
 
         <AFormItem v-if="createMode === 'manual'" :label="t('customer', '客戶')" field="customerId" class="col-span-2">
-          <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('pleaseSelect', '請選擇')" :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)" />
+          <InfiniteSelect
+            v-model="basicForm.customerId"
+            dataSource="customers"
+            :placeholder="t('pleaseSelect', '請選擇')"
+            :disabled="isEditing || (createMode === 'fromOrder' && selectedOrder)"
+            :filters="{ status: 'ACTIVE' }"
+          />
         </AFormItem>
         <AFormItem :label="t('billingRequestItems', '請款單項目')" field="">
           <template #label>
@@ -535,7 +550,7 @@ const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, hand
 const getAPI = () => getDefaultAPI();
 
 /** 新增/編輯請款單 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const dialogVisible = ref(false);
 const isEditing = ref(false);
 const isSaving = ref(false);

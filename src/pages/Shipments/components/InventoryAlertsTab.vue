@@ -211,7 +211,7 @@ const loadAllCounts = async () => {
 const handleAlertTypeChange = () => loadAlertData(); //切換子分類
 
 /** 入庫彈窗 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const stockInDialogVisible = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);

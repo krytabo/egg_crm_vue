@@ -277,14 +277,12 @@
     </template>
     <a-tabs type="capsule" v-model:active-key="activeTab" class="mb-3">
       <a-tab-pane key="infoData" :title="t('基本資料', '基本資料')"></a-tab-pane>
-      <!--<a-tab-pane key="company" :title="isCompanyType ? t('companyTab', '公司資訊') : t('customerInfoTab', '客戶資訊')"></a-tab-pane>-->
       <a-tab-pane key="contact" :title="t('contactTab', '聯絡人資訊')"></a-tab-pane>
       <a-tab-pane key="product" :title="t('productPriceAdjust', '商品價格調整')"></a-tab-pane>
       <a-tab-pane key="deposit" :title="t('depositManagement', '儲值管理')"></a-tab-pane>
-      <!--<template #extra><a-button type="text" @click="generateFakeCustomer" v-if="isCreate">產生假資料</a-button></template>-->
     </a-tabs>
     <perfect-scrollbar ref="dialogScrollbarRef" :class="['px-4', fullscreen ? 'h-[calc(100vh-230px)]' : 'h-[calc(100vh-400px)]']">
-      <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
+      <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width :layout="isDeletedRecord ? 'horizontal' : 'vertical'">
         <!--資本資料-->
         <template v-if="activeTab === 'infoData'">
           <div class="grid gap-3 grid-cols-3">
@@ -295,54 +293,101 @@
                 :placeholder="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')"
                 allowClear
                 class="w-full"
+                :readonly="isDeletedRecord"
               />
             </AFormItem>
             <AFormItem :label="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')">
-              <CustomField v-model="basicForm.companyForm.companyPhone" type="input" :placeholder="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')" allowClear />
+              <CustomField
+                v-model="basicForm.companyForm.companyPhone"
+                type="input"
+                :placeholder="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')"
+                allowClear
+                :readonly="isDeletedRecord"
+              />
             </AFormItem>
-            <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" class="col-span-3">
-              <CustomField v-model="basicForm.companyForm.companyAddress" type="input" :placeholder="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" allowClear />
+            <AFormItem :label="isCompanyType ? t('companyPhone2', '公司電話2') : t('customerPhone2', '客戶電話2')">
+              <CustomField
+                v-model="basicForm.companyForm.companyPhone2"
+                type="input"
+                :placeholder="isCompanyType ? t('companyPhone2', '公司電話2') : t('customerPhone2', '客戶電話2')"
+                allowClear
+                :readonly="isDeletedRecord"
+              />
             </AFormItem>
+            <div class="col-span-3 grid grid-cols-2 gap-3">
+              <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')">
+                <CustomField
+                  v-model="basicForm.companyForm.companyAddress"
+                  type="input"
+                  :placeholder="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')"
+                  allowClear
+                  :readonly="isDeletedRecord"
+                />
+              </AFormItem>
+              <AFormItem :label="isCompanyType ? t('companyAddress2', '公司地址2') : t('customerAddress2', '客戶地址2')">
+                <CustomField
+                  v-model="basicForm.companyForm.companyAddress2"
+                  type="input"
+                  :placeholder="isCompanyType ? t('companyAddress2', '公司地址2') : t('customerAddress2', '客戶地址2')"
+                  allowClear
+                  :readonly="isDeletedRecord"
+                />
+              </AFormItem>
+            </div>
             <AFormItem :label="t('customerType', '客戶類型')">
-              <CustomField v-model="basicForm.metaForm.type" type="select" allowClear :options="customerTypeOptions" />
+              <CustomField v-model="basicForm.metaForm.type" type="select" allowClear :options="customerTypeOptions" :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')">
-              <CustomField v-model="basicForm.companyForm.companyEmail" type="email" :placeholder="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')" allowClear />
+              <CustomField
+                v-model="basicForm.companyForm.companyEmail"
+                type="email"
+                :placeholder="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')"
+                allowClear
+                :readonly="isDeletedRecord"
+              />
             </AFormItem>
             <!--<AFormItem :label="t('taxId', '統一編號')">
               <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
             </AFormItem>-->
             <AFormItem :label="t('segmentWithHint', '客戶分類')">
-              <CustomField v-model="basicForm.metaForm.segment" type="select" allowClear :options="customerSegmentOptions" />
+              <CustomField v-model="basicForm.metaForm.segment" type="select" allowClear :options="customerSegmentOptions" :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('customerSource', '客戶來源')">
-              <CustomField v-model="basicForm.metaForm.source" type="select" allowClear :options="customerSourceOptions" />
+              <CustomField v-model="basicForm.metaForm.source" type="select" allowClear :options="customerSourceOptions" :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('salesRep', '業務負責')">
-              <InfiniteSelect v-model="basicForm.metaForm.salesRepId" dataSource="users" labelKey="fullName" :placeholder="t('salesRepPlaceholder', '選擇業務人員')" allowClear />
+              <InfiniteSelect
+                v-model="basicForm.metaForm.salesRepId"
+                dataSource="users"
+                labelKey="fullName"
+                :placeholder="t('salesRepPlaceholder', '選擇業務人員')"
+                allowClear
+                :readonly="isDeletedRecord"
+              />
             </AFormItem>
-            <AFormItem :label="t('tagsWithHint', '標籤 (輸入後按 Enter)')">
-              <TinyTextPopup v-model="basicForm.metaForm.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full!" />
+            <AFormItem :label="t('tagsWithHint', '標籤 (輸入後按 Enter)')" class="row-span-4">
+              <TagTextarea v-model="basicForm.metaForm.tags" :placeholder="t('pleaseEnter', '請輸入')" class="w-full!" height="266px" :readonly="isDeletedRecord" />
             </AFormItem>
-            <AFormItem :label="t('categoriesMulti', '客戶類別（可多選）')" class="col-span-3">
+            <AFormItem :label="t('categoriesMulti', '客戶類別（可多選)')">
               <div class="flex items-center gap-0.5">
-                <TinyCheckboxGroup v-model="categoriesForm" :options="customerCategories" />
+                <CustomField v-model="categoriesForm" type="checkbox-group" valueKey="label" labelKey="text" :options="customerCategories" :readonly="isDeletedRecord" />
               </div>
             </AFormItem>
-            <AFormItem :label="t('deliveryDaysMulti', '出貨星期（可多選）')" class="col-span-3">
-              <TinyCheckboxGroup v-model="deliveryDaysForm" :options="weekDayOptions" />
-            </AFormItem>
             <AFormItem :label="t('paymentMethod', '收付方式')">
-              <CustomField v-model="basicForm.otherForm.paymentMethod" type="select" allowClear :options="paymentOptions" />
+              <CustomField v-model="basicForm.otherForm.paymentMethod" type="checkbox-group" valueKey="label" labelKey="text" :options="paymentOptions" :readonly="isDeletedRecord" />
             </AFormItem>
+            <AFormItem :label="t('deliveryDaysMulti', '出貨星期（可多選）')" class="col-span-2">
+              <CustomField v-model="deliveryDaysForm" type="checkbox-group" valueKey="label" labelKey="text" :options="weekDayOptions" :readonly="isDeletedRecord" />
+            </AFormItem>
+
             <!--<AFormItem :label="t('deposit', '訂金')">
               <CustomField v-model="basicForm.otherForm.deposit" type="number" :min="0" thousands allowClear />
             </AFormItem>-->
             <AFormItem :label="t('invoiceTitle', '發票抬頭')">
-              <CustomField v-model="basicForm.otherForm.invoiceTitle" type="input" allowClear />
+              <CustomField v-model="basicForm.otherForm.invoiceTitle" type="input" allowClear :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('invoiceTaxId', '發票統編')">
-              <CustomField v-model="basicForm.otherForm.invoiceTaxId" type="input" allowClear />
+              <CustomField v-model="basicForm.otherForm.invoiceTaxId" type="input" allowClear :readonly="isDeletedRecord" />
             </AFormItem>
             <!--<AFormItem>
               <TinyCheckbox :model-value="sameAsCompanyInfo" @update:model-value="handleInvoiceSameAsCompany">
@@ -350,16 +395,69 @@
               </TinyCheckbox>
             </AFormItem>-->
             <AFormItem :label="t('note', '備註')" class="col-span-3">
-              <CustomField v-model="basicForm.otherForm.note" type="textarea" allowClear />
-            </AFormItem>
-            <AFormItem v-if="isEdite && !isProspect" :label="t('status', '狀態')">
-              <CustomField v-model="basicForm.metaForm.status" type="select" allowClear :options="customerStatusOptions" />
+              <CustomField v-model="basicForm.otherForm.note" type="textarea" allowClear :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('registeredDate', '註冊日期')">
-              <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
+              <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear :readonly="isDeletedRecord" />
+            </AFormItem>
+            <AFormItem v-if="isEdite && !isProspect" :label="t('status', '狀態')" class="custom_switch">
+              <p class="text-rose-500 text-[16px]" v-if="basicForm.metaForm.status === 'DELETED'">{{ t('statusDeleted', '已刪除') }}</p>
+              <a-switch v-else v-model="basicForm.metaForm.status" checked-color="#165dff" unchecked-color="#F53F3F" checked-value="ACTIVE" unchecked-value="INACTIVE">
+                <template #checked>{{ t('statusActive') }}</template>
+                <template #unchecked>{{ t('statusInactive') }}</template>
+              </a-switch>
+              <!--<CustomField v-model="basicForm.metaForm.status" type="select" allowClear :options="customerStatusOptions" />-->
             </AFormItem>
           </div>
         </template>
+
+        <!--聯絡人資訊-->
+        <div v-if="activeTab === 'contact'" class="flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <p class="text-sm font-medium text-gray-900">{{ t('contactList', '聯絡人列表') }}</p>
+            <a-button v-if="!isDeletedRecord" type="text" @click="addContact">{{ t('addContact', '新增聯絡人') }}</a-button>
+          </div>
+          <template v-for="(contact, index) in basicForm.contactsForm" :key="contact.id || index">
+            <div class="rounded-[20px] border border-gray-300 px-4 py-3">
+              <div class="mb-4 flex items-center gap-2">
+                <!--<TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />-->
+                <a-button v-if="!isDeletedRecord && basicForm.contactsForm.length > 1" type="text" @click="removeContact(index)">{{ t('remove', '移除') }}</a-button>
+              </div>
+              <AForm autoLabelWidth>
+                <div class="grid gap-3 grid-cols-2">
+                  <AFormItem :label="t('name', '姓名')">
+                    <div class="flex items-center gap-2 w-full">
+                      <CustomField
+                        v-model="basicForm.contactsForm[index].name"
+                        type="input"
+                        :placeholder="t('name', '姓名')"
+                        allowClear
+                        :disabled="contact.sameAsCompanyName"
+                        class="flex-1"
+                        :readonly="isDeletedRecord"
+                      />
+                      <TinyCheckbox
+                        v-if="!isDeletedRecord"
+                        v-model="basicForm.contactsForm[index].sameAsCompanyName"
+                        :label="isCompanyType ? t('sameAsCompanyName', '同公司名稱') : t('sameAsCustomerName', '同客戶名稱')"
+                        @update:model-value="(val) => handleSameAsCompanyName(index, val)"
+                      />
+                    </div>
+                  </AFormItem>
+                  <AFormItem :label="t('phone', '電話')">
+                    <CustomField v-model="basicForm.contactsForm[index].phone" type="input" :placeholder="t('phone', '電話')" allowClear :readonly="isDeletedRecord" />
+                  </AFormItem>
+                  <AFormItem :label="t('address', '地址')">
+                    <CustomField v-model="basicForm.contactsForm[index].address" type="input" :placeholder="t('address', '地址')" allowClear :readonly="isDeletedRecord" />
+                  </AFormItem>
+                  <AFormItem :label="t('email', '電子信箱')">
+                    <CustomField v-model="basicForm.contactsForm[index].email" type="email" :placeholder="t('email', '電子信箱')" allowClear :readonly="isDeletedRecord" />
+                  </AFormItem>
+                </div>
+              </AForm>
+            </div>
+          </template>
+        </div>
 
         <!--商品價格調整-->
         <template v-if="activeTab === 'product'">
@@ -367,7 +465,7 @@
             <template #label>
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-gray-900">{{ t('productSalePriceSetting', '商品銷售價格設定') }}</p>
-                <a-button type="text" @click="addCustomPrice">{{ t('addProductPrice', '新增商品價格') }}</a-button>
+                <a-button v-if="!isDeletedRecord" type="text" @click="addCustomPrice">{{ t('addProductPrice', '新增商品價格') }}</a-button>
               </div>
             </template>
             <p v-if="customPriceForm.length === 0" class="text-xs text-gray-500 w-full">
@@ -383,18 +481,19 @@
                       :filters="{ status: 'ACTIVE' }"
                       :placeholder="t('pleaseSelectProduct', '請選擇商品')"
                       @change="(product) => changeProduct(product, index)"
+                      :readonly="isDeletedRecord"
                     />
                   </AFormItem>
                   <AFormItem :label="t('suggestedRetailPriceTWD', '建議售價')" class="flex-1">
                     <p class="h-8 w-full text-right text-[16px]">{{ item.basePriceAmount }}</p>
                   </AFormItem>
                   <AFormItem :label="t('adjustmentAmount', '調整金額')" class="flex-1">
-                    <CustomField v-model="item.adjustment" type="number" thousands allowClear />
+                    <CustomField v-model="item.adjustment" type="number" thousands allowClear :readonly="isDeletedRecord" />
                   </AFormItem>
                   <AFormItem :label="t('finalPrice', '最終價格')" class="flex-1">
                     <p class="h-8 w-full text-right text-[16px] text-emerald-500">{{ currency((Number(item.basePriceAmount) || 0) + (Number(item.adjustment) || 0)) }}</p>
                   </AFormItem>
-                  <a-button type="text" @click="removeCustomPrice(item.id)">{{ t('remove') }}</a-button>
+                  <a-button v-if="!isDeletedRecord" type="text" @click="removeCustomPrice(item.id)">{{ t('remove') }}</a-button>
                 </div>
               </template>
             </div>
@@ -407,7 +506,7 @@
             <template #label>
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-gray-900">{{ t('depositProductSetting', '飲水商品儲值設定') }}</p>
-                <a-button type="text" @click="addWaterDeposit">{{ t('addDeposit', '新增儲值') }}</a-button>
+                <a-button v-if="!isDeletedRecord" type="text" @click="addWaterDeposit">{{ t('addDeposit', '新增儲值') }}</a-button>
               </div>
             </template>
             <p v-if="waterDepositsForm.length === 0" class="text-xs text-gray-500 w-full">
@@ -424,16 +523,17 @@
                       :filters="{ status: 'ACTIVE' }"
                       :placeholder="t('pleaseSelectProduct', '請選擇商品')"
                       @change="(product) => changeDepositProduct(product, index)"
+                      :readonly="isDeletedRecord"
                     />
                   </AFormItem>
                   <!--<AFormItem :label="t('unit', '單位')" class="flex-1">
                     <p class="h-8 flex items-center text-[15px] text-gray-600">{{ item.unit || '—' }}</p>
                   </AFormItem>-->
                   <AFormItem :label="t('depositQuantity', '儲值數量')" class="flex-1">
-                    <CustomField v-model="item.quantity" type="number" :min="0" :placeholder="t('optional', '選填')" allowClear />
+                    <CustomField v-model="item.quantity" type="number" :min="0" :placeholder="t('optional', '選填')" allowClear :readonly="isDeletedRecord" />
                   </AFormItem>
                   <AFormItem :label="t('depositAmount', '儲值金額')" class="flex-1">
-                    <CustomField v-model="item.amount" type="number" thousands :min="0" :placeholder="t('optional', '選填')" allowClear />
+                    <CustomField v-model="item.amount" type="number" thousands :min="0" :placeholder="t('optional', '選填')" allowClear :readonly="isDeletedRecord" />
                   </AFormItem>
                   <AFormItem :label="t('remainingQuantity', '剩餘數量')" class="flex-1">
                     <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ item.remainingQuantity || '-' }}</p>
@@ -441,79 +541,10 @@
                   <AFormItem :label="t('remainingDepositAmount', '剩餘金額')" class="flex-1">
                     <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ currency(item.remainingAmount) || '-' }}</p>
                   </AFormItem>
-                  <a-button type="text" status="danger" @click="removeWaterDeposit(item.id)">{{ t('remove') }}</a-button>
+                  <a-button v-if="!isDeletedRecord" type="text" status="danger" @click="removeWaterDeposit(item.id)">{{ t('remove') }}</a-button>
                 </div>
               </template>
             </div>
-          </AFormItem>
-        </template>
-
-        <!--聯絡人資訊-->
-        <div v-if="activeTab === 'contact'" class="flex flex-col gap-3">
-          <div class="flex items-center justify-between">
-            <p class="text-sm font-medium text-gray-900">{{ t('contactList', '聯絡人列表') }}</p>
-            <a-button type="text" @click="addContact">{{ t('addContact', '新增聯絡人') }}</a-button>
-          </div>
-          <template v-for="(contact, index) in basicForm.contactsForm" :key="contact.id || index">
-            <div class="rounded-[20px] border border-gray-300 px-4 py-3">
-              <div class="mb-4 flex items-center gap-2">
-                <!--<TinyCheckbox :model-value="contact.isPrimary" @update:model-value="() => setPrimaryContact(index)" :label="t('primaryContact', '主要聯絡人')" />-->
-                <a-button v-if="basicForm.contactsForm.length > 1" type="text" @click="removeContact(index)">{{ t('remove', '移除') }}</a-button>
-              </div>
-              <AForm autoLabelWidth>
-                <div class="grid gap-3 grid-cols-2">
-                  <AFormItem :label="t('name', '姓名')">
-                    <div class="flex items-center gap-2 w-full">
-                      <CustomField v-model="basicForm.contactsForm[index].name" type="input" :placeholder="t('name', '姓名')" allowClear :disabled="contact.sameAsCompanyName" class="flex-1" />
-                      <TinyCheckbox
-                        v-model="basicForm.contactsForm[index].sameAsCompanyName"
-                        :label="isCompanyType ? t('sameAsCompanyName', '同公司名稱') : t('sameAsCustomerName', '同客戶名稱')"
-                        @update:model-value="(val) => handleSameAsCompanyName(index, val)"
-                      />
-                    </div>
-                  </AFormItem>
-                  <AFormItem :label="t('phone', '電話')">
-                    <CustomField v-model="basicForm.contactsForm[index].phone" type="input" :placeholder="t('phone', '電話')" allowClear />
-                  </AFormItem>
-                  <AFormItem :label="t('address', '地址')">
-                    <CustomField v-model="basicForm.contactsForm[index].address" type="input" :placeholder="t('address', '地址')" allowClear />
-                  </AFormItem>
-                  <AFormItem :label="t('email', '電子信箱')">
-                    <CustomField v-model="basicForm.contactsForm[index].email" type="email" :placeholder="t('email', '電子信箱')" allowClear />
-                  </AFormItem>
-                </div>
-              </AForm>
-            </div>
-          </template>
-        </div>
-
-        <!--公司/客戶資訊-->
-        <template v-if="activeTab === 'company'">
-          <AFormItem :label="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')">
-            <CustomField
-              v-model="basicForm.companyForm.companyName"
-              type="input"
-              :placeholder="isCompanyType ? t('companyName', '公司名稱') : t('customerName', '客戶名稱')"
-              allowClear
-              class="w-full"
-            />
-          </AFormItem>
-          <div class="grid gap-3 grid-cols-3">
-            <AFormItem :label="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')">
-              <CustomField v-model="basicForm.companyForm.companyPhone" type="input" :placeholder="isCompanyType ? t('companyPhone', '公司電話') : t('customerPhone', '客戶電話')" allowClear />
-            </AFormItem>
-            <AFormItem :label="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')">
-              <CustomField v-model="basicForm.companyForm.companyEmail" type="email" :placeholder="isCompanyType ? t('companyEmail', '公司信箱') : t('customerEmail', '客戶信箱')" allowClear />
-            </AFormItem>
-            <AFormItem :label="t('taxId', '統一編號')">
-              <CustomField v-model="basicForm.companyForm.taxId" type="input" allowClear />
-            </AFormItem>
-          </div>
-          <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')">
-            <CustomField v-model="basicForm.companyForm.companyAddress" type="input" :placeholder="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')" allowClear />
-          </AFormItem>
-          <AFormItem :label="t('registeredDate', '註冊日期')">
-            <CustomField v-model="basicForm.companyForm.registeredDate" type="date-picker" width="220px" allowClear />
           </AFormItem>
         </template>
       </AForm>
@@ -523,7 +554,7 @@
       <!--<a-button @click="getInfo">取得儲值紀錄</a-button>-->
       <div class="flex flex-1 items-center justify-center gap-2">
         <a-button size="large" @click="closeDialog">{{ t('cancel', '取消') }}</a-button>
-        <a-button type="primary" :disabled="isSaving" @click="saveData" :loading="isSaving">
+        <a-button v-if="!isDeletedRecord" type="primary" :disabled="isSaving" @click="saveData" :loading="isSaving">
           {{ isSaving ? t('saving', '儲存中') : t('save', '儲存') }}
         </a-button>
       </div>
@@ -533,16 +564,14 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-
-const route = useRoute();
-import { TinyInput, TinySelect, TinyCheckbox, TinyBadge, TinyDrawer, TinyTextPopup, TinyForm, TinyFormItem, TinyCheckboxGroup } from '@opentiny/vue';
+import { TinyInput, TinySelect, TinyCheckbox, TinyBadge, TinyDrawer, TinyForm, TinyFormItem, TinyCheckboxGroup } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import InfiniteSelect from '@/components/Form/InfiniteSelect.vue';
 import CustomField from '@/components/Form/CustomField.vue';
+import TagTextarea from '@/components/Form/TagTextarea.vue';
 import { UserRoundSearch, ShoppingCart, Trash2, SquarePen, ScrollText, Package, Expand, Shrink } from 'lucide-vue-next';
 import { useContentWidth } from '@/composables/useContentWidth';
 import { useSystemStore } from '@/stores/system';
@@ -551,6 +580,8 @@ import { useI18n } from 'vue-i18n';
 import { useBasePage } from './useBasePage';
 import { CustomersStoredGetByID } from '@/assets/API/Customers';
 import { useWindowSize } from '@vueuse/core';
+import { useRoute } from 'vue-router';
+import { JsonViewer } from 'vue3-json-viewer';
 
 const props = defineProps({
   pageType: { type: String, default: 'customer', validator: (v) => ['customer', 'prospect'].includes(v) },
@@ -559,6 +590,7 @@ const { containerRef } = useContentWidth();
 const systemStore = useSystemStore();
 const permissionStore = usePermissionStore();
 const { t } = useI18n();
+const route = useRoute();
 
 /** 高度相關 **/
 const { height: windowHeight } = useWindowSize();
@@ -672,9 +704,6 @@ const {
   handleOrderPageChange,
   handleOrderPageSizeChange,
   handleOrderCategoryChange,
-
-  //Mock 資料
-  generateFakeCustomer,
 } = useBasePage(props, t);
 
 watch(activeTab, () => {
@@ -691,6 +720,7 @@ const getInfo = async () => {
 };
 
 const isCompanyType = computed(() => basicForm.value.metaForm?.type === 'COMPANY');
+const isDeletedRecord = computed(() => basicForm.value.metaForm?.status === 'DELETED');
 
 const handleSameAsCompanyName = (index, checked) => {
   if (checked) {

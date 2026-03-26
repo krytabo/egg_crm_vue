@@ -42,8 +42,10 @@
 
   "companyName": "Company Name",
   "companyPhone": "Company Phone",
+  "companyPhone2": "Company Phone 2",
   "companyEmail": "Company Email",
   "companyAddress": "Company Address",
+  "companyAddress2": "Company Address 2",
   "taxId": "Tax ID",
   "registeredDate": "Registered Date",
 
@@ -162,6 +164,8 @@
   "cash": "Cash",
   "monthly": "Monthly",
   "prepaid": "Prepaid",
+  "transfer": "Transfer",
+  "check": "Check",
 
   "pickup": "Pickup",
   "driverDelivery": "Driver Delivery",

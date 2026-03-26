@@ -10,9 +10,11 @@ export function useSelectOptions() {
     // { label: 'DISPENSER', text: t('dispenser', '飲水機') },
   ]); //客戶類別（label 為存儲值，text 為顯示文字）
   const paymentOptions = computed(() => [
-    { label: t('cash', '現金'), value: 'CASH' },
-    { label: t('monthly', '月結'), value: 'MONTHLY' },
-    { label: t('prepaid', '預付'), value: 'PREPAID' },
+    { label: 'CASH', text: t('cash', '現金') },
+    { label: 'MONTHLY', text: t('monthly', '月結') },
+    { label: 'PREPAID', text: t('prepaid', '預付') },
+    { label: 'TRANSFER', text: t('transfer', '匯款') },
+    { label: 'CHECK', text: t('check', '支票') },
   ]); //付款方式
   const customerTypeOptions = computed(() => [
     { label: t('typeCompany', '公司'), value: 'COMPANY' },

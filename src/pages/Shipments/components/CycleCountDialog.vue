@@ -147,7 +147,7 @@ const dialogVisible = computed({
 });
 
 /** 表單相關 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const formRef = ref(null);
 const isSaving = ref(false);
 const initializeForm = () => ({

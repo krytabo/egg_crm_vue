@@ -2,7 +2,16 @@
 <template>
   <!--輸入框-->
   <template v-if="type === 'input'">
-    <a-input ref="inputRef" v-if="!readonly" v-model="modelValueProxy" :placeholder="props.placeholder || $t('pleaseEnter')" @change="handleChange" :allow-clear="props.allowClear" @clear="() => handleChange('')" :style="{ width: props.width }">
+    <a-input
+      ref="inputRef"
+      v-if="!readonly"
+      v-model="modelValueProxy"
+      :placeholder="props.placeholder || $t('pleaseEnter')"
+      @change="handleChange"
+      :allow-clear="props.allowClear"
+      @clear="() => handleChange('')"
+      :style="{ width: props.width }"
+    >
       <template v-if="$slots.prefix" #prefix>
         <slot name="prefix" />
       </template>
@@ -17,7 +26,7 @@
       </template>
     </a-input>
     <template v-else>
-      <p>{{ modelValueProxy || "-" }}</p>
+      <p>{{ modelValueProxy || '-' }}</p>
     </template>
   </template>
   <!--數字輸入框-->
@@ -46,7 +55,7 @@
           <slot name="suffix" />
         </template>
       </a-input-number>
-      <p v-if="isExceedMaxNumber" class="text-sm text-red-500">{{ t("exceededMaxValue") }} {{ props.maxNumber }}</p>
+      <p v-if="isExceedMaxNumber" class="text-sm text-red-500">{{ t('exceededMaxValue') }} {{ props.maxNumber }}</p>
     </div>
     <div v-else class="flex gap-2">
       <p>{{ formattedReadonlyValue }}</p>
@@ -82,11 +91,19 @@
 
   <!--下拉選擇-->
   <template v-if="type === 'select'">
-    <a-select ref="selectRef" v-if="!readonly" v-model="modelValueProxy" :placeholder="props.placeholder || $t('pleaseSelect')" @change="handleChange" :allow-clear="props.allowClear" @clear="clearItem">
+    <a-select
+      ref="selectRef"
+      v-if="!readonly"
+      v-model="modelValueProxy"
+      :placeholder="props.placeholder || $t('pleaseSelect')"
+      @change="handleChange"
+      :allow-clear="props.allowClear"
+      @clear="clearItem"
+    >
       <a-option v-for="item in props.options" :key="item[props.valueKey]" :label="item[props.labelKey]" :value="item[props.valueKey]" :disabled="item.disabled === true" />
     </a-select>
     <template v-else>
-      <p>{{ selectedLabel || "-" }}</p>
+      <p>{{ selectedLabel || '-' }}</p>
     </template>
   </template>
 
@@ -105,7 +122,7 @@
       @picker-value-change="(visible) => emit('picker-value-change', visible)"
     />
     <template v-else>
-      <p>{{ formatDateWithTimezone(modelValueProxy, props.dateFormat || "YYYY/MM/DD") || "-" }}</p>
+      <p>{{ formatDateWithTimezone(modelValueProxy, props.dateFormat || 'YYYY/MM/DD') || '-' }}</p>
     </template>
   </template>
   <!--日期區間-->
@@ -113,7 +130,7 @@
     <a-range-picker v-if="!readonly" v-model="modelValueProxy" class="w-full" @change="handleChange" :allow-clear="props.allowClear" @clear="() => handleChange([])" />
     <template v-else>
       <!--<p>{{ formattedRange }}</p>-->
-      <p>{{ formatRangeWithTimezone || "-" }}</p>
+      <p>{{ formatRangeWithTimezone || '-' }}</p>
     </template>
   </template>
   <!--日期時間選擇器-->
@@ -137,7 +154,7 @@
     />
     <template v-else>
       <!--<p>{{ formattedDateTime }}</p>-->
-      <p>{{ formatDateWithTimezone(modelValueProxy, props.dateFormat || "YYYY/MM/DD HH:mm:ss") || "-" }}</p>
+      <p>{{ formatDateWithTimezone(modelValueProxy, props.dateFormat || 'YYYY/MM/DD HH:mm:ss') || '-' }}</p>
     </template>
   </template>
 
@@ -159,14 +176,13 @@
   <!--複選框組-->
   <template v-if="type === 'checkbox-group'">
     <a-checkbox-group v-if="!readonly" v-model="modelValueProxy" @change="handleChange">
-      <a-checkbox v-for="item in props.options" :key="item[props.valueKey]" :value="item[props.valueKey]" :disabled="item.disabled === true">{{ item.name }}</a-checkbox>
+      <a-checkbox v-for="item in props.options" :key="item[props.valueKey]" :value="item[props.valueKey]" :disabled="item.disabled === true">{{ item[props.labelKey] }}</a-checkbox>
     </a-checkbox-group>
     <template v-else>
-      <template v-if="selectedCheckboxGroupLabels">
-        <!--<p>{{ selectedCheckboxGroupLabels.join("、") }}</p>-->
+      <template v-if="selectedCheckboxGroupLabels.length">
         <a-tag v-for="item in selectedCheckboxGroupLabels" :key="item" class="mr-2 last:mr-0" color="arcoblue">{{ item }}</a-tag>
       </template>
-      <p v-else class="text-gray-400">{{ $t("noData") }}</p>
+      <p v-else class="text-gray-400">{{ $t('noData') }}</p>
     </template>
   </template>
 
@@ -191,25 +207,25 @@
       <a-radio v-for="item in props.options" :key="item[props.valueKey]" :value="item[props.valueKey]" :disabled="item.disabled === true">{{ item[props.labelKey] || item.name }}</a-radio>
     </a-radio-group>
     <template v-else>
-      <p>{{ selectedRadioLabel || "-" }}</p>
+      <p>{{ selectedRadioLabel || '-' }}</p>
     </template>
   </template>
 </template>
 
 <script setup>
 defineOptions({
-  name: "AFormItemCompatible"
+  name: 'AFormItemCompatible',
 });
-import { computed, ref, useAttrs, useSlots } from "vue";
-import EmailAutocomplete from "./AEmailAutocomplete.vue";
-import { useFormItem } from "@arco-design/web-vue";
-import { useI18n } from "vue-i18n";
+import { computed, ref, useAttrs, useSlots } from 'vue';
+import EmailAutocomplete from './AEmailAutocomplete.vue';
+import { useFormItem } from '@arco-design/web-vue';
+import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
-import dayjs from "dayjs";
+import dayjs from 'dayjs';
 const attrs = useAttrs();
 
 /** 時間戳相關 **/
-import { useTimezoneStore } from "@/stores/TimezoneStore";
+import { useTimezoneStore } from '@/stores/TimezoneStore';
 const timezoneStore = useTimezoneStore();
 const formatDate = computed(() => timezoneStore.formatDate); //依照時區將時間戳轉換格式
 
@@ -226,14 +242,15 @@ const props = defineProps({
    */
   type: {
     type: String,
-    default: "input",
-    validator: (value) => ["select", "input", "number", "email", "textarea", "date-picker", "range-picker", "datetime-picker", "checkbox", "checkbox-group", "radio", "radio-group", "userSelect"].includes(value)
+    default: 'input',
+    validator: (value) =>
+      ['select', 'input', 'number', 'email', 'textarea', 'date-picker', 'range-picker', 'datetime-picker', 'checkbox', 'checkbox-group', 'radio', 'radio-group', 'userSelect'].includes(value),
   },
   width: String,
   modelValue: [String, Number, Array, null, Boolean, null],
   options: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   readonly: Boolean,
   allowClear: Boolean,
@@ -244,37 +261,37 @@ const props = defineProps({
   precision: Number, //數字精度，設定0代表只能整數
   formatter: {
     type: Function,
-    default: undefined
+    default: undefined,
   }, //定義數字輸入框展示值
   parser: {
     type: Function,
-    default: undefined
+    default: undefined,
   }, //需與formatter搭配
   thousands: {
     type: Boolean,
-    default: false
+    default: false,
   }, //是否使用formatter、parser
   trueLabel: {
     type: [String, Number, Boolean],
-    default: true
+    default: true,
   },
   falseLabel: {
     type: [String, Number, Boolean],
-    default: false
+    default: false,
   },
   textareaRows: {
     type: Number,
-    default: 4
+    default: 4,
   },
-  labelKey: { type: String, default: "label" }, //預設label
-  valueKey: { type: String, default: "value" }, //預設value
-  placeholder: { type: String, default: "" }, //預設value
+  labelKey: { type: String, default: 'label' }, //預設label
+  valueKey: { type: String, default: 'value' }, //預設value
+  placeholder: { type: String, default: '' }, //預設value
   groupType: { type: String, default: null }, //單選框類型
 
   //成員選擇相關
   userTitle: {
     type: String,
-    default: "標題"
+    default: '標題',
   },
   /**
    * 使用者選擇模式
@@ -282,8 +299,8 @@ const props = defineProps({
    */
   userMode: {
     type: String,
-    default: "multipleAll",
-    validator: (value) => ["multipleAll", "multipleInternal", "multipleExternal", "singleAll", "singleInternal", "singleExternal"].includes(value)
+    default: 'multipleAll',
+    validator: (value) => ['multipleAll', 'multipleInternal', 'multipleExternal', 'singleAll', 'singleInternal', 'singleExternal'].includes(value),
   },
   /**
    * 顯示的最大標籤數量，超過後會顯示 +N
@@ -291,7 +308,7 @@ const props = defineProps({
    */
   maxTagCount: {
     type: Number,
-    default: null
+    default: null,
   },
 
   //DateTimePicker相關
@@ -305,46 +322,46 @@ const props = defineProps({
   disabledSeconds: [Array, Function],
   step: Object,
   hasError: Boolean,
-  dateFormat: String
+  dateFormat: String,
 });
-const emit = defineEmits(["update:modelValue", "change", "input", "validate", "clear", "picker-value-change"]);
+const emit = defineEmits(['update:modelValue', 'change', 'input', 'validate', 'clear', 'picker-value-change']);
 const { mergedDisabled, mergedError, eventHandlers } = useFormItem({
   disabled: computed(() => props.readonly),
-  error: computed(() => props.hasError)
+  error: computed(() => props.hasError),
 }); //使用 useFormItem 來獲取表單驗證狀態
 
 const slots = useSlots();
 const modelValueProxy = computed({
   get: () => props.modelValue,
-  set: (val) => emit("update:modelValue", val)
+  set: (val) => emit('update:modelValue', val),
 });
 const selectedLabel = computed(() => {
-  const valueKey = props.valueKey || "value";
-  const labelKey = props.labelKey || "label";
+  const valueKey = props.valueKey || 'value';
+  const labelKey = props.labelKey || 'label';
   const found = props.options.find((opt) => opt?.[valueKey] === props.modelValue);
-  return found ? (found?.[labelKey] ?? "") : "";
+  return found ? (found?.[labelKey] ?? '') : '';
 }); //下拉選擇
 const handleChange = (value) => {
   let val = value ?? modelValueProxy.value;
-  if (props.type === "date-picker" && (val === "" || Array.isArray(val) || val == null)) {
+  if (props.type === 'date-picker' && (val === '' || Array.isArray(val) || val == null)) {
     val = null;
   }
-  if (props.type === "range-picker" && (val === "" || val == null)) {
+  if (props.type === 'range-picker' && (val === '' || val == null)) {
     val = [];
   }
-  emit("update:modelValue", val);
-  emit("change", val);
+  emit('update:modelValue', val);
+  emit('change', val);
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 }; //全部-點擊觸發
 const clearItem = (val) => {
-  emit("clear", val);
+  emit('clear', val);
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 }; //清除項目
 const handleCheckboxChange = (checked) => {
   const newValue = checked ? props.trueLabel : props.falseLabel;
-  emit("update:modelValue", newValue);
-  emit("change", newValue);
-  emit("validate");
+  emit('update:modelValue', newValue);
+  emit('change', newValue);
+  emit('validate');
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 }; //複選框-點擊觸發
 
@@ -361,7 +378,7 @@ const defaultFormatter = (value) => {
 }; //千分位格式化
 const defaultParser = (value) => {
   if (!props.thousands) return value;
-  return String(value).replace(/,/g, "");
+  return String(value).replace(/,/g, '');
 }; //解析
 const actualFormatter = computed(() => {
   return props.formatter || (props.thousands ? defaultFormatter : undefined);
@@ -371,11 +388,11 @@ const actualParser = computed(() => {
 }); //實際使用的解析
 const formattedReadonlyValue = computed(() => {
   const value = modelValueProxy.value || 0;
-  if (actualFormatter.value && typeof actualFormatter.value === "function") return actualFormatter.value(value);
+  if (actualFormatter.value && typeof actualFormatter.value === 'function') return actualFormatter.value(value);
   return value;
 }); //readonly時的格式化顯示
 const handleNumberFocus = (e) => {
-  const inputElement = e.target.querySelector("input") || e.target;
+  const inputElement = e.target.querySelector('input') || e.target;
   if (inputElement) {
     inputElement.select();
   }
@@ -389,49 +406,49 @@ const formatDateWithTimezone = (date, format) => {
 }; //時間戳轉換用
 const formattedDate = computed(() => {
   if (props.modelValue) {
-    return formatDateWithTimezone(props.modelValue, props.dateFormat || "YYYY/MM/DD");
+    return formatDateWithTimezone(props.modelValue, props.dateFormat || 'YYYY/MM/DD');
   }
-  return "";
+  return '';
 }); //日期
 const formattedRange = computed(() => {
   if (Array.isArray(props.modelValue) && props.modelValue.length === 2) {
-    return `${dayjs(props.modelValue[0]).format("YYYY-MM-DD")} ~ ${dayjs(props.modelValue[1]).format("YYYY-MM-DD")}`;
+    return `${dayjs(props.modelValue[0]).format('YYYY-MM-DD')} ~ ${dayjs(props.modelValue[1]).format('YYYY-MM-DD')}`;
   }
-  return "";
+  return '';
 }); //日期區間
 const formattedDateTime = computed(() => {
   if (props.modelValue) {
-    return formatDateWithTimezone(props.modelValue, props.dateFormat || "YYYY/MM/DD　HH:mm:ss");
+    return formatDateWithTimezone(props.modelValue, props.dateFormat || 'YYYY/MM/DD　HH:mm:ss');
   }
-  return "";
+  return '';
 }); //日期＋時間
 const formatRangeWithTimezone = computed(() => {
   if (Array.isArray(props.modelValue) && props.modelValue.length === 2) {
-    const format = props.dateFormat || "YYYY/MM/DD";
-    const startDate = formatDateWithTimezone(props.modelValue[0], format) || "";
-    const endDate = formatDateWithTimezone(props.modelValue[1], format) || "";
+    const format = props.dateFormat || 'YYYY/MM/DD';
+    const startDate = formatDateWithTimezone(props.modelValue[0], format) || '';
+    const endDate = formatDateWithTimezone(props.modelValue[1], format) || '';
     return `${startDate} ~ ${endDate}`;
   }
-  return "-";
+  return '-';
 });
 
 /**  複選框相關 **/
 const selectedCheckboxGroupLabels = computed(() => {
   const selected = Array.isArray(props.modelValue) ? props.modelValue : [];
-  return props.options.filter((item) => selected.includes(item.value)).map((item) => item.name);
+  return props.options.filter((item) => selected.includes(item[props.valueKey])).map((item) => item[props.labelKey]);
 });
 
 /** 單選按鈕相關 **/
 const handleRadioChange = (value) => {
   const newValue = value ? props.trueLabel : props.falseLabel;
-  emit("update:modelValue", newValue);
-  emit("change", newValue);
-  emit("validate");
+  emit('update:modelValue', newValue);
+  emit('change', newValue);
+  emit('validate');
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 }; //單選框-點擊觸發
 const selectedRadioLabel = computed(() => {
   const found = props.options.find((opt) => opt.value === props.modelValue);
-  return found ? found.name || found.label : "";
+  return found ? found.name || found.label : '';
 }); //單選按鈕組-取值
 
 /** 成員選擇相關 **/
@@ -463,19 +480,19 @@ const openAttendeesModal = () => {
 };
 const handleAttendeesConfirm = (selectedAttendees) => {
   modelValueProxy.value = selectedAttendees;
-  emit("change", selectedAttendees);
+  emit('change', selectedAttendees);
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
   attendeesModal.value = false;
 };
 const handleUserRemove = (item) => {
   modelValueProxy.value = modelValueProxy.value.filter((user) => user.id !== item.id);
-  emit("change", modelValueProxy.value);
+  emit('change', modelValueProxy.value);
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 };
 const handleUserRemoveAll = () => {
   modelValueProxy.value = [];
   isHovered.value = false;
-  emit("change", []);
+  emit('change', []);
   eventHandlers.value?.onChange?.(); //Arco 驗證表單通知
 };
 
@@ -507,6 +524,6 @@ defineExpose({
     datePickerRef.value?.focus?.();
     radioRef.value?.focus?.();
     radioGroupRef.value?.focus?.();
-  }
+  },
 });
 </script>

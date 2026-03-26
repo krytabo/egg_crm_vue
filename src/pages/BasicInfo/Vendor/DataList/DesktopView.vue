@@ -246,7 +246,7 @@ const { t } = useI18n();
 const { height: windowHeight } = useWindowSize();
 const TableScrollY = computed(() => Math.max(windowHeight.value - 290, 100));
 
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const {
   //篩選與查詢
   statusFilterOptions,

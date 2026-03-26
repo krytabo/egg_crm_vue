@@ -201,7 +201,7 @@ const { basicDataList, filters, pagination, pageSizeOptions, getDefaultAPI, hand
 const getAPI = () => getDefaultAPI(); //取得列表資料
 
 /** 新增調撥 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const transferDialogVisible = ref(false);
 const isSaving = ref(false);
 const formRef = ref(null);

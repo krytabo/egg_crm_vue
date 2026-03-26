@@ -358,7 +358,7 @@ const isDevEnv = import.meta.env.DEV;
 const isSystemAdmin = (row) => row.role === '系統管理員'; //判斷是否為系統管理員
 
 //＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const passwordDialogVisible = ref(false);
 const isChangingPassword = ref(false);
 const passwordFormRef = ref(null);

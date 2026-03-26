@@ -31,7 +31,7 @@
         <TinySelect v-model="filters.status" :options="statusOptions" :placeholder="t('all', '全部')" clearable @change="handleFiltersChange" />
       </CustomFormItem>
       <CustomFormItem :label="t('customer', '客戶')">
-        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" />
+        <InfiniteSelect v-model="filters.customerId" dataSource="customers" :placeholder="t('all', '全部')" type="outline" allowClear @change="handleFiltersChange" :filters="{ status: 'ACTIVE' }" />
       </CustomFormItem>
     </CustomForm>
 
@@ -128,7 +128,7 @@
         <TinySelect v-model="basicForm.direction" :options="directionOptions" />
       </a-form-item>
       <a-form-item :label="t('customer', '客戶')">
-        <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('selectCustomer', '選擇關聯客戶（選填）')" type="outline" allowClear />
+        <InfiniteSelect v-model="basicForm.customerId" dataSource="customers" :placeholder="t('selectCustomer', '選擇關聯客戶（選填）')" type="outline" allowClear :filters="{ status: 'ACTIVE' }" />
       </a-form-item>
       <a-form-item :label="t('callOutcome', '通話結果')">
         <TinySelect v-model="basicForm.callOutcome" :options="outcomeOptions" :placeholder="t('selectOutcome', '選擇通話結果（選填）')" clearable />

@@ -206,7 +206,7 @@ import { Expand, Shrink } from 'lucide-vue-next';
 const systemStore = useSystemStore();
 const { containerRef } = useContentWidth();
 const { t } = useI18n();
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 
 /** Table高度 **/
 import { useWindowSize } from '@vueuse/core';

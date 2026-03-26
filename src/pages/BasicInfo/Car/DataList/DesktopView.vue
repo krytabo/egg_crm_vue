@@ -281,7 +281,7 @@ const handleUnassignDriver = () => {
 };
 
 /** 詳細資料抽屜 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const detailDrawerVisible = ref(false);
 const detailVehicle = ref(null);
 const openDetailDrawer = (vehicle) => {

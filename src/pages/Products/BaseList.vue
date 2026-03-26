@@ -177,6 +177,7 @@
               :placeholder="t('pleaseSelect', '請選擇')"
               allowClear
               @change="handleVendorFilterChange"
+              :filters="{ status: 'active' }"
               class="w-45"
             />
             <!--<TinySelect v-model="filters.primaryVendorId" :options="vendorFilterOptions" placeholder="全部" class="h-8 text-xs" filterable clearable @update:model-value="handleVendorFilterChange" />-->
@@ -298,7 +299,7 @@
             <CustomField v-model="basicForm.reorderPoint" type="number" placeholder="0" :min="0" allowClear />
           </AFormItem>
           <AFormItem :label="t('vendorId', '供應商 ID')">
-            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear />
+            <InfiniteSelect v-model="basicForm.primaryVendorId" dataSource="vendors" :placeholder="t('pleaseSelectVendor', '請選擇供應商')" allowClear :filters="{ status: 'active' }" />
           </AFormItem>
           <AFormItem :label="t('tags', '標籤')">
             <CustomField v-model="basicForm.tags" type="input" :placeholder="t('tagsCommaSeparated', '標籤（以逗號分隔）')" allowClear />
@@ -721,7 +722,7 @@ const clearFilter = async () => {
 }; //清除全部搜尋條件
 
 /** 新增編輯相關 **/
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const dialogMode = ref('create');
 const dialogVisible = ref(false); //彈窗顯示狀態
 const editingId = ref(null); //編輯中的 ID

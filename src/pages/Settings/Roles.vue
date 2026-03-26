@@ -232,7 +232,7 @@ const initializeForm = () => ({
   isSystem: false,
   permissionIds: [],
 }); //初始化表單資料
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const dialogVisible = ref(false); //彈窗開關
 const dialogMode = ref('create'); //彈窗模式
 const dialogTitle = computed(() => (isCreate.value ? t('addRole') : t('editRole'))); //彈窗標題

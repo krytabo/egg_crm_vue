@@ -42,7 +42,7 @@
     <teleport to="body">
       <div v-if="isOpen" class="infinite-select-dropdown" :style="dropdownStyle" ref="dropdownRef">
         <div class="border-b p-2" v-if="allowSearch">
-          <input v-model="searchTerm" type="text" class="search-input" placeholder="輸入關鍵字搜尋" />
+          <input ref="searchInputRef" v-model="searchTerm" type="text" class="search-input" placeholder="輸入關鍵字搜尋" />
         </div>
         <div class="options-container" ref="listRef" @scroll="handleScroll">
           <template v-if="options.length">
@@ -264,6 +264,11 @@ const DATA_SOURCE_MAP = {
   customers: {
     api: CustomersListGet,
     valueKey: 'id',
+    fetcher: async ({ page, limit, search, filters }) => {
+      const params = { page, limit, ...filters };
+      if (search) params.name = search;
+      return CustomersListGet(params);
+    },
     formatOption: (item) => ({
       value: item.id,
       label: item.name || item.code || item.id,
@@ -304,6 +309,7 @@ const isHovered = ref(false);
 const triggerRef = ref(null);
 const dropdownRef = ref(null);
 const listRef = ref(null);
+const searchInputRef = ref(null);
 const isOpen = ref(false);
 const options = ref([]);
 const loading = ref(false);
@@ -331,6 +337,13 @@ const resolvedConfig = computed(() => {
           }
           return { data: { data: items, meta: { total: items.length } } };
         },
+        valueKey: config.valueKey,
+        formatOption: config.formatOption,
+      };
+    }
+    if (typeof config.fetcher === 'function') {
+      return {
+        fetcher: config.fetcher,
         valueKey: config.valueKey,
         formatOption: config.formatOption,
       };
@@ -408,9 +421,11 @@ const toggleDropdown = async () => {
   await openDropdown();
 }; //開關選單
 const openDropdown = async () => {
+  searchTerm.value = '';
   isOpen.value = true;
   await nextTick();
   updateDropdownPosition();
+  if (props.allowSearch) searchInputRef.value?.focus();
   if (!options.value.length) await getAPI(1, false);
   document.addEventListener('mousedown', handleOutsideClick);
 }; //開啟選單
@@ -435,9 +450,9 @@ const updateDropdownPosition = () => {
 /** 取得資料相關 **/
 const normalizeResponse = (response) => {
   if (!response) return { data: [], total: 0 };
-  const dataBlock = response.data?.data ?? response.data ?? response;
-  const items = dataBlock?.data ?? dataBlock?.items ?? dataBlock ?? [];
-  const total = dataBlock?.meta?.total ?? dataBlock?.total ?? items.length;
+  const innerBlock = response.data?.data ?? response.data ?? response;
+  const items = innerBlock?.data ?? innerBlock?.items ?? (Array.isArray(innerBlock) ? innerBlock : []);
+  const total = innerBlock?.pagination?.total ?? innerBlock?.meta?.total ?? innerBlock?.total ?? (Array.isArray(items) ? items.length : 0);
   return { data: Array.isArray(items) ? items : [], total };
 };
 const getAPI = async (targetPage = 1, append = false) => {

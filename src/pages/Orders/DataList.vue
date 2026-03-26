@@ -55,6 +55,7 @@
               type="outline"
               class="w-46.25!"
               allowClear
+              :filters="{ status: 'ACTIVE' }"
               @change="handleFiltersChange"
             />
           </div>
@@ -72,6 +73,7 @@
               type="outline"
               class="w-46.25!"
               allowClear
+              :filters="{ status: 'active' }"
               @change="handleFiltersChange"
             />
           </div>
@@ -170,6 +172,7 @@
                 :readonly="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'customer')"
                 class="w-full"
+                :filters="{ status: 'ACTIVE' }"
               />
             </a-form-item>
             <a-form-item v-else-if="basicForm.targetType === 'VENDOR'" :label="t('vendor', '廠商')" field="targetId">
@@ -179,6 +182,7 @@
                 :placeholder="t('pleaseSelect', '請選擇')"
                 :disabled="!canModifyTarget"
                 @change="(v) => changeTarget(v, 'vendor')"
+                :filters="{ status: 'active' }"
                 class="w-full"
               />
             </a-form-item>
@@ -527,7 +531,7 @@ const { handlePrint: handleEggTriplicatePrint } = useVueToPrint({
 });
 
 const dialogMode = ref('create');
-const fullscreen = ref(false);
+const fullscreen = ref(true);
 const dialogVisible = ref(false);
 const editingId = ref(null);
 const editingOrderProducts = ref([]);

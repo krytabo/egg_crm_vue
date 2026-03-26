@@ -42,8 +42,10 @@
 
   "companyName": "公司名称",
   "companyPhone": "公司电话",
+  "companyPhone2": "公司电话2",
   "companyEmail": "公司信箱",
   "companyAddress": "公司地址",
+  "companyAddress2": "公司地址2",
   "taxId": "统一编号",
   "registeredDate": "注册日期",
 
@@ -154,6 +156,8 @@
   "cash": "现金",
   "monthly": "月结",
   "prepaid": "预付",
+  "transfer": "汇款",
+  "check": "支票",
 
   "pickup": "自取",
   "driverDelivery": "司机送货",
