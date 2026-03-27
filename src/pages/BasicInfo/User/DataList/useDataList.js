@@ -1,6 +1,4 @@
 // src/pages/BasicInfo/User/DataList/useDataList.js
-// 員工資料列表 - 共用業務邏輯（Desktop / Mobile 共用）
-
 import { computed, reactive, ref } from 'vue';
 import { UserListGet, UserCreatePost, UserUpdatePatch, UserDeleteById, UserGetByID } from '@/assets/API/User';
 import { dataList } from '@/assets/API/api';
@@ -9,21 +7,13 @@ import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { debounce } from 'lodash';
 
-/**
- * 員工資料列表共用邏輯
- * @param {Function} t - i18n 翻譯函式
- * @param {Function} showMessage - 顯示訊息函式（Desktop/Mobile 各自實作）
- */
 export function useDataList(t, showMessage = () => {}) {
   const mainStore = useMainStore();
   const timezoneStore = useTimezoneStore();
 
-  // ===== 常數 =====
-  const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
-  const MIN_PASSWORD_LENGTH = 8; // 最小密碼長度
-  const userPhoto = ref(false); // 大頭照功能開關（先暫時隱藏）
-
-  // ===== 選項相關 =====
+  const MAX_AVATAR_SIZE = 5 * 1024 * 1024; //5MB
+  const MIN_PASSWORD_LENGTH = 8; //最小密碼長度
+  const userPhoto = ref(false); //大頭照功能開關（先暫時隱藏）
   const jobTypeOptions = [
     { label: t('jobTypeDriver'), value: 'DRIVER' },
     { label: t('jobTypeSales'), value: 'SALES' },
@@ -38,19 +28,14 @@ export function useDataList(t, showMessage = () => {}) {
     { label: t('statusInactive'), value: 'INACTIVE' },
   ];
   const jobTypeFilterOptions = computed(() => [{ label: '全部', value: '' }, ...jobTypeOptions]);
-
-  // ===== 共用工具函式 =====
   const formatDate = (value, format = 'YYYY/MM/DD') => timezoneStore.formatDate(value, format);
-
   const getJobTypeLabel = (jobTypeValue) => jobTypeOptions.find((option) => option.value === jobTypeValue)?.label || jobTypeValue || '—';
-
   const trimFields = (obj, fields) => {
     return fields.reduce((acc, field) => {
       acc[field] = obj[field]?.trim();
       return acc;
     }, {});
   };
-
   const responseDataToList = (user = {}) => {
     return {
       ...user,
@@ -69,7 +54,7 @@ export function useDataList(t, showMessage = () => {}) {
     };
   };
 
-  // ===== 篩選與排序相關 =====
+  /** 篩選與排序相關 **/
   const sortField = ref('');
   const sortDirection = ref('asc');
   const sortFieldMap = {
@@ -90,9 +75,7 @@ export function useDataList(t, showMessage = () => {}) {
     hireDateFrom: '',
     hireDateTo: '',
   };
-
   const getColumnOrder = (field) => (sortField.value === field ? sortDirection.value : '');
-
   const handleColumnSort = async ({ field, order }) => {
     if (!field) return;
     if (!order) {
@@ -105,7 +88,7 @@ export function useDataList(t, showMessage = () => {}) {
     await getAPI();
   };
 
-  // ===== 列表資料取得相關 =====
+  /** 列表資料取得相關 **/
   const wrappedUserListGet = (params) => {
     const processedParams = { ...params };
     const searchTerm = searchFields.email.trim() || searchFields.name.trim() || '';
@@ -132,7 +115,6 @@ export function useDataList(t, showMessage = () => {}) {
     }
     return UserListGet(processedParams);
   };
-
   const {
     basicDataList,
     filters,
@@ -147,37 +129,31 @@ export function useDataList(t, showMessage = () => {}) {
     responseDataToList,
     pageSizeOptions: [10, 20, 50, 100, 200],
   });
-
   const getAPI = async () => {
     await getDefaultAPI();
   };
-
   const handleFilterChange = handleFiltersChange;
-
   const clearFilter = () => {
     searchFields.name = '';
     searchFields.email = '';
     searchFields.phone = '';
     clearFilterBase();
   };
-
   const clearHireDateFilter = async () => {
     filters.hireDateFrom = '';
     filters.hireDateTo = '';
     await handleFiltersChange();
   };
 
-  // ===== 新增編輯相關 =====
+  /** 新增編輯相關 **/
   const dialogMode = ref('create');
   const editingId = ref(null);
   const dialogVisible = ref(false);
   const isSaving = ref(false);
   const basicFormRef = ref(null);
-
   const isCreate = computed(() => dialogMode.value === 'create');
   const isEdite = computed(() => dialogMode.value === 'edit');
   const isEditing = computed(() => Boolean(editingId.value));
-
   const initializeForm = () => ({
     fullName: '',
     username: '',
@@ -192,15 +168,12 @@ export function useDataList(t, showMessage = () => {}) {
     role: null,
     isActive: true,
     avatar: '',
-    // 司機專用欄位
+    //司機專用欄位
     licenseNumber: '',
     licenseExpiry: '',
   });
-
   const basicForm = ref(initializeForm());
-
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
   const emailValidator = (value, callback) => {
     if (!value || emailPattern.test(value)) {
       callback();
@@ -208,7 +181,6 @@ export function useDataList(t, showMessage = () => {}) {
       callback(new Error('電子信箱格式不正確'));
     }
   };
-
   const passwordValidator = (requirePassword) => (value, callback) => {
     if (!requirePassword && !value) {
       callback();
@@ -224,7 +196,6 @@ export function useDataList(t, showMessage = () => {}) {
     }
     callback();
   };
-
   const basicFormRules = computed(() => {
     const requirePassword = !isEditing.value;
     const requireIdentity = !isEditing.value;
@@ -243,12 +214,10 @@ export function useDataList(t, showMessage = () => {}) {
       licenseExpiry: [...(requireDriverFields ? [{ required: true, message: t('licenseExpiryRequired'), trigger: 'change' }] : [])],
     };
   });
-
   const resetForm = () => {
     basicForm.value = initializeForm();
     basicFormRef.value?.clearValidate?.();
   };
-
   const getDataInfo = (user) => {
     const primaryRole = Array.isArray(user.roles) ? user.roles[0] || null : user.roles || null;
     basicForm.value = {
@@ -267,7 +236,6 @@ export function useDataList(t, showMessage = () => {}) {
       avatar: user.avatar || '',
     };
   };
-
   const getData = async (id) => {
     if (!id) return;
     mainStore.setLoading(true);
@@ -281,14 +249,12 @@ export function useDataList(t, showMessage = () => {}) {
       mainStore.setLoading(false);
     }
   };
-
   const openCreateDialog = () => {
     dialogMode.value = 'create';
     editingId.value = null;
     resetForm();
     dialogVisible.value = true;
   };
-
   const editData = (employee) => {
     if (!employee?.id) return;
     dialogMode.value = 'edit';
@@ -297,19 +263,16 @@ export function useDataList(t, showMessage = () => {}) {
     dialogVisible.value = true;
     getData(employee.id);
   };
-
   const closeDialog = () => {
     isSaving.value = false;
     dialogVisible.value = false;
     basicFormRef.value?.clearValidate?.();
   };
-
   const generateDriverEmployeeId = (email) => {
     const prefix = email?.split('@')[0] || 'driver';
     const timestamp = Date.now();
     return `${prefix}_${timestamp}`;
   };
-
   const preparePayload = (isUpdate) => {
     const formState = basicForm.value;
     const resolvedRole = formState.role;
@@ -338,14 +301,13 @@ export function useDataList(t, showMessage = () => {}) {
     }
 
     if (isUpdate) {
-      // if (formState.password) payload.password = formState.password;
+      //if (formState.password) payload.password = formState.password;
       payload.isActive = Boolean(formState.isActive);
       payload.avatar = formState.avatar?.trim() || '';
     }
 
     return payload;
   };
-
   const updateAvatar = async (userId, avatarUrl) => {
     if (!avatarUrl || !userId) return;
 
@@ -355,7 +317,6 @@ export function useDataList(t, showMessage = () => {}) {
       await mainStore.SWAL_Error(error);
     }
   };
-
   const _submitForm = async () => {
     const validateResult = await basicFormRef.value.validate();
     if (validateResult) return false;
@@ -387,9 +348,7 @@ export function useDataList(t, showMessage = () => {}) {
       isSaving.value = false;
     }
   };
-
   const saveData = debounce(_submitForm, 300, { leading: true, trailing: false });
-
   const deleteData = async (id) => {
     if (!id) return;
     await mainStore.SWAL_DeleteConfirm({
@@ -406,28 +365,23 @@ export function useDataList(t, showMessage = () => {}) {
     });
   };
 
-  // ===== 圖片相關 =====
+  /** 圖片相關 **/
   const imagePickerVisible = ref(false);
   const photoPreview = ref(false);
   const photoSrc = ref('');
-
   const openPhoto = () => {
     photoSrc.value = basicForm.value.avatar;
     photoPreview.value = true;
   };
-
   const visibleChange = (v) => {
     photoPreview.value = v;
   };
-
   const openImagePicker = () => {
     imagePickerVisible.value = true;
   };
-
   const clearAvatar = () => {
     basicForm.value.avatar = '';
   };
-
   const uploadImageViaApi = async (file) => {
     if (!file) return '';
 
@@ -447,21 +401,16 @@ export function useDataList(t, showMessage = () => {}) {
   };
 
   return {
-    // 常數
     MAX_AVATAR_SIZE,
     MIN_PASSWORD_LENGTH,
     userPhoto,
-
-    // 選項
     jobTypeOptions,
     statusFilterOptions,
     jobTypeFilterOptions,
-
-    // 工具函式
     formatDate,
     getJobTypeLabel,
 
-    // 篩選相關
+    //篩選相關
     sortField,
     sortDirection,
     searchFields,
@@ -472,7 +421,7 @@ export function useDataList(t, showMessage = () => {}) {
     clearFilter,
     clearHireDateFilter,
 
-    // 列表相關
+    //列表相關
     basicDataList,
     pagination,
     pageSizeOptions,
@@ -480,7 +429,7 @@ export function useDataList(t, showMessage = () => {}) {
     CurrentChange,
     SizeChange,
 
-    // 新增編輯相關
+    //新增編輯相關
     dialogMode,
     editingId,
     dialogVisible,
@@ -498,7 +447,7 @@ export function useDataList(t, showMessage = () => {}) {
     saveData,
     deleteData,
 
-    // 圖片相關
+    //圖片相關
     imagePickerVisible,
     photoPreview,
     photoSrc,

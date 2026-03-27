@@ -1,17 +1,17 @@
 // src/pages/BasicInfo/Customer/BasePage/useBasePage.js 客戶/潛在客戶管理共用邏輯
-import { computed, reactive, ref, watch, toRaw } from 'vue';
+import { computed, reactive, ref, toRaw, watch } from 'vue';
 import { OrderListGet } from '@/assets/API/Order';
 import {
-  CustomersListGet,
   CustomersCreatePost,
-  CustomersUpdatePatch,
   CustomersDeleteById,
   CustomersGetByID,
   CustomersImportExcel,
-  CustomersStoredGetByID,
+  CustomersListGet,
   CustomersStoredCreatePost,
-  CustomersStoredUpdatePatch,
   CustomersStoredDeleteById,
+  CustomersStoredGetByID,
+  CustomersStoredUpdatePatch,
+  CustomersUpdatePatch,
 } from '@/assets/API/Customers';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
@@ -19,10 +19,7 @@ import { useCurrencyStore } from '@/stores/currency';
 import { getUserInfo } from '@/utils/auth';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
-import { format } from 'date-fns';
 import { debounce } from 'lodash';
-import { mockProducts } from '@/lib/mock-products';
-import { orderStatusColors } from '@/lib/mock-orders';
 import { CATEGORY_IDS } from '@/constants/categories';
 
 export function useBasePage(props, t, showMessage = () => {}) {
@@ -44,6 +41,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     formatWeekDays,
     orderStatusLabelMap,
     orderStatusDisplayMap,
+    orderStatusColors,
   } = useSelectOptions();
 
   //頁面判斷相關
@@ -80,7 +78,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const statusFilterOptions = computed(() => customerStatusOptions.value);
   const currency = (val) => formatCurrencyNumber(val);
   const getPrimaryContact = (customer) => customer.contacts?.find((c) => c.isPrimary) || customer.contacts?.[0];
-  const findProductById = (productId) => mockProducts.find((item) => item.id === productId) || null;
   const parseTagsInput = (value) =>
     String(value || '')
       .split(',')
@@ -92,7 +89,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
   };
   const toggleArrayItem = (array, item) => (array.includes(item) ? array.filter((i) => i !== item) : [...array, item]);
 
-  // 根據訂單類型或商品推導 categoryId
+  //根據訂單類型或商品推導 categoryId
   const inferCategoryId = (item = {}) => {
     // 優先使用 API 返回的 categoryId
     if (item.categoryId) return item.categoryId;
@@ -209,7 +206,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       contacts,
       companyName: customer.name || '—',
       companyPhone: customer.contactInfo?.phone || '',
-      companyPhone2: customFields.companyPhone2 || '',
+      companyPhone2: customer.contactInfo?.phone2 || '',
       companyEmail: customer.contactInfo?.email || '',
       companyAddress:
         customFields.companyAddress || [customer.address?.street, customer.address?.city, customer.address?.state, customer.address?.zipCode, customer.address?.country].filter(Boolean).join(' '),
@@ -503,7 +500,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     });
   };
 
-  //聯絡人操作
+  /** 聯絡人相關 **/
   const addContact = () => {
     const nextItem = { ...FORM_TEMPLATES.contact, isPrimary: true, id: Date.now() };
     basicForm.value.contactsForm.push(nextItem);
@@ -519,7 +516,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
     basicForm.value.contactsForm[index].isPrimary = !basicForm.value.contactsForm[index].isPrimary;
   };
 
-  //客製價格操作
+  /** 客製價格相關 **/
   const changeProduct = (product, index) => {
     if (!product) return;
     const item = customPriceForm.value[index];
@@ -562,6 +559,82 @@ export function useBasePage(props, t, showMessage = () => {}) {
     item.productName = product.name || '';
     item.unit = product.unit || '';
   };
+
+  /** 訂單相關 **/
+  const customerData = ref(false);
+  const drawerVisible = ref(false);
+  const drawerCustomer = ref(null);
+  const orderList = ref([]);
+  const orderPagination = reactive({ page: 1, limit: 20, total: 0 });
+  const selectedOrderCategory = ref('all'); //選中的訂單分類：all 或 CATEGORY_IDS 的值
+  const orderCategories = computed(() => [
+    {
+      key: 'all',
+      label: t('allOrders', '全部訂單'),
+    },
+    {
+      key: CATEGORY_IDS.EGG,
+      label: t('orderEgg', '雞蛋訂單'),
+    },
+    {
+      key: CATEGORY_IDS.WATER,
+      label: t('orderWater', '飲水訂單'),
+    },
+  ]); //訂單分類配置 - 使用 CATEGORY_IDS
+  const openCustomerData = () => (customerData.value = !customerData.value);
+  const openDrawer = async (customer) => {
+    drawerCustomer.value = customer;
+    orderPagination.page = 1;
+    selectedOrderCategory.value = 'all'; // 重置為全部
+    await loadCustomerOrders(customer.id, 'all');
+    drawerVisible.value = true;
+  };
+  const buildOrderListParams = (customerId, categoryId = 'all') => {
+    const params = {
+      customerId,
+      page: orderPagination.page,
+      limit: orderPagination.limit,
+    };
+
+    // 只有不是「全部」時才傳遞 categoryId
+    if (categoryId !== 'all') {
+      params.categoryId = categoryId;
+    }
+
+    return params;
+  }; //根據categoryId 構建 API 參數
+  const loadCustomerOrders = async (customerId, categoryId = 'all') => {
+    mainStore.setLoading(true);
+    const params = buildOrderListParams(customerId, categoryId);
+    const response = await OrderListGet(params);
+    const rawData = response?.data?.data?.data ?? [];
+    const metaInfo = response?.data?.data?.pagination ?? {};
+
+    // 訂單數據轉換
+    orderList.value = Array.isArray(rawData) ? rawData.map(orderResponseDataToList) : [];
+
+    // 更新分頁信息
+    orderPagination.total = metaInfo.total ?? orderList.value.length;
+    orderPagination.page = metaInfo.page ?? orderPagination.page;
+
+    mainStore.setLoading(false);
+  };
+  const handleOrderPageChange = async (page) => {
+    orderPagination.page = page;
+    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
+  };
+  const handleOrderPageSizeChange = async (size) => {
+    orderPagination.limit = Number(size);
+    orderPagination.page = 1;
+    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
+  };
+  const handleOrderCategoryChange = async (category) => {
+    selectedOrderCategory.value = category;
+    orderPagination.page = 1;
+    await loadCustomerOrders(drawerCustomer.value.id, category);
+  };
+
+  /** 新增編輯儲存 **/
   const preparePayload = () => {
     const formContacts = basicForm.value.contactsForm.length ? basicForm.value.contactsForm : [{ ...FORM_TEMPLATES.contact }];
     const primaryContact = formContacts.find((contact) => contact.isPrimary) || formContacts[0];
@@ -576,42 +649,37 @@ export function useBasePage(props, t, showMessage = () => {}) {
       }))
       .filter((item) => item.productId);
 
-    // 儲值管理：已由獨立 API 處理，不放在 customFields 內
     const payload = {
-      name: companyForm.companyName || primaryContact?.name || t('unnamedCustomer', '未命名客戶'),
-      type: metaForm.type || FORM_TEMPLATES.meta.type,
-      segment: metaForm.segment || FORM_TEMPLATES.meta.segment,
-      source: metaForm.source || FORM_TEMPLATES.meta.source,
+      name: companyForm.companyName || primaryContact?.name,
+      type: metaForm.type || FORM_TEMPLATES.meta.type, //客戶類型
+      segment: metaForm.segment || FORM_TEMPLATES.meta.segment, //客戶分類
+      source: metaForm.source || FORM_TEMPLATES.meta.source, //客戶來源
       contactInfo: {
-        phone: companyForm.companyPhone || undefined,
-        email: companyForm.companyEmail || undefined,
+        email: companyForm.companyEmail || undefined, //電子信箱
+        phone: companyForm.companyPhone || undefined, //電話
+        phone2: companyForm.companyPhone2 || undefined, //電話2
       },
-      taxId: companyForm.taxId || '',
-      notes: otherForm.note || '',
-      salesRepId: (typeof metaForm.salesRepId === 'object' ? metaForm.salesRepId?.id : metaForm.salesRepId) || null,
-      deliveryDays: deliveryDaysForm.value,
+      taxId: companyForm.taxId || '', //統一編號(棄用)
+      notes: otherForm.note || '', //備註
+      salesRepId: (typeof metaForm.salesRepId === 'object' ? metaForm.salesRepId?.id : metaForm.salesRepId) || null, //業務負責
+      deliveryDays: deliveryDaysForm.value, //出貨星期
       productCategories: categoriesForm.value, //客戶類型
       paymentOptions: Array.isArray(otherForm.paymentMethod) ? otherForm.paymentMethod : [otherForm.paymentMethod].filter(Boolean), //收付方式
       customFields: {
-        contacts: formContacts,
-        deposit: Number(otherForm.deposit || 0),
-        invoiceTitle: otherForm.invoiceTitle,
-        invoiceTaxId: otherForm.invoiceTaxId,
-        customPrices: processedCustomPrices,
-        registeredDate: companyForm.registeredDate,
-        companyAddress: companyForm.companyAddress,
-        companyAddress2: companyForm.companyAddress2,
-        companyPhone2: companyForm.companyPhone2,
+        invoiceTitle: otherForm.invoiceTitle, //發票抬頭
+        invoiceTaxId: otherForm.invoiceTaxId, //統一編號
+        companyAddress: companyForm.companyAddress, //地址
+        companyAddress2: companyForm.companyAddress2, //地址2
+        registeredDate: companyForm.registeredDate, //註冊日期
+        contacts: formContacts, //聯絡人列表
+        customPrices: processedCustomPrices, //自訂價格
+        deposit: Number(otherForm.deposit || 0), //儲值管理(棄用-改獨立API)
       },
     };
-    const tagValues = parseTagsInput(metaForm.tags);
-    payload.tags = tagValues;
+    payload.tags = parseTagsInput(metaForm.tags); //標籤
 
-    if (isCreate.value && isProspect.value) {
-      payload.status = 'PROSPECT';
-    } else if (isEdite.value && metaForm.status) {
-      payload.status = metaForm.status;
-    }
+    if (isCreate.value && isProspect.value) payload.status = 'PROSPECT'; //新增狀態
+    if (isEdite.value && metaForm.status) payload.status = metaForm.status; //編輯狀態-依設定
     return payload;
   };
   const _submitForm = async () => {
@@ -627,7 +695,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       }
       if (isEdite.value) await CustomersUpdatePatch(customerId, payload);
 
-      // 儲值管理：同步 CRUD
+      //儲值管理
       const depositsWithProductId = waterDepositsForm.value.filter((item) => item.productId);
       const buildDepositPayload = (item) => ({
         productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
@@ -661,90 +729,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
   };
   const saveData = debounce(_submitForm, 300, { leading: true, trailing: false });
 
-  //訂單相關
-  const customerData = ref(false);
-  const drawerVisible = ref(false);
-  const drawerCustomer = ref(null);
-  const orderList = ref([]);
-  const orderPagination = reactive({ page: 1, limit: 20, total: 0 });
-  const selectedOrderCategory = ref('all'); //選中的訂單分類：all 或 CATEGORY_IDS 的值
-
-  // 訂單分類配置 - 使用 CATEGORY_IDS
-  const orderCategories = computed(() => [
-    {
-      key: 'all',
-      label: t('allOrders', '全部訂單'),
-    },
-    {
-      key: CATEGORY_IDS.EGG,
-      label: t('orderEgg', '雞蛋訂單'),
-    },
-    {
-      key: CATEGORY_IDS.WATER,
-      label: t('orderWater', '飲水訂單'),
-    },
-  ]);
-
-  const openCustomerData = () => (customerData.value = !customerData.value);
-
-  const openDrawer = async (customer) => {
-    drawerCustomer.value = customer;
-    orderPagination.page = 1;
-    selectedOrderCategory.value = 'all'; // 重置為全部
-    await loadCustomerOrders(customer.id, 'all');
-    drawerVisible.value = true;
-  };
-
-  // 根據 categoryId 構建 API 參數
-  const buildOrderListParams = (customerId, categoryId = 'all') => {
-    const params = {
-      customerId,
-      page: orderPagination.page,
-      limit: orderPagination.limit,
-    };
-
-    // 只有不是「全部」時才傳遞 categoryId
-    if (categoryId !== 'all') {
-      params.categoryId = categoryId;
-    }
-
-    return params;
-  };
-
-  const loadCustomerOrders = async (customerId, categoryId = 'all') => {
-    mainStore.setLoading(true);
-    const params = buildOrderListParams(customerId, categoryId);
-    const response = await OrderListGet(params);
-    const rawData = response?.data?.data?.data ?? [];
-    const metaInfo = response?.data?.data?.pagination ?? {};
-
-    // 訂單數據轉換
-    orderList.value = Array.isArray(rawData) ? rawData.map(orderResponseDataToList) : [];
-
-    // 更新分頁信息
-    orderPagination.total = metaInfo.total ?? orderList.value.length;
-    orderPagination.page = metaInfo.page ?? orderPagination.page;
-
-    mainStore.setLoading(false);
-  };
-
-  const handleOrderPageChange = async (page) => {
-    orderPagination.page = page;
-    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
-  };
-
-  const handleOrderPageSizeChange = async (size) => {
-    orderPagination.limit = Number(size);
-    orderPagination.page = 1;
-    await loadCustomerOrders(drawerCustomer.value.id, selectedOrderCategory.value);
-  };
-
-  const handleOrderCategoryChange = async (category) => {
-    selectedOrderCategory.value = category;
-    orderPagination.page = 1;
-    await loadCustomerOrders(drawerCustomer.value.id, category);
-  };
-
   return {
     //頁面類型
     isProspect,
@@ -775,7 +759,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
 
     currency,
     getPrimaryContact,
-    findProductById,
     formatDateValue,
     formatWeekDays,
     toggleArrayItem,

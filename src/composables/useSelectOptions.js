@@ -164,6 +164,15 @@ export function useSelectOptions() {
     DELIVERED: t('delivered', '已完成'),
     CANCELLED: t('cancelled', '取消'),
   })); //英文 key → 前端顯示文字
+
+  /** 訂單狀態 Tailwind 顏色 class **/
+  const orderStatusColors = {
+    PENDING: 'bg-yellow-100 text-yellow-800',
+    PROCESSING: 'bg-blue-100 text-blue-800',
+    SHIPPED: 'bg-indigo-100 text-indigo-800',
+    DELIVERED: 'bg-green-100 text-green-800',
+    CANCELLED: 'bg-red-100 text-red-800',
+  }; //訂單狀態顏色
   const targetTypeLabelMap = {
     客戶: 'CUSTOMER',
     廠商: 'VENDOR',
@@ -214,6 +223,7 @@ export function useSelectOptions() {
     //訂單狀態轉換 Map
     orderStatusLabelMap,
     orderStatusDisplayMap,
+    orderStatusColors,
     targetTypeLabelMap,
     paymentMethodLabelMap,
     shipMethodLabelMap,
