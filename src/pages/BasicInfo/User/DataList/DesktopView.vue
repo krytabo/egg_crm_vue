@@ -146,7 +146,7 @@
       <CustomTinyGridColumn field="" :title="t('actions')" :width="150" fixed="right" align="center">
         <template #default="{ row }">
           <div class="flex items-center justify-center gap-2">
-            <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : ''">
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'DELETE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotDelete', '系統管理員無法刪除') : t('delete')">
               <button
                 class="table-button"
                 :disabled="isSystemAdmin(row) && !isDevEnv"
@@ -156,7 +156,7 @@
                 <Trash2 class="size-4 text-rose-500" />
               </button>
             </a-tooltip>
-            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : t('changePassword')">
               <button
                 class="table-button"
                 :disabled="isSystemAdmin(row) && !isDevEnv"
@@ -166,7 +166,7 @@
                 <KeyRound class="size-4 text-amber-500" />
               </button>
             </a-tooltip>
-            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : ''">
+            <a-tooltip v-if="permissionStore.hasPermission('USER', 'UPDATE')" :content="isSystemAdmin(row) && !isDevEnv ? t('systemAdminCannotEdit', '系統管理員無法編輯') : t('edit')">
               <button
                 class="table-button"
                 :disabled="isSystemAdmin(row) && !isDevEnv"
@@ -202,7 +202,7 @@
         <button v-if="fullscreen" class="-ml-8!" @click="fullscreen = false"><Shrink /></button>
       </div>
     </template>
-    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : userPhoto ? 'h-[calc(100vh-370px)]' : 'h-[calc(100vh-470px)]']">
+    <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : userPhoto ? 'h-[calc(100vh-320px)]' : 'h-[calc(100vh-350px)]']">
       <AForm ref="basicFormRef" auto-label-width :model="basicForm" layout="vertical" :rules="basicFormRules">
         <template v-if="userPhoto">
           <div class="relative mx-auto size-27.5 overflow-hidden rounded-[15px] border border-gray-200" @click="basicForm.avatar && openPhoto()">
@@ -220,52 +220,46 @@
           <a-divider class="col-span-2 my-4" />
         </template>
         <div class="grid grid-cols-2 gap-x-3">
-          <AFormItem :label="t('fullName')" field="fullName" :class="editingId ? 'col-span-1' : 'col-span-2'">
+          <AFormItem :label="t('fullName', '姓名')" field="fullName">
             <CustomField v-model="basicForm.fullName" type="input" :placeholder="t('pleaseEnterFullName')" allowClear />
           </AFormItem>
-          <AFormItem v-if="editingId" :label="t('accountStatus')">
-            <a-switch v-model="basicForm.isActive" checked-color="#165dff" unchecked-color="#F53F3F">
-              <template #checked>{{ t('statusActive') }}</template>
-              <template #unchecked>{{ t('statusInactive') }}</template>
-            </a-switch>
-          </AFormItem>
-          <AFormItem :label="t('idNumber')">
-            <CustomField v-model="basicForm.idNumber" type="input" :placeholder="t('pleaseEnter')" allowClear />
-          </AFormItem>
-          <AFormItem :label="t('permissionSetting')" field="role">
-            <InfiniteSelect v-model="basicForm.role" dataSource="roles" :placeholder="t('pleaseSelectPermission')" />
-          </AFormItem>
-          <AFormItem :label="t('jobType')" field="jobType">
-            <CustomField v-model="basicForm.jobType" type="select" :placeholder="t('pleaseSelectJobType')" :options="jobTypeOptions" allowClear />
-          </AFormItem>
-          <!-- 司機專用欄位（僅新增時顯示） -->
-          <template v-if="!isEditing && basicForm.jobType === 'DRIVER'">
-            <AFormItem :label="t('licenseNumber')" field="licenseNumber">
-              <CustomField v-model="basicForm.licenseNumber" type="input" :placeholder="t('pleaseEnterLicenseNumber')" allowClear />
-            </AFormItem>
-            <AFormItem :label="t('licenseExpiry')" field="licenseExpiry">
-              <CustomField v-model="basicForm.licenseExpiry" type="date-picker" :placeholder="t('pleaseSelectDate')" allowClear />
-            </AFormItem>
-          </template>
-          <AFormItem :label="t('phone')">
-            <CustomField v-model="basicForm.phone" type="input" :placeholder="t('pleaseEnter')" allowClear />
-          </AFormItem>
-          <AFormItem :label="t('birthday')">
-            <CustomField v-model="basicForm.birthday" type="date-picker" :placeholder="t('pleaseSelectDate')" allowClear />
-          </AFormItem>
-          <AFormItem :label="t('emailLoginAccount')" field="email">
+          <AFormItem :label="t('emailLoginAccount', '電子信箱')" field="email">
             <AEmailAutocomplete v-model="basicForm.email" :placeholder="t('pleaseEnterEmail')" :display-only="isEditing" />
           </AFormItem>
-          <AFormItem :label="t('address')" class="col-span-2">
-            <CustomField v-model="basicForm.address" type="input" :placeholder="t('pleaseEnterAddress')" allowClear />
+          <AFormItem :label="t('birthday', '生日')">
+            <CustomField v-model="basicForm.birthday" type="date-picker" :placeholder="t('pleaseSelectDate')" allowClear />
           </AFormItem>
-
-          <a-divider class="col-span-2 my-4" />
-
-          <AFormItem :label="t('hireDate')" field="hireDate">
+          <AFormItem :label="t('idNumber', '身分證字號')">
+            <CustomField v-model="basicForm.idNumber" type="input" :placeholder="t('pleaseEnter')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('phone', '電話')">
+            <CustomField v-model="basicForm.phone" type="input" :placeholder="t('pleaseEnter')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('hireDate', '入職日期')" field="hireDate">
             <CustomField v-model="basicForm.hireDate" type="date-picker" :placeholder="t('pleaseSelectDate')" allowClear />
           </AFormItem>
-          <AFormItem v-if="!isEdite" :label="t('password')" field="password">
+          <AFormItem :label="t('address', '地址')" class="col-span-2">
+            <CustomField v-model="basicForm.address" type="input" :placeholder="t('pleaseEnterAddress')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('permissionSetting', '權限設定')" field="role">
+            <InfiniteSelect v-model="basicForm.role" dataSource="roles" :placeholder="t('pleaseSelectPermission')" />
+          </AFormItem>
+          <AFormItem :label="t('jobType', '職務類型')" field="jobType">
+            <CustomField v-model="basicForm.jobType" type="select" :placeholder="t('pleaseSelectJobType')" :options="jobTypeOptions" allowClear />
+          </AFormItem>
+          <!-- 司機專用欄位 -->
+          <template v-if="basicForm.jobType === 'DRIVER'">
+            <AFormItem :label="t('licenseNumber')" field="licenseNumber">
+              <CustomField v-model="basicForm.licenseNumber" type="input" :placeholder="t('pleaseEnterLicenseNumber')" :readonly="isDriverDataLocked" allowClear />
+            </AFormItem>
+            <AFormItem :label="t('licenseExpiry')" field="licenseExpiry">
+              <CustomField v-model="basicForm.licenseExpiry" type="date-picker" :placeholder="t('pleaseSelectDate')" :readonly="isDriverDataLocked" allowClear />
+            </AFormItem>
+
+            <div v-if="isDriverDataLocked" class="bg-rose-50 px-4 py-2 rounded-md text-rose-500 col-span-2">{{ t('driverInfoEditNote') }}</div>
+          </template>
+          <a-divider class="col-span-2 my-4" />
+          <AFormItem v-if="!isEdite" :label="t('password', '密碼')" field="password" class="col-span-2">
             <a-input-password
               v-model="basicForm.password"
               :placeholder="isEdite ? t('resetPasswordHint') : t('passwordMinLengthHint', { length: MIN_PASSWORD_LENGTH })"
@@ -275,12 +269,21 @@
           </AFormItem>
         </div>
       </AForm>
+
+      <AForm ref="basicFormRef" auto-label-width :model="basicForm" layout="horizontal" :rules="basicFormRules">
+        <AFormItem v-if="editingId" :label="t('accountStatus', '狀態')">
+          <a-switch v-model="basicForm.isActive" checked-color="#165dff" unchecked-color="#F53F3F">
+            <template #checked>{{ t('statusActive') }}</template>
+            <template #unchecked>{{ t('statusInactive') }}</template>
+          </a-switch>
+        </AFormItem>
+      </AForm>
     </perfect-scrollbar>
 
     <template #footer>
       <div class="flex flex-1 items-center justify-center gap-2">
-        <a-button size="large" @click="closeDialog">{{ t('cancel') }}</a-button>
-        <Button :disabled="isSaving" @click="saveData" :loading="isSaving">{{ isSaving ? t('saving') : t('save') }}</Button>
+        <a-button @click="closeDialog">{{ t('cancel') }}</a-button>
+        <a-button type="primary" :disabled="isSaving" @click="saveData" :loading="isSaving">{{ isSaving ? t('saving') : t('save') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -316,8 +319,8 @@
 
     <template #footer>
       <div class="flex flex-1 items-center justify-center gap-2">
-        <a-button size="large" @click="closePasswordDialog">{{ t('cancel') }}</a-button>
-        <Button @click="submitChangePassword" :loading="isChangingPassword">{{ isChangingPassword ? t('saving') : t('save') }}</Button>
+        <a-button @click="closePasswordDialog">{{ t('cancel') }}</a-button>
+        <a-button type="primary" @click="submitChangePassword" :loading="isChangingPassword">{{ isChangingPassword ? t('saving') : t('save') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -358,7 +361,7 @@ const isDevEnv = import.meta.env.DEV;
 const isSystemAdmin = (row) => row.role === '系統管理員'; //判斷是否為系統管理員
 
 //＝＝＝＝＝＝＝＝＝ 變更密碼相關 ＝＝＝＝＝＝＝＝＝
-const fullscreen = ref(true);
+const fullscreen = ref(false);
 const passwordDialogVisible = ref(false);
 const isChangingPassword = ref(false);
 const passwordFormRef = ref(null);
@@ -474,6 +477,7 @@ const {
   basicFormRef,
   isEdite,
   isEditing,
+  isDriverDataLocked,
   basicForm,
   basicFormRules,
   openCreateDialog,

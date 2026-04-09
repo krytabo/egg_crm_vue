@@ -1,6 +1,4 @@
 // src/pages/BasicInfo/Driver/DataList/useDataList.js
-// 司機資料列表 - 共用業務邏輯（Desktop / Mobile 共用）
-
 import { computed, reactive, ref } from 'vue';
 import { DriverListGet, DriverCreatePost, DriverUpdatePatch, DriverDeleteById, DriverGetById } from '@/assets/API/Drivers';
 import { useMainStore } from '@/stores/LoadingStore';

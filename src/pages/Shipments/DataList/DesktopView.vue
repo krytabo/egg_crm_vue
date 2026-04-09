@@ -242,7 +242,16 @@
     </a-tabs>
     <!-- 步驟一：選擇商品 -->
     <div v-if="isProject" class="flex flex-col gap-2">
-      <p class="mt-2 text-xs text-gray-500">{{ t('selectedCount', '已選擇') }} {{ selectedProductIndexes.length }} {{ t('products', '個商品') }}</p>
+      <div class="mt-2 flex items-center justify-between">
+        <p class="text-xs text-gray-500">{{ t('selectedCount', '已選擇') }} {{ selectedProductIndexes.length }} {{ t('products', '個商品') }}</p>
+        <div v-if="selectedConvertCustomerName" class="flex flex-col items-end gap-0.5">
+          <p class="text-xs text-blue-600 font-medium"><i class="ri-lock-line mr-1"></i>{{ t('lockedToCustomer', '已鎖定客戶') }}：{{ selectedConvertCustomerName }}</p>
+          <p v-if="selectedConvertProductCategory" class="text-xs text-orange-500 font-medium">
+            <i class="ri-lock-line mr-1"></i>{{ t('lockedToCategory', '已鎖定類別') }}：{{ selectedConvertProductCategory }}
+          </p>
+        </div>
+        <p v-else class="text-xs text-gray-400">{{ t('selectCustomerHint', '請選擇任一商品，將自動鎖定該客戶與類別') }}</p>
+      </div>
       <a-table :data="convertProductList" :bordered="false" :pagination="false" :scroll="{ y: 500 }">
         <template #columns>
           <a-table-column :width="60" align="center">
@@ -250,11 +259,19 @@
               <a-checkbox :model-value="isAllProductsSelected" :indeterminate="isProductsIndeterminate" @change="handleSelectAllProducts" />
             </template>
             <template #cell="{ record }">
-              <a-checkbox :model-value="selectedProductIndexes.includes(record._index)" :disabled="record.isConvertedToOrder" @change="(checked) => handleToggleProduct(record._index, checked)" />
+              <a-checkbox
+                :model-value="selectedProductIndexes.includes(record._index)"
+                :disabled="!isProductSelectableForConvert(record)"
+                @change="(checked) => handleToggleProduct(record._index, checked)"
+              />
             </template>
           </a-table-column>
           <a-table-column :title="t('customer', '對象')" min-width="120">
-            <template #cell="{ record }">{{ record.customer?.name || record.customerName || '—' }}</template>
+            <template #cell="{ record }">
+              <span :class="!isProductSelectableForConvert(record) && !record.isConvertedToOrder ? 'text-gray-300' : ''">
+                {{ record.customer?.name || record.customerName || '—' }}
+              </span>
+            </template>
           </a-table-column>
           <a-table-column :title="t('product', '商品')" min-width="120">
             <template #cell="{ record }">{{ record.product?.name || record.productName || '—' }}</template>
@@ -291,7 +308,8 @@
       <!-- 建立新訂單：選擇產品種類 -->
       <div v-if="convertMode === 'new'" class="flex flex-col gap-2 rounded-[10px] border bg-[#f2f3f5] p-3">
         <AFormItem :label="t('productCategory', '產品種類')" required>
-          <InfiniteSelect v-model="convertCategoryId" emitValue dataSource="productTypes" :placeholder="t('pleaseSelectCategory', '請選擇產品種類')" type="outline" class="w-full" />
+          {{ convertCategoryId }}
+          <InfiniteSelect v-model="convertCategoryId" emitValue dataSource="productTypes" valueKey="code" :placeholder="t('pleaseSelectCategory', '請選擇產品種類')" type="outline" class="w-full" />
         </AFormItem>
       </div>
 
@@ -532,8 +550,8 @@ import { useWindowSize } from '@vueuse/core';
 const { height: windowHeight } = useWindowSize();
 const TableScrollY = computed(() => Math.max(windowHeight.value - 440, 100));
 
-const printFullscreen = ref(false);
-const convertFullscreen = ref(false);
+const printFullscreen = ref(true);
+const convertFullscreen = ref(true);
 const {
   //常數
   statusOptions,
@@ -605,6 +623,10 @@ const {
   handleConvertToOrder,
   closeConvertDialog,
   handleDoConvert,
+  selectedConvertCustomerId,
+  selectedConvertCustomerName,
+  selectedConvertProductCategory,
+  isProductSelectableForConvert,
 
   //搜尋既有訂單
   orderSearchDialogVisible,

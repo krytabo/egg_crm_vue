@@ -67,6 +67,23 @@
           <TinyCustomField type="number" v-model="row.quantity" :min="0" :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
         </template>
       </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="recoveredQuantity" :title="t('recoveredQuantity', '回收數量')" :width="150" align="right">
+        <template #default="{ row, rowIndex }">
+          <TinyCustomField type="number" v-model="row.recoveredQuantity" :min="0" :displayOnly="isReadOnly" @change="() => recalculateStrandedQuantity(rowIndex)" />
+        </template>
+      </CustomTinyGridColumn>
+      <CustomTinyGridColumn field="strandedQuantity" :title="t('strandedQuantity', '滯留數量')" :width="140" align="right">
+        <template #default="{ row }">
+          <div class="flex flex-col items-end">
+            <span :class="row.strandedQuantity > 0 ? 'text-orange-500 font-medium' : 'text-gray-400'">
+              {{ row.strandedQuantity ?? '—' }}
+            </span>
+            <span v-if="row.recoveredQuantity !== row._baseRecovered" class="text-[10px] text-gray-400">
+              {{ t('estimated', '(估算)') }}
+            </span>
+          </div>
+        </template>
+      </CustomTinyGridColumn>
       <CustomTinyGridColumn field="unitPrice" :title="t('unitPrice', '單價')" :width="180" align="right">
         <template #default="{ row, rowIndex }">
           <TinyCustomField type="number" v-model="row.unitPrice" :min="0" :precision="1" thousands :displayOnly="isReadOnly" @change="() => recalculateRow(rowIndex)" />
@@ -260,6 +277,7 @@ const {
   exportFile,
   handleBack,
   recalculateRow,
+  recalculateStrandedQuantity,
   handleCustomerChange,
   handleDeleteRow,
   handleClearAll,

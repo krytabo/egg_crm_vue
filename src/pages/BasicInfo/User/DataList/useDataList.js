@@ -1,6 +1,7 @@
 // src/pages/BasicInfo/User/DataList/useDataList.js
 import { computed, reactive, ref } from 'vue';
 import { UserListGet, UserCreatePost, UserUpdatePatch, UserDeleteById, UserGetByID } from '@/assets/API/User';
+import { DriverListGet } from '@/assets/API/Drivers';
 import { dataList } from '@/assets/API/api';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
@@ -151,6 +152,7 @@ export function useDataList(t, showMessage = () => {}) {
   const dialogVisible = ref(false);
   const isSaving = ref(false);
   const basicFormRef = ref(null);
+  const isDriverDataLocked = ref(false);
   const isCreate = computed(() => dialogMode.value === 'create');
   const isEdite = computed(() => dialogMode.value === 'edit');
   const isEditing = computed(() => Boolean(editingId.value));
@@ -200,7 +202,7 @@ export function useDataList(t, showMessage = () => {}) {
     const requirePassword = !isEditing.value;
     const requireIdentity = !isEditing.value;
     const isDriver = basicForm.value.jobType === 'DRIVER';
-    const requireDriverFields = !isEditing.value && isDriver;
+    const requireDriverFields = isDriver && !isDriverDataLocked.value;
 
     return {
       fullName: [{ required: true, message: t('fullNameRequired'), trigger: 'blur' }],
@@ -208,7 +210,7 @@ export function useDataList(t, showMessage = () => {}) {
       email: [...(requireIdentity ? [{ required: true, message: t('emailRequired'), trigger: ['blur', 'change'] }] : []), { validator: emailValidator, trigger: ['blur', 'change'] }],
       role: [{ required: true, message: t('roleRequired'), trigger: 'change' }],
       hireDate: [{ required: true, message: t('pleaseSelect'), trigger: 'change' }],
-      password: [{ validator: passwordValidator(requirePassword), trigger: 'blur' }],
+      password: [{ required: true, validator: passwordValidator(requirePassword), trigger: 'blur' }],
       jobType: [{ required: true, message: t('jobTypeRequired'), trigger: 'change' }],
       licenseNumber: [...(requireDriverFields ? [{ required: true, message: t('licenseNumberRequired'), trigger: 'blur' }] : [])],
       licenseExpiry: [...(requireDriverFields ? [{ required: true, message: t('licenseExpiryRequired'), trigger: 'change' }] : [])],
@@ -252,20 +254,35 @@ export function useDataList(t, showMessage = () => {}) {
   const openCreateDialog = () => {
     dialogMode.value = 'create';
     editingId.value = null;
+    isDriverDataLocked.value = false;
     resetForm();
     dialogVisible.value = true;
   };
-  const editData = (employee) => {
+  const editData = async (employee) => {
     if (!employee?.id) return;
     dialogMode.value = 'edit';
     editingId.value = employee.id;
     getDataInfo(employee.raw || employee);
     dialogVisible.value = true;
-    getData(employee.id);
+    await getData(employee.id);
+    if (employee.jobType === 'DRIVER') {
+      try {
+        const driverRes = await DriverListGet({ page: 1, limit: 10, search: employee.email });
+        const driverDetail = driverRes?.data?.data?.data?.[0];
+        if (driverDetail) {
+          basicForm.value.licenseExpiry = driverDetail.licenseExpiry ?? '';
+          basicForm.value.licenseNumber = driverDetail.licenseNumber ?? '';
+          isDriverDataLocked.value = true;
+        }
+      } catch (_) {
+        // 若查無司機資料則忽略，不影響基本資料的編輯
+      }
+    }
   };
   const closeDialog = () => {
     isSaving.value = false;
     dialogVisible.value = false;
+    isDriverDataLocked.value = false;
     basicFormRef.value?.clearValidate?.();
   };
   const generateDriverEmployeeId = (email) => {
@@ -289,15 +306,15 @@ export function useDataList(t, showMessage = () => {}) {
     if (!isUpdate) {
       payload.email = formState.email?.trim();
       payload.password = formState.password;
+    }
 
-      //新增時，若為司機則加入 driverInfo
-      if (formState.jobType === 'DRIVER') {
-        payload.driverInfo = {
-          employeeId: generateDriverEmployeeId(formState.email),
-          licenseNumber: formState.licenseNumber?.trim() || '',
-          licenseExpiry: formState.licenseExpiry || null,
-        };
-      }
+    //職務類型等於司機時，帶入司機專用欄位
+    if (formState.jobType === 'DRIVER') {
+      payload.driverInfo = {
+        employeeId: generateDriverEmployeeId(formState.email),
+        licenseNumber: formState.licenseNumber?.trim() || '',
+        licenseExpiry: formState.licenseExpiry || null,
+      };
     }
 
     if (isUpdate) {
@@ -438,6 +455,7 @@ export function useDataList(t, showMessage = () => {}) {
     isCreate,
     isEdite,
     isEditing,
+    isDriverDataLocked,
     basicForm,
     basicFormRules,
     resetForm,

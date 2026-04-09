@@ -71,7 +71,7 @@
       </a-table-column>
 
       <!-- 數量（可編輯） -->
-      <a-table-column :title="props.quantityTitle || t('quantity', '數量')" data-index="selectedQuantity" :width="150" align="center" fixed="right">
+      <a-table-column :title="props.quantityTitle || t('quantity', '數量')" data-index="selectedQuantity" :width="props.readonly ? 100 : 160" align="center" fixed="right">
         <template #cell="{ record, rowIndex }">
           <CustomField
             type="number"
@@ -91,7 +91,7 @@
       </a-table-column>
 
       <!-- 實際單價（可編輯） -->
-      <a-table-column v-if="showUnitPrice" :title="t('actualUnitPrice', '實際單價')" data-index="customPrice" :width="160" align="right" fixed="right">
+      <a-table-column v-if="showUnitPrice" :title="t('actualUnitPrice', '實際單價')" data-index="customPrice" :width="props.readonly ? 100 : 160" align="right" fixed="right">
         <template #cell="{ record }">
           <CustomField
             type="number"
@@ -106,7 +106,7 @@
       </a-table-column>
 
       <!-- 小計（只讀） -->
-      <a-table-column v-if="showUnitPrice" :title="t('subtotal', '小計')" data-index="subtotal" :width="130" align="right" fixed="right">
+      <a-table-column v-if="showUnitPrice" :title="t('subtotal', '小計')" data-index="subtotal" :width="100" align="right" fixed="right">
         <template #cell="{ record }">
           <div class="font-medium">
             {{ formatCurrency((customPrices[record.id] ?? getProductPrice(record)) * (selectedItems[record.id] || 0)) }}
@@ -115,17 +115,19 @@
       </a-table-column>
 
       <!-- 自訂額外欄位 -->
-      <a-table-column v-for="col in props.extraColumns" :key="col.key" :title="col.title" :width="col.width || 120" :align="col.align || 'left'" :fixed="col.fixed || null">
+      <a-table-column v-for="col in props.extraColumns" :key="col.key" :title="col.title" :width="col.width" :align="col.align || 'left'" :fixed="col.fixed || null">
         <template #cell="{ record }">
           <CustomField
             v-if="!props.readonly && col.editable !== false && (!col.showWhen || col.showWhen(record))"
             :type="col.type || 'input'"
-            :model-value="record[col.key] || ''"
+            :model-value="extraFields[record.id]?.[col.key] ?? record[col.key] ?? (col.type === 'number' ? 0 : '')"
+            :min="col.min ?? 0"
             :readonly="props.readonly"
             @update:model-value="(val) => updateExtraField(record.id, col.key, val)"
           />
           <template v-else>
-            {{ record[col.key] || '-' }}
+            <template v-if="col.getValue">{{ col.getValue(record) }}</template>
+            <template v-else>{{ extraFields[record.id]?.[col.key] ?? record[col.key] ?? '-' }}</template>
           </template>
         </template>
       </a-table-column>
@@ -209,8 +211,14 @@ const props = defineProps({
     //   width: 120,                  // 欄位寬度（可選）
     //   type: 'input'|'date-picker', // 欄位類型（可選，預設 input）
     //   editable: true,              // 是否可編輯（可選，預設 true）
-    //   showWhen: (item) => true     // 條件函數（可選，何時顯示該欄位）
+    //   showWhen: (item) => true,    // 條件函數（可選，何時顯示該欄位）
+    //   getValue: (record) => any,   // 自訂取值函數（可選，取代 record[col.key]）
     // }
+  },
+  // 自訂列樣式函數（(record) => className string）
+  extraRowClass: {
+    type: Function,
+    default: null,
   },
 });
 const emit = defineEmits(['update:modelValue']);
@@ -340,7 +348,13 @@ const hasCustomPrice = (product) => {
 };
 
 const getRowClass = (record) => {
-  return hasCustomPrice(record) ? 'custom-price-row' : '';
+  const classes = [];
+  if (hasCustomPrice(record)) classes.push('custom-price-row');
+  if (props.extraRowClass) {
+    const extra = props.extraRowClass(record);
+    if (extra) classes.push(extra);
+  }
+  return classes.join(' ');
 };
 
 // 格式化貨幣
@@ -479,6 +493,14 @@ defineExpose({
 
 .products-table :deep(.custom-price-row:hover td) {
   background-color: #fff3cc !important;
+}
+
+.products-table :deep(.deposit-row-positive td) {
+  color: #389e0d !important;
+}
+
+.products-table :deep(.deposit-row-negative td) {
+  color: #cf1322 !important;
 }
 
 .products-table .arco-table-hover:not(.arco-table-dragging) .arco-table-tr:not(.arco-table-tr-empty):not(.arco-table-tr-summary):hover .arco-table-td.arco-table-col-fixed-left::before,

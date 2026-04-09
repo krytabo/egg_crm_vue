@@ -186,7 +186,10 @@
   "depositNote": "Quantity and amount can be filled in either or both. When shipping orders, the system will deduct quantity first, then amount.",
   "depositQuantity": "Deposit Quantity",
   "depositAmount": "Deposit Amount",
+  "totalDepositQuantity": "Total Deposit Quantity",
+  "totalDepositAmount": "Total Deposit Amount",
   "remainingQuantity": "Remaining Qty",
   "remainingDepositAmount": "Remaining Amount",
-  "optional": "Optional"
+  "optional": "Optional",
+  "orderInfo": "Order Info"
 }

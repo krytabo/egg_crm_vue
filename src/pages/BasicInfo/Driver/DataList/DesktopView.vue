@@ -107,8 +107,8 @@
       <CustomTinyGridColumn field="" title="操作" :width="120" fixed="right" align="center">
         <template #default="{ row }">
           <div class="flex items-center justify-center gap-2">
-            <button class="table-button" @click="deleteData(row.id)">刪除</button>
-            <button class="table-button" @click="editData(row)">編輯</button>
+            <a-button status="danger" type="text" class="px-0!" @click="deleteData(row.id)">刪除</a-button>
+            <a-button type="text" class="px-0!" @click="editData(row)">編輯</a-button>
           </div>
         </template>
       </CustomTinyGridColumn>
@@ -134,18 +134,13 @@
     </template>
     <perfect-scrollbar :class="[fullscreen ? 'h-[calc(100vh-120px)]' : 'h-[calc(100vh-370px)]']">
       <AForm ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width layout="vertical">
-        <div class="mb-3 text-sm font-semibold text-gray-700">{{ t('basicInfo', '基本資料') }}</div>
-        <div class="grid gap-4 md:grid-cols-2">
-          <AFormItem :label="t('employeeId', '員工編號')" field="employeeId">
+        <div class="grid gap-4 grid-cols-2">
+          <!--<AFormItem :label="t('employeeId', '員工編號')" field="employeeId">
             <CustomField v-model="basicForm.employeeId" type="input" :placeholder="t('enterEmployeeId', '輸入員工編號')" allowClear />
-          </AFormItem>
+          </AFormItem>-->
           <AFormItem :label="t('fullName', '姓名')" field="fullName">
             <CustomField v-model="basicForm.fullName" type="input" :placeholder="t('enterName', '輸入姓名')" allowClear :disabled="isEdite" />
           </AFormItem>
-        </div>
-
-        <div class="mb-3 text-sm font-semibold text-gray-700">{{ t('licenseInfo', '駕照與任職資訊') }}</div>
-        <div class="grid gap-4 md:grid-cols-3">
           <AFormItem :label="t('licenseNumber', '駕照號碼')" field="licenseNumber">
             <CustomField v-model="basicForm.licenseNumber" type="input" :placeholder="t('enterLicenseNumber', '輸入駕照號碼')" allowClear />
           </AFormItem>
@@ -155,34 +150,28 @@
           <AFormItem :label="t('hireDate', '入職日期')" field="hireDate">
             <CustomField v-model="basicForm.hireDate" type="date-picker" :placeholder="t('selectHireDate', '選擇入職日期')" :disabled="isEdite" />
           </AFormItem>
-        </div>
-
-        <div class="mb-3 text-sm font-semibold text-gray-700">{{ t('contactInfo', '聯絡資訊') }}</div>
-        <div class="grid gap-4 md:grid-cols-2">
           <AFormItem :label="t('phone', '電話')">
             <CustomField v-model="basicForm.phone" type="input" :placeholder="t('enterPhone', '輸入電話')" allowClear :disabled="isEdite" />
           </AFormItem>
           <AFormItem :label="t('email', '電子郵件')">
             <CustomField v-model="basicForm.email" type="email" :placeholder="t('enterEmail', '輸入電子郵件')" allowClear :disabled="isEdite" />
           </AFormItem>
+          <AFormItem :label="t('address', '地址')" class="col-span-2">
+            <CustomField v-model="basicForm.address" type="input" :placeholder="t('enterAddress', '輸入地址')" allowClear :disabled="isEdite" />
+          </AFormItem>
+          <AFormItem :label="t('notes', '備註')" class="col-span-2">
+            <CustomField v-model="basicForm.notes" type="textarea" :rows="3" :placeholder="t('enterNotes', '輸入備註')" allowClear />
+          </AFormItem>
+          <AFormItem :label="t('status', '狀態')" class="col-span-2">
+            <CustomField v-model="basicForm.status" type="select" :options="statusSelectOptions" readonly />
+          </AFormItem>
         </div>
-        <AFormItem :label="t('address', '地址')">
-          <CustomField v-model="basicForm.address" type="input" :placeholder="t('enterAddress', '輸入地址')" allowClear :disabled="isEdite" />
-        </AFormItem>
-
-        <AFormItem :label="t('notes', '備註')">
-          <CustomField v-model="basicForm.notes" type="textarea" :rows="3" :placeholder="t('enterNotes', '輸入備註')" allowClear />
-        </AFormItem>
-
-        <AFormItem :label="t('status', '狀態')">
-          <CustomField v-model="basicForm.status" type="select" :options="statusSelectOptions" />
-        </AFormItem>
       </AForm>
     </perfect-scrollbar>
     <template #footer>
       <div class="flex flex-1 items-center justify-center gap-2">
-        <a-button size="large" @click="closeDialog">{{ t('cancel', '取消') }}</a-button>
-        <Button :disabled="isSaving" @click="saveData" :loading="isSaving">{{ isSaving ? t('saving', '儲存中...') : t('save', '儲存') }}</Button>
+        <a-button @click="closeDialog">{{ t('cancel', '取消') }}</a-button>
+        <a-button type="primary" :disabled="isSaving" @click="saveData" :loading="isSaving">{{ isSaving ? t('saving', '儲存中...') : t('save', '儲存') }}</a-button>
       </div>
     </template>
   </a-modal>
@@ -206,7 +195,7 @@ import { Expand, Shrink } from 'lucide-vue-next';
 const systemStore = useSystemStore();
 const { containerRef } = useContentWidth();
 const { t } = useI18n();
-const fullscreen = ref(true);
+const fullscreen = ref(false);
 
 /** Table高度 **/
 import { useWindowSize } from '@vueuse/core';

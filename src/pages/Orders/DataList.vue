@@ -35,14 +35,14 @@
     <!--＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝-->
     <CustomTinyGrid ref="orderGridRef" :data="basicDataList" :height="TableScrollY" :border="true" row-key="id">
       <CustomTinyGridColumn field="" type="selection" title="" :width="50" />
-      <CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="220">
+      <!--<CustomTinyGridColumn field="orderNumber" :title="t('orderNumber', '訂單編號')" :width="220">
         <template #header>
           <div class="flex flex-col gap-1">
             <span class="text-[16px] text-[#111827]">{{ t('orderNumber', '訂單編號') }}</span>
             <TinyInput v-model="filters.orderNumber" :placeholder="t('pleaseEnter', '請輸入')" class="h-8 text-xs" clearable @keyup.enter="handleGlobalSearch" @clear="handleGlobalSearch" />
           </div>
         </template>
-      </CustomTinyGridColumn>
+      </CustomTinyGridColumn>-->
       <CustomTinyGridColumn v-if="isCustomer" field="targetName" :title="t('customer', '客戶')" :width="220">
         <template #header>
           <div class="flex w-full flex-col gap-1">
@@ -152,11 +152,11 @@
     </template>
 
     <a-form ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width>
-      <div class="grid grid-cols-3 gap-2">
-        <div class="flex gap-2 flex-col">
+      <div class="grid grid-cols-7 gap-2 h-[calc(100vh-165px)]!">
+        <div class="flex gap-2 flex-col col-span-2">
           <!-- 基本資訊區塊 -->
           <div class="form-section">
-            <div class="section-title">{{ t('orderBasicInfo', '訂單基本資訊') }}</div>
+            <!--<div class="section-title">{{ t('orderBasicInfo', '訂單基本資訊') }}</div>-->
 
             <a-form-item v-if="showAllCategories" :label="t('productCategory', '商品種類')" field="categoryCode">
               <CustomField type="select" v-model="basicForm.categoryCode" :options="categoryOptions" :readonly="!canModifyTarget" @change="handleCategoryChange" />
@@ -216,7 +216,7 @@
             </a-form-item>
 
             <div class="amount-section">
-              <div v-if="!isReadOnly" class="amount-inputs">
+              <div v-if="!isReadOnly">
                 <a-form-item :label="t('discount', '折扣')" field="discountAmount" class="mb-2">
                   <a-input-number v-model="basicForm.discountAmount" :min="0" :disabled="isReadOnly" class="w-full" hide-button />
                 </a-form-item>
@@ -243,9 +243,9 @@
         </div>
 
         <!-- 訂單明細區塊 -->
-        <div class="form-section col-span-2">
+        <div class="form-section col-span-5">
           <div class="section-header">
-            <div class="section-title">{{ t('orderItems', '訂單明細') }}</div>
+            <!--<div class="section-title">{{ t('orderItems', '訂單明細') }}</div>-->
 
             <a-form-item v-if="isEdite" :label="t('status', '狀態')" field="status" class="w-75!">
               <a-select v-model="basicForm.status" :options="editableStatusOptions" :disabled="isReadOnly" class="w-75" />
@@ -256,11 +256,16 @@
             ref="productSelectionTableRef"
             v-model="basicForm.items"
             showUnitPrice
-            :visible-columns="['name', 'unit', 'basePriceAmount', 'tags', 'primaryVendor', 'isPerishable']"
+            :visible-columns="['name', 'basePriceAmount']"
             :target-object="basicForm.targetId"
             :readonly="!canModifyItems || isReadOnly"
             :category-id="props.categoryId"
             :fullscreen="fullscreen"
+            :extra-columns="[
+              ...depositExtraColumns,
+              { key: 'recoveredQuantity', title: t('recoveredQuantity', '回收數量'), type: 'number', width: isReadOnly ? 100 : 160, align: 'center', fixed: 'right', min: 0 },
+            ]"
+            :extra-row-class="depositRowClass"
           />
         </div>
       </div>
@@ -306,6 +311,7 @@ import { endOfDay } from 'date-fns';
 import { usePermissionStore } from '@/stores/PermissionStore';
 import { useSelectOptions } from '@/composables/useSelectOptions';
 import { CATEGORIES, getCategoryIdByCode } from '@/constants/categories';
+import { CustomersStoredGetByID } from '@/assets/API/Customers';
 
 /** Table高度相關 **/
 import { useWindowSize } from '@vueuse/core';
@@ -458,10 +464,15 @@ const responseDataToList = (item = {}) => {
 }; //列表資料轉換
 const wrappedOrdersListGet = (params) => {
   const processedParams = { ...params };
-  if (props.categoryCode) {
+  /*if (props.categoryCode) {
     processedParams.categoryCode = props.categoryCode;
   } else {
     delete processedParams.categoryCode;
+  }*/
+  if (props.categoryId) {
+    processedParams.categoryId = props.categoryId;
+  } else {
+    delete processedParams.categoryId;
   }
 
   if (processedParams.status && statusFilterMap[processedParams.status]) {
@@ -589,9 +600,92 @@ const changeTarget = (item, type = 'customer') => {
   if (type === 'customer') {
     basicForm.value.contact = item.customFields?.contacts?.find((c) => c.isPrimary)?.name ?? '';
     basicForm.value.notes = item.notes || '';
+    fetchDeposits(item?.id);
   }
   basicForm.value.phone = item.contactInfo?.phone;
 }; //選擇對象變更
+
+// 儲值狀況
+const depositMap = ref({});
+const fetchDeposits = async (customerId) => {
+  if (!customerId) {
+    depositMap.value = {};
+    return;
+  }
+  try {
+    const res = await CustomersStoredGetByID(customerId, { limit: 100 });
+    const list = res?.data?.data?.data ?? [];
+    const map = {};
+    list.forEach((item) => {
+      if (item.productId) {
+        map[item.productId] = {
+          remainingQuantity: item.remainingQuantity ?? 0,
+          remainingAmount: item.remainingAmount ?? 0,
+        };
+      }
+    });
+    depositMap.value = map;
+  } catch {
+    depositMap.value = {};
+  }
+};
+const depositExtraColumns = computed(() => {
+  if (!Object.keys(depositMap.value).length) return [];
+  return [
+    {
+      key: 'depositStatus',
+      title: t('depositStatus', '儲值狀況'),
+      width: 150,
+      align: 'center',
+      editable: false,
+      getValue: (record) => {
+        const result = calcDepositAfterOrder(record);
+        if (!result) return '-';
+        return `${result.remainingQuantity} 桶 / $${result.remainingAmount}`;
+      },
+    },
+  ];
+});
+const depositRowClass = (record) => {
+  const result = calcDepositAfterOrder(record);
+  if (!result) return '';
+  if (result.remainingQuantity > 0 || result.remainingAmount > 0) return 'deposit-row-positive'; // 還有數量或金額 → 綠
+  if (result.remainingQuantity < 0) return 'deposit-row-negative'; // 超用 → 紅
+  return ''; // 兩者都歸零
+};
+
+// 即時計算下單後的剩餘儲值狀況
+// 優先扣數量，數量扣完用金額補（floor 除法），金額補不夠才讓數量變負數
+const calcDepositAfterOrder = (record) => {
+  const deposit = depositMap.value[record.id];
+  if (!deposit) return null;
+
+  const orderedItem = basicForm.value.items.find((i) => i.productId === record.id);
+  const orderedQty = Number(orderedItem?.quantity ?? 0);
+
+  let newQty = deposit.remainingQuantity - orderedQty;
+  let newAmt = deposit.remainingAmount;
+
+  if (newQty < 0) {
+    const customPrices = basicForm.value.targetId?.customFields?.customPrices ?? [];
+    const customPrice = customPrices.find((cp) => {
+      const cpProductId = typeof cp.product === 'object' ? cp.product?.id : cp.productId;
+      return cpProductId === record.id;
+    });
+    const unitPrice = Number(customPrice?.amount ?? customPrice?.priceAmount ?? record.basePriceAmount ?? 0);
+
+    if (unitPrice > 0) {
+      const overflow = -newQty;
+      const bottlesCoveredByAmt = Math.floor(deposit.remainingAmount / unitPrice);
+      const covered = Math.min(overflow, bottlesCoveredByAmt);
+      const uncovered = overflow - covered;
+      newAmt = deposit.remainingAmount - covered * unitPrice;
+      newQty = uncovered > 0 ? -uncovered : 0;
+    }
+  }
+
+  return { remainingQuantity: newQty, remainingAmount: Math.round(newAmt) };
+};
 const changeProduct = (product, index) => {
   if (!product || index === null || index === undefined) return;
   const row = basicForm.value.items?.[index];
@@ -633,6 +727,7 @@ const addItem = () => {
     quantity: 1,
     unitPrice: { amount: 0, currency: 'TWD' },
     total: 0,
+    recoveredQuantity: 0,
   });
 }; //新增訂單項目
 const removeItem = (index) => {
@@ -696,6 +791,7 @@ const closeDialog = () => {
   isSaving.value = false;
   dialogVisible.value = false;
   basicFormRef.value?.clearValidate();
+  depositMap.value = {};
 }; //關閉彈窗
 const isUUID = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value); //檢查 UUID
 const extractUUID = (obj) => {
@@ -722,6 +818,7 @@ const preparePayload = () => {
       productId: extractUUID(item.productId), //商品ID
       quantity: Number(item.quantity), //數量
       unitPrice: item.unitPrice?.amount ? { amount: Number(item.unitPrice.amount), currency: 'TWD' } : undefined, //金額
+      recoveredQuantity: Number(item.recoveredQuantity ?? 0), //回收數量
     })), //商品明細
   };
 
@@ -907,6 +1004,7 @@ watch(
             basePriceAmount,
             unitPrice: { amount: unitPriceAmount, currency: item.unitPrice?.currency || 'TWD' },
             total: unitPriceAmount * quantity,
+            recoveredQuantity: Number(item.recoveredQuantity ?? 0),
           };
         });
 
@@ -929,6 +1027,7 @@ watch(
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   padding: 16px;
+  height: 100%;
 }
 
 .section-title {

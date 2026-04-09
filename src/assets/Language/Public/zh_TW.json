@@ -801,5 +801,6 @@
   "totalCustomers": "客戶總數",
   "totalOrders": "總訂單數",
   "totalRevenue": "總營收",
-  "customerName": "客戶名稱"
+  "customerName": "客戶名稱",
+  "driverInfoEditNote": "如需修改司機相關資訊請至「基本資料」→「司機資料」中進行編輯"
 }

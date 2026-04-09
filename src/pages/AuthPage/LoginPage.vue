@@ -26,6 +26,7 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { usePermissionStore } from '@/stores/PermissionStore';
 import Notify from '@opentiny/vue-notify';
 import { setToken, setUserInfo, getErrorMessage, getRememberedCredentials, setRememberedCredentials, clearRememberedCredentials, getRememberStatus, setRememberStatus } from '@/utils/auth';
+import { initCategoryIds } from '@/constants/categories';
 
 const mainStore = useMainStore();
 const permissionStore = usePermissionStore();
@@ -122,6 +123,8 @@ const handleLogin = async () => {
       title: '登入成功',
       message: `歡迎回來，${displayName}`,
     });
+
+    initCategoryIds(); // 登入後取得商品類別 ID（App.vue 不會重新 mount）
 
     // 處理登入後重定向
     const redirectParam = route.query.redirect;
