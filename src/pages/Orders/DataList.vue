@@ -600,6 +600,7 @@ const changeTarget = (item, type = 'customer') => {
   if (type === 'customer') {
     basicForm.value.contact = item.customFields?.contacts?.find((c) => c.isPrimary)?.name ?? '';
     basicForm.value.notes = item.notes || '';
+    originalQtyMap.value = {}; // 新訂單選客戶，無原始數量基準
     fetchDeposits(item?.id);
   }
   basicForm.value.phone = item.contactInfo?.phone;
@@ -607,6 +608,9 @@ const changeTarget = (item, type = 'customer') => {
 
 // 儲值狀況
 const depositMap = ref({});
+// 記錄打開訂單時各商品的「原始數量」，用來計算 delta（只有 delta 不為 0 才做預覽計算）
+const originalQtyMap = ref({});
+
 const fetchDeposits = async (customerId) => {
   if (!customerId) {
     depositMap.value = {};
@@ -629,6 +633,47 @@ const fetchDeposits = async (customerId) => {
     depositMap.value = {};
   }
 };
+
+// 根據 record 取得「顯示用」的剩餘儲值狀況：
+//   - 使用者沒有改過數量 → 直接顯示 API 原始數據（後端每次儲存後都會更新）
+//   - 使用者改了數量 → 以 API 原始數據為基礎，加減 delta 做即時預覽
+const getDepositDisplay = (record) => {
+  const deposit = depositMap.value[record.id];
+  if (!deposit) return null;
+
+  const orderedItem = basicForm.value.items.find((i) => i.productId === record.id);
+  const orderedQty = Number(orderedItem?.quantity ?? 0);
+  const originalQty = Number(originalQtyMap.value[record.id] ?? 0);
+  const delta = orderedQty - originalQty;
+
+  // 沒有改過數量，直接顯示 API 原始值
+  if (delta === 0) {
+    return { remainingQuantity: deposit.remainingQuantity, remainingAmount: deposit.remainingAmount };
+  }
+
+  // 使用者改了數量，以 API 原始值 + delta 做預覽計算
+  const customPrices = basicForm.value.targetId?.customFields?.customPrices ?? [];
+  const customPrice = customPrices.find((cp) => {
+    const cpProductId = typeof cp.product === 'object' ? cp.product?.id : cp.productId;
+    return cpProductId === record.id;
+  });
+  const unitPrice = Number(customPrice?.amount ?? customPrice?.priceAmount ?? record.basePriceAmount ?? 0);
+
+  let newQty = deposit.remainingQuantity - delta;
+  let newAmt = deposit.remainingAmount;
+
+  if (newQty < 0 && unitPrice > 0) {
+    const overflow = -newQty;
+    const bottlesCoveredByAmt = Math.floor(deposit.remainingAmount / unitPrice);
+    const covered = Math.min(overflow, bottlesCoveredByAmt);
+    const uncovered = overflow - covered;
+    newAmt = deposit.remainingAmount - covered * unitPrice;
+    newQty = uncovered > 0 ? -uncovered : 0;
+  }
+
+  return { remainingQuantity: newQty, remainingAmount: Math.round(newAmt) };
+};
+
 const depositExtraColumns = computed(() => {
   if (!Object.keys(depositMap.value).length) return [];
   return [
@@ -639,7 +684,7 @@ const depositExtraColumns = computed(() => {
       align: 'center',
       editable: false,
       getValue: (record) => {
-        const result = calcDepositAfterOrder(record);
+        const result = getDepositDisplay(record);
         if (!result) return '-';
         return `${result.remainingQuantity} 桶 / $${result.remainingAmount}`;
       },
@@ -647,44 +692,11 @@ const depositExtraColumns = computed(() => {
   ];
 });
 const depositRowClass = (record) => {
-  const result = calcDepositAfterOrder(record);
+  const result = getDepositDisplay(record);
   if (!result) return '';
-  if (result.remainingQuantity > 0 || result.remainingAmount > 0) return 'deposit-row-positive'; // 還有數量或金額 → 綠
-  if (result.remainingQuantity < 0) return 'deposit-row-negative'; // 超用 → 紅
-  return ''; // 兩者都歸零
-};
-
-// 即時計算下單後的剩餘儲值狀況
-// 優先扣數量，數量扣完用金額補（floor 除法），金額補不夠才讓數量變負數
-const calcDepositAfterOrder = (record) => {
-  const deposit = depositMap.value[record.id];
-  if (!deposit) return null;
-
-  const orderedItem = basicForm.value.items.find((i) => i.productId === record.id);
-  const orderedQty = Number(orderedItem?.quantity ?? 0);
-
-  let newQty = deposit.remainingQuantity - orderedQty;
-  let newAmt = deposit.remainingAmount;
-
-  if (newQty < 0) {
-    const customPrices = basicForm.value.targetId?.customFields?.customPrices ?? [];
-    const customPrice = customPrices.find((cp) => {
-      const cpProductId = typeof cp.product === 'object' ? cp.product?.id : cp.productId;
-      return cpProductId === record.id;
-    });
-    const unitPrice = Number(customPrice?.amount ?? customPrice?.priceAmount ?? record.basePriceAmount ?? 0);
-
-    if (unitPrice > 0) {
-      const overflow = -newQty;
-      const bottlesCoveredByAmt = Math.floor(deposit.remainingAmount / unitPrice);
-      const covered = Math.min(overflow, bottlesCoveredByAmt);
-      const uncovered = overflow - covered;
-      newAmt = deposit.remainingAmount - covered * unitPrice;
-      newQty = uncovered > 0 ? -uncovered : 0;
-    }
-  }
-
-  return { remainingQuantity: newQty, remainingAmount: Math.round(newAmt) };
+  if (result.remainingQuantity > 0 || result.remainingAmount > 0) return 'deposit-row-positive';
+  if (result.remainingQuantity < 0) return 'deposit-row-negative';
+  return '';
 };
 const changeProduct = (product, index) => {
   if (!product || index === null || index === undefined) return;
@@ -781,6 +793,11 @@ const editData = async (row) => {
       status: statusKey,
     };
     dialogVisible.value = true;
+
+    // 編輯既有訂單時，若對象是客戶，自動載入儲值狀況
+    if (targetTypeValue === 'CUSTOMER' && orderData.targetId) {
+      fetchDeposits(orderData.targetId);
+    }
   } catch (error) {
     await mainStore.SWAL_Error(error);
   } finally {
@@ -792,6 +809,7 @@ const closeDialog = () => {
   dialogVisible.value = false;
   basicFormRef.value?.clearValidate();
   depositMap.value = {};
+  originalQtyMap.value = {};
 }; //關閉彈窗
 const isUUID = (value) => typeof value === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value); //檢查 UUID
 const extractUUID = (obj) => {
@@ -1009,6 +1027,10 @@ watch(
         });
 
         basicForm.value.items = items;
+        // 記錄原始數量，作為儲值預覽計算的基準
+        const qtySnapshot = {};
+        items.forEach((item) => { if (item.productId) qtySnapshot[item.productId] = item.quantity; });
+        originalQtyMap.value = qtySnapshot;
         editingOrderProducts.value = [];
       }
     }
