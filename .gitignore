@@ -16,6 +16,9 @@ build/
 .env.production
 .env.*.local
 
+# Vercel CLI local state
+.vercel
+
 # IDE
 .vscode/
 .idea/
