@@ -23,6 +23,8 @@
     "lodash.merge": "^4.6.2",
     "lucide": "^0.557.0",
     "lucide-vue-next": "^0.556.0",
+    "markdown-it": "^14.1.1",
+    "mermaid": "^11.13.0",
     "pinia": "^3.0.4",
     "prettier": "^3.7.4",
     "prettier-plugin-tailwindcss": "^0.7.2",
