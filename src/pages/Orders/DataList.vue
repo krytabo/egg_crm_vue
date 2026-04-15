@@ -151,6 +151,7 @@
       </div>
     </template>
 
+    <!--<JsonViewer :value="basicForm" boxed copyable />-->
     <a-form ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width>
       <div class="grid grid-cols-7 gap-2 h-[calc(100vh-165px)]!">
         <div class="flex gap-2 flex-col col-span-2">
@@ -191,6 +192,9 @@
             </a-form-item>
             <a-form-item :label="t('phone', '電話')" field="phone">
               <a-input v-model="basicForm.phone" :placeholder="t('pleaseEnter', '請輸入')" :readonly="isReadOnly" />
+            </a-form-item>
+            <a-form-item :label="t('address', '地址')">
+              <a-input v-model="basicForm.shippingAddress" :placeholder="t('pleaseEnter', '請輸入')" :readonly="isReadOnly" />
             </a-form-item>
             <a-form-item :label="t('orderDate', '訂單日期')" field="orderDate">
               <a-date-picker v-model="basicForm.orderDate" :disabled="!canModifyItems" class="w-full" />
@@ -284,7 +288,8 @@
 
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
-import { OrderCreatePost, OrderDeleteById, OrderGetByID, OrderListGet, OrderUpdatePatch, OrderStatusUpdatePatch } from '@/assets/API/Order';
+import { OrderCreatePost, OrderDeleteById, OrderGetByID, OrderListGet, OrderStatusUpdatePatch, OrderUpdatePatch } from '@/assets/API/Order';
+import { CustomersStoredGetByID } from '@/assets/API/Customers';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import CustomForm from '@/components/Form/CustomForm.vue';
@@ -294,29 +299,24 @@ import ProductSelectionTable from '@/components/ProductTable/ProductSelectionTab
 import OrderPrintSlip from '@/components/dialogs/OrderPrintSlip.vue';
 import WaterTriplicateSlip from '@/components/dialogs/WaterTriplicateSlip.vue';
 import EggTriplicateSlip from '@/components/dialogs/EggTriplicateSlip.vue';
-import { useVueToPrint } from 'vue-to-print';
-import { Button } from '@/components/ui/button';
-import { TinyButton, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
 import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
+import { TinyButton, TinyDatePicker, TinyInput, TinySelect } from '@opentiny/vue';
 import { CustomTinyGrid, CustomTinyGridColumn } from '@/components/Table/CustomTable';
 import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
+import { useCurrencyStore } from '@/stores/currency';
+import { usePermissionStore } from '@/stores/PermissionStore';
 import { useContentWidth } from '@/composables/useContentWidth';
+import { useSelectOptions } from '@/composables/useSelectOptions';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
-import { SquarePen, Trash2, Expand, Shrink, Eye, ScrollText, Printer } from 'lucide-vue-next';
+import { CATEGORIES, getCategoryIdByCode } from '@/constants/categories';
+import { Expand, Eye, Printer, ScrollText, Shrink, SquarePen, Trash2 } from 'lucide-vue-next';
+import { useVueToPrint } from 'vue-to-print';
 import { debounce } from 'lodash';
 import { useI18n } from 'vue-i18n';
-import { Form as AForm, FormItem as AFormItem } from '@arco-design/web-vue';
 import { endOfDay } from 'date-fns';
-import { usePermissionStore } from '@/stores/PermissionStore';
-import { useSelectOptions } from '@/composables/useSelectOptions';
-import { CATEGORIES, getCategoryIdByCode } from '@/constants/categories';
-import { CustomersStoredGetByID } from '@/assets/API/Customers';
-
-/** Table高度相關 **/
-import { useWindowSize } from '@vueuse/core';
-const { height: windowHeight } = useWindowSize();
-const TableScrollY = computed(() => Math.max(windowHeight.value - 350, 100));
 
 const permissionStore = usePermissionStore();
 const {
@@ -334,20 +334,18 @@ const {
 } = useSelectOptions();
 const paymentDisplayMap = computed(() => buildLabelMap(orderPaymentTermOptions.value));
 const shipDisplayMap = computed(() => buildLabelMap(shipMethodOptions.value));
-
-const props = defineProps({
-  pageTitle: { type: String, required: true },
-  categoryId: { type: String, default: undefined },
-  categoryCode: { type: String, default: undefined },
-});
-import { useCurrencyStore } from '@/stores/currency';
-
 const mainStore = useMainStore();
 const timezoneStore = useTimezoneStore();
 const currencyStore = useCurrencyStore();
 const { containerRef } = useContentWidth();
 const { t } = useI18n();
 const { formatNumber, formatCurrencyNumber } = currencyStore;
+
+const props = defineProps({
+  pageTitle: { type: String, required: true },
+  categoryId: { type: String, default: undefined },
+  categoryCode: { type: String, default: undefined },
+});
 const formatDate = (value, format = 'YYYY-MM-DD HH:mm') => timezoneStore.formatDate(value, format);
 const isCreate = computed(() => dialogMode.value === 'create');
 const isEdite = computed(() => dialogMode.value === 'edit');
@@ -507,40 +505,6 @@ const clearHireDateFilter = async () => {
 
 /** 表單操作相關 **/
 const orderGridRef = ref(null); //列表 grid ref（用於取得勾選列）
-const orderPrintSlipRef = ref(null); //列印元件 ref
-const printOrders = ref([]); //待列印的訂單資料
-
-/** vue-to-print 列印設定 **/
-const { handlePrint } = useVueToPrint({
-  content: () => orderPrintSlipRef.value?.printContentRef, //取得子元件暴露的 DOM ref
-  documentTitle: '訂單出貨單',
-  /*pageStyle: `
-    @page { size: A4; margin: 0; }
-    body { margin: 0; }
-  `,*/
-  removeAfterPrint: true,
-});
-
-/** 三聯單列印設定 **/
-const waterTriplicateRef = ref(null);
-const eggTriplicateRef = ref(null);
-const triplicateOrders = ref([]);
-const triplicatePageStyle = `@page { size: 241mm 140mm; margin: 0; } body { margin: 0; }`;
-
-const { handlePrint: handleWaterTriplicatePrint } = useVueToPrint({
-  content: () => waterTriplicateRef.value?.printContentRef,
-  documentTitle: '飲水送貨三聯單',
-  pageStyle: triplicatePageStyle,
-  removeAfterPrint: true,
-  suppressErrors: true, // 不等待圖片/資源載入，直接列印
-});
-const { handlePrint: handleEggTriplicatePrint } = useVueToPrint({
-  content: () => eggTriplicateRef.value?.printContentRef,
-  documentTitle: '雞蛋出貨三聯單',
-  pageStyle: triplicatePageStyle,
-  removeAfterPrint: true,
-});
-
 const dialogMode = ref('create');
 const fullscreen = ref(true);
 const dialogVisible = ref(false);
@@ -556,21 +520,21 @@ const initializeForm = () => ({
   temporaryCustomerName: '', //臨時客戶名稱（當 targetType=TEMPORARY_CUSTOMER 時使用）
   categoryId: props.categoryId, //商品種類ID（用於篩選商品）
   categoryCode: props.categoryCode || 'EGG', //商品種類代碼（用於所有訂單頁面）
-  orderDate: new Date(), //訂單日期
   expectedDeliveryDate: null, //預計配送日期
-  phone: '', //聯絡電話
   contact: '', //聯絡人姓名
-  paymentTerm: 'CASH', //付款方式 (CASH=現金 / MONTHLY=月結 / PREPAID=預付)
+  phone: '', //聯絡電話
+  orderDate: new Date(), //訂單日期
+  shipDate: new Date(), //出貨日期
+  paymentTerm: 'PREPAID', //付款方式 (CASH=現金 / MONTHLY=月結 / PREPAID=預付)
   shipMethod: 'PICKUP', //出貨方式 (PICKUP=自取 / DRIVER_DELIVERY=司機送貨 / COURIER=宅配)
-  shipDate: null, //出貨日期
   driverId: '', //司機UUID（當 shipMethod=DRIVER_DELIVERY 時使用）
-  items: [], //商品明細 [{ productId, quantity, unitPrice }]
+  shippingAddress: '', //配送地址
+  notes: '', //訂單備註（對外）
+  internalNotes: '', //內部備註（僅供內部查看）
   discountAmount: 0, //折扣金額
   shippingAmount: 0, //運費金額
   taxAmount: 0, //稅金金額
-  shippingAddress: {}, //配送地址（物件格式）
-  notes: '', //訂單備註（對外）
-  internalNotes: '', //內部備註（僅供內部查看）
+  items: [], //商品明細 [{ productId, quantity, unitPrice }]
   status: 'PENDING', //訂單狀態 (PENDING=待出貨 / PROCESSING=處理中 / DELIVERED=已完成 / CANCELLED=取消)
 }); //初始化表單資料
 const basicForm = ref(initializeForm());
@@ -602,15 +566,18 @@ const changeTarget = (item, type = 'customer') => {
     basicForm.value.notes = item.notes || '';
     originalQtyMap.value = {}; // 新訂單選客戶，無原始數量基準
     fetchDeposits(item?.id);
+    // 自動帶入客戶地址
+    const addr1 = item.customFields?.companyAddress || '';
+    const addr2 = item.customFields?.companyAddress2 || '';
+    const street = [addr1, addr2].filter(Boolean).join(', ');
+    basicForm.value.shippingAddress = [addr1, addr2].filter(Boolean).join(', ');
   }
-  basicForm.value.phone = item.contactInfo?.phone;
+  basicForm.value.phone = [item.contactInfo?.phone, item.contactInfo?.phone2].filter(Boolean).join(', ');
 }; //選擇對象變更
 
-// 儲值狀況
+/** 儲值狀況相關 **/
 const depositMap = ref({});
-// 記錄打開訂單時各商品的「原始數量」，用來計算 delta（只有 delta 不為 0 才做預覽計算）
-const originalQtyMap = ref({});
-
+const originalQtyMap = ref({}); //記錄打開訂單時各商品的「原始數量」，用來計算 delta（只有 delta 不為 0 才做預覽計算）
 const fetchDeposits = async (customerId) => {
   if (!customerId) {
     depositMap.value = {};
@@ -632,11 +599,7 @@ const fetchDeposits = async (customerId) => {
   } catch {
     depositMap.value = {};
   }
-};
-
-// 根據 record 取得「顯示用」的剩餘儲值狀況：
-//   - 使用者沒有改過數量 → 直接顯示 API 原始數據（後端每次儲存後都會更新）
-//   - 使用者改了數量 → 以 API 原始數據為基礎，加減 delta 做即時預覽
+}; //取得最新儲值狀況
 const getDepositDisplay = (record) => {
   const deposit = depositMap.value[record.id];
   if (!deposit) return null;
@@ -673,8 +636,9 @@ const getDepositDisplay = (record) => {
 
   return { remainingQuantity: newQty, remainingAmount: Math.round(newAmt) };
 };
-
 const depositExtraColumns = computed(() => {
+  //使用者沒有改過數量 → 直接顯示 API 原始數據（後端每次儲存後都會更新）
+  //使用者改了數量 → 以 API 原始數據為基礎，加減 delta 做即時預覽
   if (!Object.keys(depositMap.value).length) return [];
   return [
     {
@@ -690,7 +654,7 @@ const depositExtraColumns = computed(() => {
       },
     },
   ];
-});
+}); //剩餘數量與金額
 const depositRowClass = (record) => {
   const result = getDepositDisplay(record);
   if (!result) return '';
@@ -731,6 +695,7 @@ const updateItemTotal = (item) => {
 const updateAllItemTotals = () => {
   basicForm.value.items.forEach((item) => updateItemTotal(item));
 }; //更新所有項目小計
+
 const addItem = () => {
   basicForm.value.items.push({
     productId: '',
@@ -741,10 +706,10 @@ const addItem = () => {
     total: 0,
     recoveredQuantity: 0,
   });
-}; //新增訂單項目
+}; //新增訂單項目(待刪除)
 const removeItem = (index) => {
   basicForm.value.items.splice(index, 1);
-}; //移除訂單項目
+}; //移除訂單項目(待刪除)
 const openCreateDialog = () => {
   dialogMode.value = 'create';
   editingId.value = null;
@@ -787,7 +752,7 @@ const editData = async (row) => {
       items: [], // 先設為空，等商品加載完再設置
       discountAmount: Number(orderData.discount ?? orderData.discountAmount?.amount ?? 0),
       shippingAmount: Number(orderData.shippingFee ?? orderData.shippingAmount?.amount ?? 0),
-      shippingAddress: orderData.shippingAddress || {},
+      shippingAddress: orderData.shippingAddress || '', //配送地址
       notes: orderData.note || orderData.notes || '',
       internalNotes: orderData.internalNotes || '',
       status: statusKey,
@@ -822,7 +787,7 @@ const extractUUID = (obj) => {
     if (isUUID(obj.vendorId)) return obj.vendorId;
   }
   return undefined;
-}; //提取 UUID
+}; //取得UUID
 const preparePayload = () => {
   const form = basicForm.value;
   const finalCategoryId = props.categoryId || form.categoryId || getCategoryIdByCode(form.categoryCode);
@@ -851,9 +816,10 @@ const preparePayload = () => {
   if (form.expectedDeliveryDate) payload.expectedDeliveryDate = form.expectedDeliveryDate; //預計配送日期
   if (form.discountAmount > 0) payload.discountAmount = { amount: Number(form.discountAmount), currency: 'TWD' }; //折扣金額
   if (form.shippingAmount > 0) payload.shippingAmount = { amount: Number(form.shippingAmount), currency: 'TWD' }; //運費金額
+  if (form.shippingAddress) payload.shippingAddress = form.shippingAddress; //配送地址
 
   return payload;
-}; //整理儲存 Payload
+}; //整理儲存Payload
 const updateOrderStatusWithAutoPromote = async (id, targetStatus) => {
   if (targetStatus === 'PROCESSING') {
     try {
@@ -929,6 +895,34 @@ const deleteData = async (id) => {
 }; //刪除訂單
 
 /** 列印相關 **/
+const printOrders = ref([]); //待列印的訂單資料
+const orderPrintSlipRef = ref(null); //列印元件 ref
+const waterTriplicateRef = ref(null);
+const eggTriplicateRef = ref(null);
+const triplicateOrders = ref([]);
+const triplicatePageStyle = `@page { size: 241mm 140mm; margin: 0; } body { margin: 0; }`;
+const { handlePrint } = useVueToPrint({
+  content: () => orderPrintSlipRef.value?.printContentRef, //取得子元件暴露的 DOM ref
+  documentTitle: '訂單出貨單',
+  /*pageStyle: `
+    @page { size: A4; margin: 0; }
+    body { margin: 0; }
+  `,*/
+  removeAfterPrint: true,
+});
+const { handlePrint: handleWaterTriplicatePrint } = useVueToPrint({
+  content: () => waterTriplicateRef.value?.printContentRef,
+  documentTitle: '飲水送貨三聯單',
+  pageStyle: triplicatePageStyle,
+  removeAfterPrint: true,
+  suppressErrors: true, // 不等待圖片/資源載入，直接列印
+});
+const { handlePrint: handleEggTriplicatePrint } = useVueToPrint({
+  content: () => eggTriplicateRef.value?.printContentRef,
+  documentTitle: '雞蛋出貨三聯單',
+  pageStyle: triplicatePageStyle,
+  removeAfterPrint: true,
+});
 const printReport = async (row) => {
   mainStore.setLoading(true);
   try {
@@ -944,7 +938,6 @@ const printReport = async (row) => {
     mainStore.setLoading(false);
   }
 }; //單筆列印
-
 const batchPrint = async () => {
   const selectedRows = orderGridRef.value?.getSelectRecords?.() ?? [];
   if (!selectedRows.length) {
@@ -954,8 +947,7 @@ const batchPrint = async () => {
   mainStore.setLoading(true);
   try {
     const results = await Promise.all(selectedRows.map((row) => OrderGetByID(row.id)));
-    const ordersData = results.map((res) => res.data?.data || res.data);
-    printOrders.value = ordersData;
+    printOrders.value = results.map((res) => res.data?.data || res.data);
     await nextTick(); //等 DOM 更新
     await orderPrintSlipRef.value?.prepare?.(); //動態計算空白行數
     handlePrint();
@@ -965,8 +957,6 @@ const batchPrint = async () => {
     mainStore.setLoading(false);
   }
 }; //批次列印
-
-/** 三聯單列印相關 **/
 const printTriplicate = async (row) => {
   mainStore.setLoading(true);
   try {
@@ -981,7 +971,6 @@ const printTriplicate = async (row) => {
     mainStore.setLoading(false);
   }
 }; //單筆三聯單
-
 const batchPrintTriplicate = async () => {
   const selectedRows = orderGridRef.value?.getSelectRecords?.() ?? [];
   if (!selectedRows.length) {
@@ -1001,6 +990,12 @@ const batchPrintTriplicate = async () => {
     mainStore.setLoading(false);
   }
 }; //批次三聯單
+
+/** Table高度相關 **/
+import { useWindowSize } from '@vueuse/core';
+import { JsonViewer } from 'vue3-json-viewer';
+const { height: windowHeight } = useWindowSize();
+const TableScrollY = computed(() => Math.max(windowHeight.value - 350, 100));
 
 onMounted(getAPI);
 watch(
@@ -1029,7 +1024,9 @@ watch(
         basicForm.value.items = items;
         // 記錄原始數量，作為儲值預覽計算的基準
         const qtySnapshot = {};
-        items.forEach((item) => { if (item.productId) qtySnapshot[item.productId] = item.quantity; });
+        items.forEach((item) => {
+          if (item.productId) qtySnapshot[item.productId] = item.quantity;
+        });
         originalQtyMap.value = qtySnapshot;
         editingOrderProducts.value = [];
       }

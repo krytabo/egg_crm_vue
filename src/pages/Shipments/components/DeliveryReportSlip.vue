@@ -199,13 +199,17 @@ const buildCustomerSlips = (report) => {
     const c = item.customer || {};
     const id = c.id || 'unknown';
     if (!map.has(id)) {
-      const phone =
-        c.contactInfo?.phone || c.contactInfo?.mobile || c.phone || '';
+      const phone1 = c.contactInfo?.phone || c.contactInfo?.mobile || c.phone || '';
+      const phone2 = c.contactInfo?.phone2 || '';
+      const phone = [phone1, phone2].filter(Boolean).join(', ');
+      const addr1 = c.customFields?.companyAddress || '';
+      const addr2 = c.customFields?.companyAddress2 || '';
+      const address = [addr1, addr2].filter(Boolean).join(', ') || c.fullAddress || '';
       map.set(id, {
         customerId: id,
         name: c.name || '',
         phone,
-        address: c.fullAddress || '',
+        address,
         taxId: c.taxId || '',
         products: [],
         totalAmount: 0,
