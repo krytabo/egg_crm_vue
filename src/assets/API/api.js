@@ -2,8 +2,12 @@
 import axios from "axios";
 import { getToken, getRefreshToken, logout, setToken } from "@/utils/auth";
 
+// development: 使用 vite proxy（/hostApi → 測試站）
+// staging / production: 直接使用環境變數的 API domain
 const isDevelopment = import.meta.env.VITE_NODE_ENV === "development";
-export const host = isDevelopment ? "/hostApi" : (import.meta.env.VITE_APP_AXIOS_BASEURL || location.origin); //api路徑前綴
+export const host = isDevelopment
+  ? "/hostApi"
+  : (import.meta.env.VITE_APP_AXIOS_BASEURL || location.origin);
 
 const getUserTimezone = () => {
   const userTimezone = localStorage.getItem("userTimezone") || "Asia/Taipei";

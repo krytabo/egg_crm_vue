@@ -1,6 +1,4 @@
 // src/pages/inventory-reports/FormPage/useFormPage.js
-// 送貨報表編輯頁 - 共用業務邏輯（Desktop / Mobile 共用）
-
 import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useMainStore } from '@/stores/LoadingStore';
@@ -10,6 +8,14 @@ import { useSelectOptions } from '@/composables/useSelectOptions';
 import { useFileExport } from '@/composables/useFileExport.js';
 import { useDisplayMode } from '@/composables/useDisplayMode';
 import { DeliveryReportExportGet, DeliveryReportGetById, DeliveryReportUpdatePut, DeliveryReportCreatePost, DeliveryReportSubmitPost } from '@/assets/API/DeliveryReports.js';
+import { CATEGORY_IDS } from '@/constants/categories.js';
+
+// 後端 productCategory enum 對照（categoryId → 中文 enum 值）
+const CATEGORY_ID_TO_PRODUCT_CATEGORY = {
+  [CATEGORY_IDS.WATER]: '桶裝水',
+  [CATEGORY_IDS.EGG]: '雞蛋',
+  [CATEGORY_IDS.DISPENSER]: '飲水機',
+};
 
 /**
  * 送貨報表編輯頁共用邏輯
@@ -141,10 +147,10 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
       const aCustomerId = a.customerId?.id || '';
       const bCustomerId = b.customerId?.id || '';
       const customerSort = aCustomerId.localeCompare(bCustomerId);
-      
+
       // 如果客戶相同，則按商品 ID 排序
       if (customerSort !== 0) return customerSort;
-      
+
       const aProductId = a.productId?.id || '';
       const bProductId = b.productId?.id || '';
       return aProductId.localeCompare(bProductId);
@@ -214,12 +220,16 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
           productId: product,
           customerId: customer,
           productName: product?.name || item.productName || '',
-          productCategory: product?.categoryName || item.productCategory || '',
+          productCategory: item.productCategory || '',
           customerName: customer?.name || item.customerName || '',
           quantity,
           unitPrice,
           amount,
           actualAmount: item.actualPaymentAmount || amount || 0,
+          recoveredQuantity: item.recoveredQuantity || 0,
+          strandedQuantity: item.strandedQuantity || 0,
+          _baseRecovered: item.recoveredQuantity || 0,
+          _baseStranded: item.strandedQuantity || 0,
           paymentMethod: item.paymentMethod || customer?.customFields?.paymentMethod || '現金',
           note: item.note || '',
           isConvertedToOrder: item.isConvertedToOrder || false,
@@ -271,8 +281,9 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
             customerName: item.customerId?.name || item.customerName,
             productId: item.productId?.id,
             productName: item.productId?.name || item.productName,
-            productCategory: item.productId?.categoryName || item.productCategory,
+            productCategory: item.productCategory,
             quantity: Number(item.quantity) || 1,
+            recoveredQuantity: Number(item.recoveredQuantity) || 0,
             unitPrice: item.unitPrice,
             paymentMethod: item.paymentMethod || '現金',
             note: item.note || '',
@@ -308,8 +319,9 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
             customerName: item.customerId?.name || item.customerName,
             productId: item.productId?.id,
             productName: item.productId?.name || item.productName,
-            productCategory: item.productId?.categoryName || item.productCategory,
+            productCategory: item.productCategory,
             quantity: Number(item.quantity) || 0,
+            recoveredQuantity: Number(item.recoveredQuantity) || 0,
             unitPrice: Number(item.unitPrice) || 0,
             amount: Number(item.amount) || 0,
             actualPaymentAmount: Number(item.actualAmount) || 0,
@@ -401,6 +413,15 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
     const amount = quantity * unitPrice;
     row.amount = amount;
     row.actualAmount = amount;
+  };
+
+  // 當使用者修改回收數量時，即時估算滯留數量（存檔後以後端值為準）
+  const recalculateStrandedQuantity = (index) => {
+    const row = editedProducts.value[index];
+    const baseStranded = Number(row._baseStranded) || 0;
+    const baseRecovered = Number(row._baseRecovered) || 0;
+    const newRecovered = Number(row.recoveredQuantity) || 0;
+    row.strandedQuantity = Math.max(0, baseStranded + baseRecovered - newRecovered);
   };
 
   const handleCustomerChange = (index, customerValue) => {
@@ -509,12 +530,16 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
       productId: product,
       customerId: customer,
       productName: product.name || '',
-      productCategory: product.category?.name || '',
+      productCategory: CATEGORY_ID_TO_PRODUCT_CATEGORY[product.categoryId] || product.category?.name || '',
       customerName: customer?.name || '',
       quantity,
       unitPrice,
       amount,
       actualAmount: amount,
+      recoveredQuantity: 0,
+      strandedQuantity: 0,
+      _baseRecovered: 0,
+      _baseStranded: 0,
       paymentMethod: newProductPaymentMethod.value || customer?.customFields?.paymentMethod || '現金',
       note: newProductNote.value,
     });
@@ -608,6 +633,7 @@ export function useFormPage(props, t, showMessage = () => {}, showConfirm = null
 
     // 資料列操作
     recalculateRow,
+    recalculateStrandedQuantity,
     handleCustomerChange,
     handleDeleteRow,
     handleClearAll,

@@ -8,8 +8,23 @@
 @import "./tiny.css";
 @import "./Naive.css";
 
+@font-face {
+    font-family: 'MapleMono';
+    src: url('@/assets/font/maple-mono-latin-500-normal.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    unicode-range: U+4E00-9FFF; /*只針對中文字體使用*/
+}
+
+@font-face {
+    font-family: 'Manrope';
+    font-weight: normal;
+    font-style: normal;
+    unicode-range: U+0000-00FF; /*只針對英文數字使用*/
+}
+
 #app {
-    font-family: "Manrope", 'M PLUS Rounded 1c', Inter, "-apple-system", BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "noto sans", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
+    font-family: "MapleMono", "Manrope", 'M PLUS Rounded 1c', Inter, "-apple-system", BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "noto sans", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif !important;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     color: #2c3e50;
@@ -18,7 +33,7 @@
 }
 
 [class*=tiny-] {
-    font-family: 'Manrope', 'M PLUS Rounded', sans-serif !important;
+    font-family: "MapleMono", 'Manrope', 'M PLUS Rounded', sans-serif !important;
 }
 
 button {

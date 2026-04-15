@@ -77,6 +77,7 @@ import { DriverListGet } from '@/assets/API/Drivers';
 import { X, ChevronDown } from 'lucide-vue-next';
 import { DeliveryByDaysGet } from '@/assets/API/DeliveryReports';
 import { InvoiceListGet } from '@/assets/API/Billing';
+import { CATEGORY_IDS } from '@/constants/categories';
 
 const props = defineProps({
   modelValue: {
@@ -213,15 +214,17 @@ const DATA_SOURCE_MAP = {
     }),
   }, //司機
   productTypes: {
-    localData: [
-      // { id: 'c7fe60f0-6d61-4445-bfef-3ab7a41196be', code: 'DELIVERY_REPORT', name: '送貨報表轉單', description: '從送貨報表轉換的訂單', isDeletable: true },
-      { id: '959ff8c8-8bc7-4164-91b1-f2491142075b', code: 'EGG', name: '雞蛋類別', description: null, isDeletable: true },
-      { id: 'e106af10-17d4-4f4d-9ccf-8dfd5fbfe0b6', code: 'WATER', name: '飲水類別', description: null, isDeletable: true },
-      { id: '41ad5510-9da6-41f1-9d02-0a022da95749', code: 'EQUIPMENT', name: '用品/設備', description: null, isDeletable: true },
-      // { id: 'b2eb8750-10d5-4f90-803f-71ed3ae264da', code: 'DISPENSER', name: '飲水機', description: null, isDeletable: true },
-      // { id: 'ab0e22fe-f1d1-4c40-a5bf-e1ee0a86f63a', code: 'RAW_MATERIAL', name: '原料', description: 'Raw materials for production', isDeletable: false },
-      // { id: '8cd54fbf-277f-4f35-81a3-42ec08c50150', code: 'FINISHED_GOOD', name: '成品', description: 'Ready-to-sell products', isDeletable: false },
-    ],
+    get localData() {
+      return [
+        // { id: ..., code: 'DELIVERY_REPORT', name: '送貨報表轉單', description: '從送貨報表轉換的訂單', isDeletable: true },
+        { id: CATEGORY_IDS.EGG, code: 'EGG', name: '雞蛋類別', description: null, isDeletable: true },
+        { id: CATEGORY_IDS.WATER, code: 'WATER', name: '飲水類別', description: null, isDeletable: true },
+        { id: '41ad5510-9da6-41f1-9d02-0a022da95749', code: 'EQUIPMENT', name: '用品/設備', description: null, isDeletable: true },
+        // { id: CATEGORY_IDS.DISPENSER, code: 'DISPENSER', name: '飲水機', description: null, isDeletable: true },
+        // { id: ..., code: 'RAW_MATERIAL', name: '原料', description: 'Raw materials for production', isDeletable: false },
+        // { id: ..., code: 'FINISHED_GOOD', name: '成品', description: 'Ready-to-sell products', isDeletable: false },
+      ];
+    },
     valueKey: 'id',
     formatOption: (item) => ({
       value: item.id,

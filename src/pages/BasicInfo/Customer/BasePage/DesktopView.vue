@@ -146,9 +146,15 @@
       <CustomTinyGridColumn field="" :title="t('actions', '操作')" :width="150" fixed="right" align="center">
         <template #default="{ row }">
           <div class="flex items-center justify-center gap-2">
-            <button v-if="permissionStore.hasPermission('CUSTOMER', 'DELETE')" class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
-            <button class="table-button" @click="openDrawer(row)"><ScrollText class="size-4 text-green-500" /></button>
-            <button v-if="permissionStore.hasPermission('CUSTOMER', 'UPDATE')" class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+            <a-tooltip v-if="permissionStore.hasPermission('CUSTOMER', 'DELETE')" :content="t('delete')">
+              <button class="table-button" @click="deleteData(row.id)"><Trash2 class="size-4 text-rose-500" /></button>
+            </a-tooltip>
+            <a-tooltip :content="t('orderInfo')">
+              <button class="table-button" @click="openDrawer(row)"><ScrollText class="size-4 text-green-500" /></button>
+            </a-tooltip>
+            <a-tooltip v-if="permissionStore.hasPermission('CUSTOMER', 'UPDATE')" :content="t('edit')">
+              <button class="table-button" @click="editData(row)"><SquarePen class="size-4" /></button>
+            </a-tooltip>
           </div>
         </template>
       </CustomTinyGridColumn>
@@ -502,50 +508,54 @@
 
         <!-- 儲值管理 -->
         <template v-if="activeTab === 'deposit'">
-          <AFormItem>
-            <template #label>
-              <div class="flex items-center justify-between">
-                <p class="text-sm font-medium text-gray-900">{{ t('depositProductSetting', '飲水商品儲值設定') }}</p>
-                <a-button v-if="!isDeletedRecord" type="text" @click="addWaterDeposit">{{ t('addDeposit', '新增儲值') }}</a-button>
-              </div>
-            </template>
-            <p v-if="waterDepositsForm.length === 0" class="text-xs text-gray-500 w-full">
-              {{ t('noDepositYet', '尚未設定儲值，點擊上方按鈕新增') }}
-            </p>
-            <!--<p class="mb-2 text-xs text-blue-500">{{ t('depositNote', '儲值數量與金額可擇一填寫，訂單出貨時系統會先扣數量，扣完後再扣金額') }}</p>-->
-            <div class="flex w-full flex-col gap-1">
-              <template v-for="(item, index) in waterDepositsForm" :key="item.id">
-                <div class="flex items-center gap-2 rounded-md border p-2">
-                  <AFormItem :label="t('product', '商品')" class="min-w-45 flex-1">
-                    <InfiniteSelect
-                      v-model="item.productId"
-                      dataSource="products"
-                      :filters="{ status: 'ACTIVE' }"
-                      :placeholder="t('pleaseSelectProduct', '請選擇商品')"
-                      @change="(product) => changeDepositProduct(product, index)"
-                      :readonly="isDeletedRecord"
-                    />
-                  </AFormItem>
-                  <!--<AFormItem :label="t('unit', '單位')" class="flex-1">
-                    <p class="h-8 flex items-center text-[15px] text-gray-600">{{ item.unit || '—' }}</p>
-                  </AFormItem>-->
-                  <AFormItem :label="t('depositQuantity', '儲值數量')" class="flex-1">
-                    <CustomField v-model="item.quantity" type="number" :min="0" :placeholder="t('optional', '選填')" allowClear :readonly="isDeletedRecord" />
-                  </AFormItem>
-                  <AFormItem :label="t('depositAmount', '儲值金額')" class="flex-1">
-                    <CustomField v-model="item.amount" type="number" thousands :min="0" :placeholder="t('optional', '選填')" allowClear :readonly="isDeletedRecord" />
-                  </AFormItem>
-                  <AFormItem :label="t('remainingQuantity', '剩餘數量')" class="flex-1">
-                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ item.remainingQuantity || '-' }}</p>
-                  </AFormItem>
-                  <AFormItem :label="t('remainingDepositAmount', '剩餘金額')" class="flex-1">
-                    <p class="h-8 flex items-center text-[15px] text-emerald-600">{{ currency(item.remainingAmount) || '-' }}</p>
-                  </AFormItem>
-                  <a-button v-if="!isDeletedRecord" type="text" status="danger" @click="removeWaterDeposit(item.id)">{{ t('remove') }}</a-button>
+          <p class="text-[18px] font-medium text-gray-900 mb-2">{{ t('depositProductSetting', '飲水商品儲值設定') }}</p>
+          <CustomTinyGrid
+            :data="waterDepositsForm"
+            :border="true"
+            :height="TableScrollY"
+            :row-config="{ keyField: 'productId', isHover: true, className: ({ row }) => (row.remainingQuantity < 0 ? 'deposit-row-negative' : '') }"
+          >
+            <CustomTinyGridColumn field="productName" :title="t('product', '商品')" min-width="120" />
+            <CustomTinyGridColumn field="quantity" :title="t('totalDepositQuantity', '累計儲值數量')" width="130" align="center" header-align="center">
+              <template #default="{ row }">
+                <span class="text-gray-700">{{ row.quantity || '-' }}</span>
+              </template>
+            </CustomTinyGridColumn>
+            <CustomTinyGridColumn field="amount" :title="t('totalDepositAmount', '累計儲值金額')" width="150" align="center" header-align="center">
+              <template #default="{ row }">
+                <span class="text-gray-700">{{ currency(row.amount) || '-' }}</span>
+              </template>
+            </CustomTinyGridColumn>
+            <CustomTinyGridColumn field="remainingQuantity" :title="t('remainingQuantity', '剩餘數量')" width="400">
+              <template #default="{ row }">
+                <div class="flex items-center gap-2">
+                  <span class="text-right flex-1" :class="row.remainingQuantity < 0 ? 'font-bold text-red-500' : 'text-emerald-600'">
+                    {{ row.remainingQuantity ?? '-' }}
+                  </span>
+                  <template v-if="!isDeletedRecord">
+                    <span class="text-gray-400">+</span>
+                    <CustomField v-model="row.addQuantity" type="number" :min="0" allowClear />
+                  </template>
                 </div>
               </template>
-            </div>
-          </AFormItem>
+            </CustomTinyGridColumn>
+            <CustomTinyGridColumn field="remainingAmount" :title="t('remainingDepositAmount', '剩餘金額')" width="400">
+              <template #default="{ row }">
+                <div class="flex items-center gap-2">
+                  <span class="text-right flex-1 text-emerald-600">{{ currency(row.remainingAmount) || '-' }}</span>
+                  <template v-if="!isDeletedRecord">
+                    <span class="text-gray-400">+</span>
+                    <CustomField v-model="row.addAmount" type="number" thousands :min="0" allowClear />
+                  </template>
+                </div>
+              </template>
+            </CustomTinyGridColumn>
+            <CustomTinyGridColumn field="strandedQuantity" :title="t('strandedQuantity', '滯留數量')" width="120" align="center" header-align="center">
+              <template #default="{ row }">
+                <span class="text-orange-500">{{ row.strandedQuantity != null ? row.strandedQuantity : '-' }}</span>
+              </template>
+            </CustomTinyGridColumn>
+          </CustomTinyGrid>
         </template>
       </AForm>
     </perfect-scrollbar>
@@ -687,9 +697,6 @@ const {
 
   //儲值管理操作
   waterDepositsForm,
-  addWaterDeposit,
-  removeWaterDeposit,
-  changeDepositProduct,
 
   //訂單相關
   customerData,
@@ -773,3 +780,22 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* 儲值管理 - 剩餘數量負數時，整列紅色框線 */
+:deep(.deposit-row-negative td) {
+  box-shadow:
+    inset 0 2px 0 0 #ef4444,
+    inset 0 -2px 0 0 #ef4444;
+}
+:deep(.deposit-row-negative td:first-child) {
+  box-shadow:
+    inset 2px 2px 0 0 #ef4444,
+    inset 0 -2px 0 0 #ef4444;
+}
+:deep(.deposit-row-negative td:last-child) {
+  box-shadow:
+    inset -2px 2px 0 0 #ef4444,
+    inset 0 -2px 0 0 #ef4444;
+}
+</style>

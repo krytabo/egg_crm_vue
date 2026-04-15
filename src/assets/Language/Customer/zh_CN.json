@@ -178,7 +178,10 @@
   "depositNote": "储值数量与金额可择一填写，订单出货时系统会先扣数量，扣完后再扣金额",
   "depositQuantity": "储值数量",
   "depositAmount": "储值金额",
+  "totalDepositQuantity": "累计储值数量",
+  "totalDepositAmount": "累计储值金额",
   "remainingQuantity": "剩余数量",
   "remainingDepositAmount": "剩余金额",
-  "optional": "选填"
+  "optional": "选填",
+  "orderInfo": "订单资讯"
 }

@@ -797,5 +797,6 @@
   "totalCustomers": "客户总数",
   "totalOrders": "总订单数",
   "totalRevenue": "总营收",
-  "customerName": "客户名称"
+  "customerName": "客户名称",
+  "driverInfoEditNote": "如需修改司机相关资讯请至「基本资料」→「司机资料」中进行编辑"
 }

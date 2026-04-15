@@ -214,6 +214,11 @@
               <span :class="row.remainingQuantity > 0 ? 'text-green-600 font-medium' : 'text-gray-400'">{{ formatNumber(row.remainingQuantity) }}</span>
             </template>
           </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="strandedQuantity" :title="t('strandedQuantity', '滯留數量')" width="120" align="right">
+            <template #default="{ row }">
+              <span :class="(row.strandedQuantity || 0) > 0 ? 'text-orange-500 font-medium' : 'text-gray-400'">{{ formatNumber(row.strandedQuantity || 0) }}</span>
+            </template>
+          </CustomTinyGridColumn>
         </CustomTinyGrid>
       </div>
 
@@ -237,6 +242,11 @@
           <CustomTinyGridColumn field="remainingQuantity" :title="t('remainingDepositQuantity', '剩餘數量')" width="120" align="right">
             <template #default="{ row }">
               <span :class="row.remainingQuantity > 0 ? 'text-green-600 font-medium' : 'text-gray-400'">{{ formatNumber(row.remainingQuantity) }}</span>
+            </template>
+          </CustomTinyGridColumn>
+          <CustomTinyGridColumn field="strandedQuantity" :title="t('strandedQuantity', '滯留數量')" width="120" align="right">
+            <template #default="{ row }">
+              <span :class="(row.strandedQuantity || 0) > 0 ? 'text-orange-500 font-medium' : 'text-gray-400'">{{ formatNumber(row.strandedQuantity || 0) }}</span>
             </template>
           </CustomTinyGridColumn>
         </CustomTinyGrid>
@@ -643,6 +653,7 @@ const depositData = reactive({
     totalRemainingAmount: 0,
     totalUsedQuantity: 0,
     totalUsedAmount: 0,
+    totalStrandedQuantity: 0,
   },
   customers: [],
 });
@@ -659,6 +670,7 @@ const depositProductBreakdown = computed(() => {
         existing.totalQuantity += product.totalQuantity;
         existing.remainingQuantity += product.remainingQuantity;
         existing.depositCount += product.depositCount;
+        existing.strandedQuantity = (existing.strandedQuantity || 0) + (product.strandedQuantity || 0);
       } else {
         map.set(product.id, { ...product });
       }
@@ -697,6 +709,13 @@ const depositSummaryCards = computed(() => {
       value: formatNumber(s.totalQuantity),
       trend: `${t('remainingDepositQuantity', '剩餘')} ${formatNumber(s.totalRemainingQuantity)}  /  ${t('usedRate', '使用率')} ${usedQtyPct}%`,
       trendClass: s.totalRemainingQuantity > 0 ? 'text-green-600' : 'text-gray-400',
+      icon: PackageIcon,
+    },
+    {
+      title: t('totalStrandedQuantity', '滯留總數量'),
+      value: formatNumber(s.totalStrandedQuantity),
+      trend: t('strandedQuantityHint', '尚未回收的桶數'),
+      trendClass: s.totalStrandedQuantity > 0 ? 'text-orange-500' : 'text-gray-400',
       icon: PackageIcon,
     },
   ];

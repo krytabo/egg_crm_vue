@@ -29,6 +29,10 @@
           <div v-if="!basicForm.driver || basicForm.weekDays.length === 0" class="bg-black/80 absolute w-full z-10 h-full rounded-[10px] flex items-center justify-center">
             <p class="text-white text-[20px]">{{ t('pleaseSelectFieldsAbove', '請先選擇上方欄位') }}</p>
           </div>
+          <div v-else-if="customersLoading" class="bg-white/90 absolute w-full z-10 h-full rounded-[10px] flex items-center justify-center">
+            <a-spin />
+            <p class="ml-2 text-gray-500">{{ t('loadingCustomers', '載入客戶中...') }}</p>
+          </div>
 
           <!-- 批量選擇模式 -->
           <div v-if="selectionMode === 'batch'" class="flex gap-2">
@@ -96,12 +100,17 @@
                         }}
                       </span>
                     </div>
+                    <div v-if="customersLoading" class="flex items-center justify-center py-8 text-gray-400">
+                      <i class="ri-loader-4-line animate-spin mr-2"></i>
+                      <span class="text-sm">客戶資料載入中...</span>
+                    </div>
                     <InfiniteScrollList
+                      v-else
                       :ref="(el) => setCustomerListRef(item.productId, el)"
                       :fetcher="fetchCustomersWithFilters"
                       :item-formatter="formatCustomer"
                       :filter-fn="filterCustomer"
-                      :filters="getCustomerFilters(item.categoryName)"
+                      :filters="getCustomerFilters(item.categoryId)"
                       :selected-values="getProductSelection(item.productId)?.customerIds || []"
                       value-key="id"
                       label-key="name"
@@ -237,6 +246,7 @@ import { useSelectOptions } from '@/composables/useSelectOptions';
 import { useI18n } from 'vue-i18n';
 import { useMainStore } from '@/stores/LoadingStore';
 import { CATEGORY_IDS } from '@/constants/categories';
+import { JsonViewer } from 'vue3-json-viewer';
 
 const mainStore = useMainStore();
 const props = defineProps({ modelValue: { type: Boolean, default: false } });
@@ -258,7 +268,7 @@ const isSubmitting = ref(false);
 const basicForm = ref({
   driver: null,
   weekDays: [],
-  products: [], //{ productId, productName, categoryName, customerIds: [] }
+  products: [], //{ productId, productName, categoryName, categoryId, customerIds: [] }
 });
 const basicFormRules = computed(() => ({
   driver: [{ required: true, message: t('pleaseSelectDriver', '請選擇司機') }],
@@ -304,6 +314,8 @@ const singleModeCustomerKey = ref(0); //用於強制重新渲染客戶選擇器
 const drivers = ref([]); //用於查找司機的 position-based ID
 const productListRef = ref(null); //商品列表組件
 const customerListRefs = ref({}); //儲存各產品的客戶列表組件
+const allCustomersRaw = ref([]); //預先載入的全部客戶（原始 API 格式）
+const customersLoading = ref(false); //客戶載入中
 let productIndexCounter = 0;
 
 /** Computed 屬性 **/
@@ -337,6 +349,7 @@ const formatProduct = (item) => {
 }; //格式化商品資料
 const formatCustomer = (item) => {
   const customFields = item.customFields || {};
+  const paymentCode = item.paymentOptions?.[0] ?? customFields.paymentMethod ?? 'CASH';
   return {
     id: item.id,
     businessId: item.businessId,
@@ -345,8 +358,8 @@ const formatCustomer = (item) => {
     typeLabel: item.type === 'COMPANY' ? t('typeCompany', '公司') : item.type === 'INDIVIDUAL' ? t('typeIndividual', '個人') : item.type,
     deliveryDays: item.deliveryDays || [],
     deliveryDaysLabels: formatWeekDays(item.deliveryDays),
-    categories: customFields.categories || [],
-    paymentMethod: customFields.paymentMethod || t('notSet', '未設定'),
+    categories: item.productCategories || [],
+    paymentMethod: PAYMENT_CODE_TO_CHINESE[paymentCode] ?? '現金',
     customPrices: customFields.customPrices || [],
   };
 }; //格式化客戶資料
@@ -372,6 +385,21 @@ const normalizeApiResponse = (response) => {
 }; //正規化 API 回應
 
 /** 篩選相關  **/
+const CATEGORY_ID_TO_API_CODE = {
+  [CATEGORY_IDS.WATER]: 'BOTTLED_WATER',
+  [CATEGORY_IDS.EGG]: 'EGG',
+  [CATEGORY_IDS.DISPENSER]: 'DISPENSER',
+}; //商品 categoryId → 客戶 productCategories API code
+const CATEGORY_ID_TO_DISPLAY = {
+  [CATEGORY_IDS.WATER]: '桶裝水',
+  [CATEGORY_IDS.EGG]: '雞蛋',
+  [CATEGORY_IDS.DISPENSER]: '飲水機',
+}; //商品 categoryId → 後端 FrontendProductCategory 中文值
+const PAYMENT_CODE_TO_CHINESE = {
+  CASH: '現金',
+  MONTHLY: '月結',
+  PREPAID: '預付',
+}; //付款代碼 → 後端 FrontendPaymentTerm 中文值
 const filterProduct = (product, filters) => {
   if (filters.category && filters.category !== 'ALL') {
     if (product.categoryId !== filters.category) return false;
@@ -383,36 +411,47 @@ const filterCustomer = (customer, filters) => {
     const hasMatchingDay = customer.deliveryDays?.some((day) => filters.deliveryDays.includes(day));
     if (!hasMatchingDay) return false;
   }
-  if (filters.productCategory) {
-    const hasMatchingCategory = customer.categories?.includes(filters.productCategory);
-    if (!hasMatchingCategory) return false;
+  if (filters.productCategoryId) {
+    const apiCode = CATEGORY_ID_TO_API_CODE[filters.productCategoryId];
+    if (apiCode) {
+      const hasMatchingCategory = customer.categories?.includes(apiCode);
+      if (!hasMatchingCategory) return false;
+    }
   }
   return true;
 }; //篩選客戶
-const getCustomerFilters = (productCategory) => ({
+const getCustomerFilters = (productCategoryId) => ({
   deliveryDays: [...basicForm.value.weekDays],
-  productCategory,
+  productCategoryId,
 }); //取得客戶篩選條件
 
 /** API 包裝函數 - 增加固定篩選欄位 **/
 const fetchProductsWithFilters = async (params) => {
-  // ✅ 增加 status: 'ACTIVE' 固定篩選到 payload
   return ProductListGet({
     page: params.page,
     limit: params.limit,
     search: params.search,
     status: 'ACTIVE',
   });
-}; //商品列表 API 包裝 - 只顯示啟用的商品
+}; //商品列表
 const fetchCustomersWithFilters = async (params) => {
-  // ✅ 增加 status: 'ACTIVE' 固定篩選到 payload
-  return CustomersListGet({
-    page: params.page,
-    limit: params.limit,
-    search: params.search,
-    status: 'ACTIVE',
-  });
-}; //客戶列表 API 包裝 - 只顯示啟用的客戶
+  const { search = '' } = params;
+  let items = allCustomersRaw.value;
+  if (search?.trim()) {
+    const kw = search.toLowerCase();
+    items = items.filter((c) => (c.name || '').toLowerCase().includes(kw));
+  }
+  // 資料已全部在記憶體中，直接回傳全部（由 filterFn 在前端做篩選）
+  const total = items.length;
+  return {
+    data: {
+      data: {
+        data: items,
+        meta: { total, page: 1, limit: total, totalPages: 1 },
+      },
+    },
+  };
+}; //客戶列表（本地快取，直接回傳全部）
 
 /** 查詢相關 **/
 const isProductSelected = (productId) => basicForm.value.products.some((item) => item.productId === productId); //判斷商品是否已選擇
@@ -431,8 +470,8 @@ const findCustomerFromRefs = (customerId) => {
   return null;
 }; //從 Refs 中查找客戶資料
 const findProductFromRef = (productId) => productListRef.value?.getItemByValue(productId); //從 Ref 中查找商品資料
-const getCustomerName = (customerId) => findCustomerFromRefs(customerId)?.name || '未知客戶'; //取得客戶名稱
-const getCustomerPaymentMethod = (customerId) => findCustomerFromRefs(customerId)?.paymentMethod || '未設定'; //取得客戶付款方式
+const getCustomerName = (customerId) => findCustomerById(customerId)?.name || '未知客戶'; //取得客戶名稱
+const getCustomerPaymentMethod = (customerId) => findCustomerById(customerId)?.paymentMethod || '未設定'; //取得客戶付款方式
 const getCustomPrice = (customer, productId) => {
   const customPrices = customer?.customPrices || customer?.customFields?.customPrices || [];
   const customPrice = customPrices.find((cp) => cp.productId === productId || cp.product?.id === productId);
@@ -441,7 +480,7 @@ const getCustomPrice = (customer, productId) => {
 const getCustomerNamesForProduct = (item) => {
   return (
     item.customerIds
-      .map((id) => findCustomerFromRefs(id)?.name || '未知')
+      .map((id) => findCustomerById(id)?.name || '未知')
       .slice(0, 3)
       .join('、') + (item.customerIds.length > 3 ? '...' : '')
   );
@@ -462,6 +501,32 @@ const fetchDrivers = async () => {
     console.error('取得司機列表失敗:', error);
   }
 }; //取得司機列表
+const loadAllCustomers = async () => {
+  if (customersLoading.value) return;
+  customersLoading.value = true;
+  allCustomersRaw.value = [];
+  try {
+    const firstResp = await CustomersListGet({ page: 1, limit: 100, status: 'ACTIVE' });
+    const { data: firstData } = normalizeApiResponse(firstResp);
+    const totalPages = firstResp?.data?.data?.pagination?.totalPages ?? firstResp?.data?.totalPages ?? firstResp?.data?.data?.meta?.totalPages ?? 1;
+    allCustomersRaw.value = firstData;
+    for (let p = 2; p <= totalPages; p++) {
+      const resp = await CustomersListGet({ page: p, limit: 100, status: 'ACTIVE' });
+      const { data } = normalizeApiResponse(resp);
+      allCustomersRaw.value = [...allCustomersRaw.value, ...data];
+    }
+  } catch (err) {
+    console.error('載入客戶列表失敗:', err);
+  } finally {
+    customersLoading.value = false;
+  }
+}; //開啟彈窗時一次性載入全部客戶（依 totalPages 逐頁背景抓取）
+const findCustomerById = (customerId) => {
+  const fromRef = findCustomerFromRefs(customerId);
+  if (fromRef) return fromRef;
+  const raw = allCustomersRaw.value.find((c) => c.id === customerId);
+  return raw ? formatCustomer(raw) : null;
+}; //查找客戶（優先從 refs，再從預載快取）
 const handleProductListLoaded = () => {}; //商品列表載入完成
 
 /** 批量選擇模式功能相關 **/
@@ -482,6 +547,7 @@ const handleProductToggle = (product) => {
         productNumericId: product.numericId,
         productName: product.name,
         categoryName: product.categoryName,
+        categoryId: product.categoryId,
         customerIds: [],
       },
     ];
@@ -517,6 +583,7 @@ const handleQuickSelectCategory = (category) => {
         productNumericId: product.numericId,
         productName: product.name,
         categoryName: product.categoryName,
+        categoryId: product.categoryId,
         customerIds: [],
       }));
     basicForm.value.products = [...basicForm.value.products, ...additions];
@@ -528,26 +595,28 @@ const handleSingleModeProductChange = () => {
   singleModeCustomers.value = [];
 }; //商品變更時清空客戶選擇
 const singleModeCustomerFetcher = async ({ page, limit, search }) => {
-  const params = { page, limit };
-  if (search) params.search = search;
-  const response = await CustomersListGet(params);
-  const { data, total } = normalizeApiResponse(response);
-  let filtered = data;
+  let items = allCustomersRaw.value;
+  if (search?.trim()) {
+    const kw = search.toLowerCase();
+    items = items.filter((c) => (c.name || '').toLowerCase().includes(kw));
+  }
   if (basicForm.value.weekDays.length > 0) {
-    filtered = filtered.filter((customer) => {
+    items = items.filter((customer) => {
       const customerDays = customer.deliveryDays || [];
       return customerDays.some((day) => basicForm.value.weekDays.includes(day));
     });
   }
   const productCategory = singleModeProduct.value?.category?.name || singleModeProduct.value?.categoryName;
   if (productCategory) {
-    filtered = filtered.filter((customer) => {
+    items = items.filter((customer) => {
       const categories = customer.customFields?.categories || [];
       return categories.includes(productCategory);
     });
   }
-  return { data: { data: filtered, total } };
-}; //客戶選擇器的 fetcher（帶篩選）
+  const total = items.length;
+  const pageItems = items.slice((page - 1) * limit, page * limit);
+  return { data: { data: { data: pageItems, meta: { total, page, limit, totalPages: Math.ceil(total / limit) } } } };
+}; //客戶選擇器的 fetcher（逐筆新增模式，使用預載快取）
 const confirmAddSingleProduct = () => {
   if (!singleModeProduct.value || !singleModeCustomers.value.length) {
     Notify({ type: 'warning', title: t('pleaseSelectProductAndCustomer', '請選擇商品和客戶') });
@@ -556,6 +625,7 @@ const confirmAddSingleProduct = () => {
   const productId = singleModeProduct.value.id;
   const productName = singleModeProduct.value.name;
   const categoryName = singleModeProduct.value.category?.name || singleModeProduct.value.categoryName || '未分類';
+  const categoryId = singleModeProduct.value.categoryId || singleModeProduct.value.category?.id || null;
   const customerIds = singleModeCustomers.value.map((c) => c.id);
   const existingIndex = basicForm.value.products.findIndex((item) => item.productId === productId);
   if (existingIndex >= 0) {
@@ -564,7 +634,7 @@ const confirmAddSingleProduct = () => {
     basicForm.value.products[existingIndex].customerIds = [...existingCustomerIds, ...newCustomerIds];
     Notify({ type: 'success', title: t('customersAddedToProduct', '已將客戶加入商品 {product}', { product: productName }) });
   } else {
-    basicForm.value.products = [...basicForm.value.products, { productId, productName, categoryName, customerIds }];
+    basicForm.value.products = [...basicForm.value.products, { productId, productName, categoryName, categoryId, customerIds }];
     Notify({ type: 'success', title: t('productAdded', '已新增商品 {product}', { product: productName }) });
   }
   singleModeCustomers.value.forEach((customer) => {
@@ -585,7 +655,7 @@ const editProduct = (item) => {
   singleModeCustomers.value = item.customerIds.map((id) => {
     const cachedCustomer = customerListRefs.value._singleModeCustomers?.[id];
     if (cachedCustomer) return cachedCustomer;
-    const foundCustomer = findCustomerFromRefs(id);
+    const foundCustomer = findCustomerById(id);
     return foundCustomer || { id, name: '未知客戶' };
   });
   singleModeCustomerKey.value++;
@@ -628,9 +698,9 @@ const buildReportPayload = () => {
       productId: item.productId,
       productNumericId: item.productNumericId,
       productName: item.productName,
-      productCategory: item.categoryName,
+      productCategory: CATEGORY_ID_TO_DISPLAY[item.categoryId] || item.categoryName,
       rows: item.customerIds.map((customerId) => {
-        const customer = findCustomerFromRefs(customerId);
+        const customer = findCustomerById(customerId);
         const customPrice = getCustomPrice(customer, item.productId);
         const unitPrice = customPrice !== null ? customPrice : product?.unitPrice || 0;
         return {
@@ -663,6 +733,7 @@ const handleSubmit = async () => {
     emit('update:modelValue', false);
     await mainStore.SWAL_Success(t('reportGenerated', '已產生報表'));
   } catch (error) {
+    console.log(123, error);
     await mainStore.SWAL_Error(error);
   } finally {
     isSubmitting.value = false;
@@ -680,7 +751,7 @@ watch(
     // 只保留符合新出貨星期的客戶
     basicForm.value.products = basicForm.value.products.map((product) => {
       const filteredCustomerIds = product.customerIds.filter((customerId) => {
-        const customer = findCustomerFromRefs(customerId);
+        const customer = findCustomerById(customerId);
         if (!customer) return false; // 客戶不存在，移除
         // 檢查客戶的配送日期是否與新選擇的出貨星期有交集
         const customerDays = customer.deliveryDays || [];
@@ -699,6 +770,7 @@ watch(
       resetState();
       productIndexCounter = 0;
       fetchDrivers();
+      loadAllCustomers();
     }
   },
 );

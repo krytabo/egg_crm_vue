@@ -341,6 +341,7 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { useCurrencyStore } from '@/stores/currency';
 import { useContentWidth } from '@/composables/useContentWidth';
+import { CATEGORY_IDS } from '@/constants/categories';
 import { usePaginatedSearchApi } from '@/composables/usePaginatedSearchApi';
 import { SquarePen, Trash2, Expand, Shrink } from 'lucide-vue-next';
 import { debounce } from 'lodash';
@@ -431,7 +432,7 @@ const fakeDataPresets = {
     const cost = Math.floor(Math.random() * (80 - 30 + 1)) + 30;
     return {
       name: `${brand}天然礦泉水 ${volume} (批次${i + 1})`,
-      categoryId: 'e106af10-17d4-4f4d-9ccf-8dfd5fbfe0b6', // 固定
+      categoryId: CATEGORY_IDS.WATER, // 固定
       productTypeCode: 'FINISHED_GOOD',
       unit: volume.includes('ml') ? '箱' : '桶',
       description: `${brand}品牌，優質水源，${volume}純淨包裝，符合國家飲用水標準。`,
@@ -447,7 +448,7 @@ const fakeDataPresets = {
         businessId: 10,
         code: 'VENDOR-002',
         name: '悅氏礦泉水股份有限公司',
-        categoryId: 'e106af10-17d4-4f4d-9ccf-8dfd5fbfe0b6',
+        categoryId: CATEGORY_IDS.WATER,
         status: 'ACTIVE',
         contactPerson: '李經理',
         email: 'sales@yueshi.com.tw',

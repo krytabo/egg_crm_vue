@@ -192,6 +192,17 @@
             <nut-input-number v-model="editingItem.quantity" :button-size="30" :input-width="50" />
           </ion-item>
           <ion-item>
+            <ion-label>{{ t('recoveredQuantity', '回收數量') }}</ion-label>
+            <nut-input-number v-model="editingItem.recoveredQuantity" :button-size="30" :input-width="50" :min="0" @change="recalculateEditingStranded" />
+          </ion-item>
+          <ion-item v-if="editingItem.strandedQuantity !== undefined">
+            <ion-label>{{ t('strandedQuantity', '滯留數量') }}</ion-label>
+            <ion-note slot="end" :class="editingItem.strandedQuantity > 0 ? 'text-orange-500 font-medium' : 'text-gray-400'">
+              {{ editingItem.strandedQuantity ?? '—' }}
+              <span v-if="editingItem.recoveredQuantity !== editingItem._baseRecovered" class="text-[10px] text-gray-400 ml-1">{{ t('estimated', '(估算)') }}</span>
+            </ion-note>
+          </ion-item>
+          <ion-item>
             <ion-label>{{ t('unitPrice', '單價') }}</ion-label>
             <ion-input slot="end" placeholder="Enter text" :value="editingItem.unitPrice" @ionInput="onEditUnitPriceChange($event.detail.value)" class="ion-text-right">
               <ion-note slot="end">元</ion-note>
@@ -998,6 +1009,15 @@ const recalculateEditingItem = () => {
     const unitPrice = Number(editingItem.value.unitPrice) || 0;
     editingItem.value.amount = quantity * unitPrice;
     editingItem.value.actualAmount = editingItem.value.amount;
+  }
+};
+
+const recalculateEditingStranded = () => {
+  if (editingItem.value) {
+    const baseStranded = Number(editingItem.value._baseStranded) || 0;
+    const baseRecovered = Number(editingItem.value._baseRecovered) || 0;
+    const newRecovered = Number(editingItem.value.recoveredQuantity) || 0;
+    editingItem.value.strandedQuantity = Math.max(0, baseStranded + baseRecovered - newRecovered);
   }
 };
 

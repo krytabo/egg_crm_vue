@@ -8,7 +8,6 @@ import {
   CustomersImportExcel,
   CustomersListGet,
   CustomersStoredCreatePost,
-  CustomersStoredDeleteById,
   CustomersStoredGetByID,
   CustomersStoredUpdatePatch,
   CustomersUpdatePatch,
@@ -441,18 +440,28 @@ export function useBasePage(props, t, showMessage = () => {}) {
     try {
       const response = await CustomersStoredGetByID(customerId);
       const list = response?.data?.data?.data ?? [];
-      _originalDepositIds.value = new Set(list.map((item) => item.id));
-      waterDepositsForm.value = list.map((item) => ({
+      _originalDepositIds.value = new Set(list.map((item) => item.id).filter(Boolean));
+      const mapped = list.map((item) => ({
         id: item.id,
-        productId: item.product ?? item.productId ?? '',
+        productId: typeof item.product === 'object' ? item.product?.id : (item.productId ?? ''),
         productName: item.product?.name ?? '',
         unit: item.unit ?? '',
-        quantity: item.quantity ?? null,
-        amount: item.amount ?? null,
+        quantity: item.quantity ?? 0,
+        amount: item.amount ?? 0,
         remainingQuantity: item.remainingQuantity ?? null, //系統維護，唯讀
         remainingAmount: item.remainingAmount ?? null, //系統維護，唯讀
+        strandedQuantity: item.strandedQuantity ?? 0, //系統維護，唯讀
         notes: item.notes ?? null,
+        addQuantity: null, // 本次新增儲值數量
+        addAmount: null,   // 本次新增儲值金額
       }));
+      // 有值的排前面，剩餘數量由小到大排序（負數優先）
+      waterDepositsForm.value = mapped.sort((a, b) => {
+        const aHasValue = Number(a.quantity) > 0 || Number(a.amount) > 0;
+        const bHasValue = Number(b.quantity) > 0 || Number(b.amount) > 0;
+        if (aHasValue !== bHasValue) return aHasValue ? -1 : 1;
+        return Number(a.remainingQuantity ?? 0) - Number(b.remainingQuantity ?? 0);
+      });
     } catch (error) {
       console.error('getDeposits error', error);
     }
@@ -537,28 +546,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
   };
 
   /** 儲值管理相關操作 **/
-  const addWaterDeposit = () => {
-    waterDepositsForm.value.push({
-      id: Date.now(),
-      productId: '',
-      productName: '',
-      unit: '',
-      quantity: 0,
-      amount: 0,
-      remainingQuantity: null,
-      remainingAmount: null,
-    });
-  };
-  const removeWaterDeposit = (id) => {
-    waterDepositsForm.value = waterDepositsForm.value.filter((item) => item.id !== id);
-  };
-  const changeDepositProduct = (product, index) => {
-    if (!product) return;
-    const item = waterDepositsForm.value[index];
-    if (!item) return;
-    item.productName = product.name || '';
-    item.unit = product.unit || '';
-  };
 
   /** 訂單相關 **/
   const customerData = ref(false);
@@ -695,28 +682,49 @@ export function useBasePage(props, t, showMessage = () => {}) {
       }
       if (isEdite.value) await CustomersUpdatePatch(customerId, payload);
 
-      //儲值管理
-      const depositsWithProductId = waterDepositsForm.value.filter((item) => item.productId);
-      const buildDepositPayload = (item) => ({
+      //儲值管理：儲值數量/金額唯讀，使用者只能在 addQuantity/addAmount 輸入增量
+      // PATCH：只送出有新增的欄位，避免後端重算未異動的剩餘值
+      const buildPatchPayload = (item) => {
+        const addQty = Number(item.addQuantity) || 0;
+        const addAmt = Number(item.addAmount) || 0;
+        const payload = {
+          productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
+          unit: item.unit || undefined,
+          notes: item.notes || undefined,
+        };
+        if (addQty > 0) payload.quantity = Number(item.quantity) + addQty;
+        if (addAmt > 0) payload.amount = Number(item.amount) + addAmt;
+        return payload;
+      };
+      // POST：首次建立，送出增量作為初始儲值值
+      const buildPostPayload = (item) => ({
         productId: typeof item.productId === 'object' ? item.productId?.id : item.productId,
-        quantity: item.quantity !== null && item.quantity !== '' ? Number(item.quantity) : undefined,
-        amount: item.amount !== null && item.amount !== '' ? Number(item.amount) : undefined,
+        quantity: Number(item.addQuantity) || 0,
+        amount: Number(item.addAmount) || 0,
         unit: item.unit || undefined,
         notes: item.notes || undefined,
       });
 
       if (customerId) {
-        const currentIds = new Set(depositsWithProductId.map((item) => item.id));
+        const upsertPromises = waterDepositsForm.value
+          .filter((item) => item.productId)
+          .map((item) => {
+            const addQty = Number(item.addQuantity) || 0;
+            const addAmt = Number(item.addAmount) || 0;
+            if (_originalDepositIds.value.has(item.id)) {
+              // 已有儲值記錄，且有新增值 → 更新（只送有異動的欄位）
+              if (addQty > 0 || addAmt > 0) {
+                return CustomersStoredUpdatePatch(customerId, item.id, buildPatchPayload(item));
+              }
+            } else if (addQty > 0 || addAmt > 0) {
+              // 首次填寫儲值（無記錄） → 新增
+              return CustomersStoredCreatePost(customerId, buildPostPayload(item));
+            }
+            return null;
+          })
+          .filter(Boolean);
 
-        // 刪除：原本有、現在沒有的
-        const deletePromises = [..._originalDepositIds.value].filter((id) => !currentIds.has(id)).map((id) => CustomersStoredDeleteById(customerId, id));
-
-        // 新增或更新
-        const upsertPromises = depositsWithProductId.map((item) =>
-          _originalDepositIds.value.has(item.id) ? CustomersStoredUpdatePatch(customerId, item.id, buildDepositPayload(item)) : CustomersStoredCreatePost(customerId, buildDepositPayload(item)),
-        );
-
-        await Promise.all([...deletePromises, ...upsertPromises]);
+        await Promise.all(upsertPromises);
       }
 
       await mainStore.SWAL_Success(t('saveSuccess', '儲存成功'));
@@ -825,9 +833,6 @@ export function useBasePage(props, t, showMessage = () => {}) {
 
     //儲值管理操作
     waterDepositsForm,
-    addWaterDeposit,
-    removeWaterDeposit,
-    changeDepositProduct,
 
     //訂單相關
     customerData,

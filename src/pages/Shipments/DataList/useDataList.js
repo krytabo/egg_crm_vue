@@ -20,6 +20,13 @@ import { useMainStore } from '@/stores/LoadingStore';
 import { useTimezoneStore } from '@/stores/TimezoneStore';
 import { getCategoryIdByCode } from '@/constants';
 
+// 出貨報表 productCategory（後端 enum 中文值）→ categoryCode
+const PRODUCT_CATEGORY_TO_CODE = {
+  桶裝水: 'WATER',
+  雞蛋: 'EGG',
+  飲水機: 'DISPENSER',
+};
+
 /**
  * 司機送貨報表列表共用邏輯
  * @param {Function} t - i18n 翻譯函式
@@ -468,8 +475,33 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
       _index: index,
     }));
   });
+  // 目前已選商品所屬的客戶 ID（強制同一客戶）
+  const selectedConvertCustomerId = computed(() => {
+    if (!selectedProductIndexes.value.length) return null;
+    const firstItem = convertProductList.value.find((item) => item._index === selectedProductIndexes.value[0]);
+    return firstItem?.customerId || firstItem?.customer?.id || null;
+  });
+  const selectedConvertCustomerName = computed(() => {
+    if (!selectedProductIndexes.value.length) return null;
+    const firstItem = convertProductList.value.find((item) => item._index === selectedProductIndexes.value[0]);
+    return firstItem?.customerName || firstItem?.customer?.name || null;
+  });
+  // 目前已選商品的類別（強制同一客戶＋同一類別）
+  const selectedConvertProductCategory = computed(() => {
+    if (!selectedProductIndexes.value.length) return null;
+    const firstItem = convertProductList.value.find((item) => item._index === selectedProductIndexes.value[0]);
+    return firstItem?.productCategory || null;
+  });
+  const isProductSelectableForConvert = (item) => {
+    if (item.isConvertedToOrder) return false;
+    if (!selectedConvertCustomerId.value) return true;
+    const itemCustomerId = item.customerId || item.customer?.id;
+    if (itemCustomerId !== selectedConvertCustomerId.value) return false;
+    if (selectedConvertProductCategory.value && item.productCategory !== selectedConvertProductCategory.value) return false;
+    return true;
+  };
   const selectableProductIndexes = computed(() => {
-    return convertProductList.value.filter((item) => !item.isConvertedToOrder).map((item) => item._index);
+    return convertProductList.value.filter((item) => isProductSelectableForConvert(item)).map((item) => item._index);
   });
   const isAllProductsSelected = computed(() => {
     if (selectableProductIndexes.value.length === 0) return false;
@@ -489,7 +521,16 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
   };
   const handleToggleProduct = (index, checked) => {
     if (checked) {
-      if (!selectedProductIndexes.value.includes(index)) {
+      const item = convertProductList.value.find((p) => p._index === index);
+      const itemCustomerId = item?.customerId || item?.customer?.id;
+      const itemCategory = item?.productCategory;
+      // 客戶不同，或類別不同 → 清空重選
+      if (
+        selectedConvertCustomerId.value &&
+        (itemCustomerId !== selectedConvertCustomerId.value || itemCategory !== selectedConvertProductCategory.value)
+      ) {
+        selectedProductIndexes.value = [index];
+      } else if (!selectedProductIndexes.value.includes(index)) {
         selectedProductIndexes.value = [...selectedProductIndexes.value, index];
       }
     } else {
@@ -518,9 +559,24 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
 
     convertingReport.value = row;
     const products = row.products || [];
-    selectedProductIndexes.value = products.map((item, index) => (!item.isConvertedToOrder ? index : null)).filter((v) => v !== null);
+    // 只自動選取第一個有未轉入商品的客戶 + 同類別的商品
+    const firstUnconvertedItem = products.find((item) => !item.isConvertedToOrder);
+    const firstCustomerId = firstUnconvertedItem?.customerId || firstUnconvertedItem?.customer?.id || null;
+    const firstCategory = firstUnconvertedItem?.productCategory || null;
+    selectedProductIndexes.value = products
+      .map((item, index) => {
+        if (item.isConvertedToOrder) return null;
+        const itemCustomerId = item.customerId || item.customer?.id;
+        if (itemCustomerId !== firstCustomerId) return null;
+        if (firstCategory && item.productCategory !== firstCategory) return null;
+        return index;
+      })
+      .filter((v) => v !== null);
     convertMode.value = 'new';
-    convertCategoryId.value = null;
+    // 根據第一筆商品的 productCategory 自動判斷類別，免去手動選擇
+    const firstProduct = (row.products || []).find((item) => !item.isConvertedToOrder);
+    const autoCode = firstProduct?.productCategory ? PRODUCT_CATEGORY_TO_CODE[firstProduct.productCategory] || null : null;
+    convertCategoryId.value = autoCode;
     selectedExistingOrder.value = null;
     convertShipDate.value = todayDate;
     convertNote.value = t('convertNoteDefault', '從送貨報表轉入');
@@ -614,7 +670,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
         limit: orderSearchPagination.limit,
       };
       if (orderSearchTerm.value) {
-        params.keyword = orderSearchTerm.value;
+        params.search = orderSearchTerm.value;
       }
       const response = await OrderListGet(params);
       const responseData = response?.data?.data || response?.data || {};
@@ -633,7 +689,7 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     }
   };
   const handleSearchExistingOrder = async () => {
-    orderSearchTerm.value = '';
+    orderSearchTerm.value = selectedConvertCustomerName.value || '';
     orderSearchPagination.page = 1;
     orderSearchDialogVisible.value = true;
     await searchExistingOrders(1);
@@ -746,6 +802,10 @@ export function useDataList(t, showMessage = () => {}, showConfirm = null) {
     handleConvertToOrder,
     closeConvertDialog,
     handleDoConvert,
+    selectedConvertCustomerId,
+    selectedConvertCustomerName,
+    selectedConvertProductCategory,
+    isProductSelectableForConvert,
 
     // 搜尋既有訂單
     orderSearchDialogVisible,

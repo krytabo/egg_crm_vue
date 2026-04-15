@@ -3,24 +3,13 @@
   <div class="infinite-scroll-list" :class="{ 'has-border': border }">
     <!-- 搜尋欄 -->
     <div v-if="allowSearch" class="search-bar">
-      <input
-        v-model="searchTerm"
-        type="text"
-        class="search-input"
-        :placeholder="searchPlaceholder"
-      />
+      <input v-model="searchTerm" type="text" class="search-input" :placeholder="searchPlaceholder" />
     </div>
 
     <!-- 列表容器 -->
     <div class="list-container" :style="{ maxHeight }" ref="listRef" @scroll="handleScroll">
       <template v-if="filteredItems.length">
-        <div
-          v-for="item in filteredItems"
-          :key="item[valueKey]"
-          class="list-row"
-          :class="{ selected: selectable && isSelected(item[valueKey]) }"
-          @click="handleRowClick(item)"
-        >
+        <div v-for="item in filteredItems" :key="item[valueKey]" class="list-row" :class="{ selected: selectable && isSelected(item[valueKey]) }" @click="handleRowClick(item)">
           <!-- 自訂內容插槽 -->
           <slot name="item" :item="item" :selected="isSelected(item[valueKey])">
             <!-- 預設顯示 -->
@@ -34,10 +23,7 @@
 
           <!-- 選擇指示器 -->
           <div v-if="selectable" class="selection-indicator">
-            <i
-              v-if="isSelected(item[valueKey])"
-              class="ri-checkbox-circle-fill text-blue-600"
-            ></i>
+            <i v-if="isSelected(item[valueKey])" class="ri-checkbox-circle-fill text-blue-600"></i>
             <i v-else class="ri-checkbox-blank-circle-line text-gray-300"></i>
           </div>
         </div>
@@ -55,15 +41,14 @@
       </div>
 
       <!-- 沒有更多資料 -->
-      <div v-else-if="!hasMore && filteredItems.length" class="no-more-state">
-        沒有更多資料
-      </div>
+      <div v-else-if="!hasMore && filteredItems.length" class="no-more-state">沒有更多資料</div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue';
+import { JsonViewer } from 'vue3-json-viewer';
 
 const props = defineProps({
   /** API 取得資料函式，接收 { page, limit, search } 參數 */

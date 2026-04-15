@@ -783,5 +783,6 @@
   "totalOrders": "Total Orders",
   "totalRevenue": "Total Revenue",
   "customerName": "Customer Name",
-  "customerUnit": "person(s)"
+  "customerUnit": "person(s)",
+  "driverInfoEditNote": "To edit driver information, go to Basic Info → Driver Data"
 }
