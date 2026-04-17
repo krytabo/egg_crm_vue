@@ -123,11 +123,11 @@ const menuSections = [
 const router = useRouter();
 const route = useRoute();
 const permissionStore = usePermissionStore();
-const isLocalEnv = import.meta.env.DEV; // 判斷是否為本地開發環境
+const isLocalEnv = import.meta.env.DEV; //判斷是否為本地開發環境
 const filteredMenuSections = computed(() => {
   return menuSections
     .map((section) => {
-      // 參數設定只在本地環境顯示
+      //參數設定只在本地環境顯示
       if (section.key === 'section-settings' && !isLocalEnv) return null;
 
       //過濾掉沒有權限的項目
@@ -147,15 +147,15 @@ const filteredMenuSections = computed(() => {
     .filter(Boolean);
 });
 const activeSidebarId = computed(() => route.meta?.sidebarId || route.name || 'dashboard');
-// 只展開當前頁面所屬的父級選單
 const defaultOpenKeys = computed(() => {
+  //只展開當前頁面所屬的父級選單
   const currentSection = filteredMenuSections.value.find((section) => section.items.some((item) => item.id === activeSidebarId.value));
   return currentSection && currentSection.items.length > 1 ? [currentSection.key] : [];
 });
 const handleMenuItemClick = (key) => {
   if (!key || key === activeSidebarId.value) return;
   router.push({ name: key });
-  emit('menu-click', key); // 通知父層選單已點擊（用於關閉手機版選單）
+  emit('menu-click', key); //通知父層選單已點擊（用於關閉手機版選單）
 };
 </script>
 
@@ -173,7 +173,7 @@ const handleMenuItemClick = (key) => {
   align-items: center;
   justify-content: center;
   font-weight: 600;
-  color: var(--color-primary-text);
+  color: #000;
   border-bottom: 1px solid var(--color-border);
 }
 

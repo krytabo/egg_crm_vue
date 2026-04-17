@@ -98,6 +98,7 @@
       :placeholder="props.placeholder || $t('pleaseSelect')"
       @change="handleChange"
       :allow-clear="props.allowClear"
+      :allowCreate="props.allowCreate"
       @clear="clearItem"
     >
       <a-option v-for="item in props.options" :key="item[props.valueKey]" :label="item[props.labelKey]" :value="item[props.valueKey]" :disabled="item.disabled === true" />
@@ -254,6 +255,7 @@ const props = defineProps({
   },
   readonly: Boolean,
   allowClear: Boolean,
+  allowCreate: Boolean,
   min: Number,
   max: Number,
   maxNumber: Number,

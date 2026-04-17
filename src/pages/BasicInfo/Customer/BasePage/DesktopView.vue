@@ -362,7 +362,7 @@
               <CustomField v-model="basicForm.metaForm.segment" type="select" allowClear :options="customerSegmentOptions" :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('customerSource', '客戶來源')">
-              <CustomField v-model="basicForm.metaForm.source" type="select" allowClear :options="customerSourceOptions" :readonly="isDeletedRecord" />
+              <CustomField v-model="basicForm.metaForm.source" type="select" allowClear allowCreate :options="customerSourceOptions" :readonly="isDeletedRecord" />
             </AFormItem>
             <AFormItem :label="t('salesRep', '業務負責')">
               <InfiniteSelect
