@@ -52,7 +52,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
   const FORM_TEMPLATES = {
     contact: { isPrimary: true, sameAsCompanyName: false, name: '', phone: '', address: '', email: '' },
     company: { companyName: '', companyPhone: '', companyPhone2: '', companyEmail: '', companyAddress: '', companyAddress2: '', taxId: '', registeredDate: '' },
-    other: { paymentMethod: ['CASH'], deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '' },
+    other: { paymentMethod: ['CASH'], deposit: '', invoiceTitle: '', invoiceTaxId: '', note: '', preDeliveryContact: false },
     meta: { type: 'COMPANY', segment: 'RETAIL', source: 'OTHER', salesRepId: '', tags: [], status: 'ACTIVE' },
   };
   const SORT_FIELD_MAP = {
@@ -384,6 +384,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       invoiceTitle: record.invoiceTitle || '',
       invoiceTaxId: record.invoiceTaxId || '',
       note: record.note || '',
+      preDeliveryContact: record.preDeliveryContact ?? false,
     }; //其他資料
     basicForm.value.metaForm = {
       type: record.type || FORM_TEMPLATES.meta.type,
@@ -648,6 +649,7 @@ export function useBasePage(props, t, showMessage = () => {}) {
       },
       taxId: companyForm.taxId || '', //統一編號(棄用)
       notes: otherForm.note || '', //備註
+      preDeliveryContact: otherForm.preDeliveryContact ?? false, //送前電聯
       salesRepId: (typeof metaForm.salesRepId === 'object' ? metaForm.salesRepId?.id : metaForm.salesRepId) || null, //業務負責
       deliveryDays: deliveryDaysForm.value, //出貨星期
       productCategories: categoriesForm.value, //客戶類型

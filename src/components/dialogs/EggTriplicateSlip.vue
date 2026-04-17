@@ -148,7 +148,7 @@ const contactLines = computed(() => {
   position: fixed;
   left: -9999px;
   top: 0;
-  //visibility: hidden;
+  visibility: hidden;
   pointer-events: none;
   z-index: -1;
 }

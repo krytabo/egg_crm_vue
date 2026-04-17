@@ -183,5 +183,6 @@
   "remainingQuantity": "剩余数量",
   "remainingDepositAmount": "剩余金额",
   "optional": "选填",
-  "orderInfo": "订单资讯"
+  "orderInfo": "订单资讯",
+  "preDeliveryContact": "送前联络"
 }

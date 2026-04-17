@@ -155,6 +155,7 @@
     <a-form ref="basicFormRef" :model="basicForm" :rules="basicFormRules" auto-label-width>
       <div class="grid grid-cols-7 gap-2 h-[calc(100vh-165px)]!">
         <div class="flex gap-2 flex-col col-span-2">
+          <!--<JsonViewer :value="basicForm" boxed copyable />-->
           <!-- 基本資訊區塊 -->
           <div class="form-section">
             <!--<div class="section-title">{{ t('orderBasicInfo', '訂單基本資訊') }}</div>-->
@@ -166,26 +167,10 @@
               <CustomField type="select" v-model="basicForm.targetType" :options="targetTypeOptions" :readonly="!canModifyTarget" @change="changeTargetType" />
             </a-form-item>
             <a-form-item v-if="basicForm.targetType === 'CUSTOMER'" :label="t('customer', '客戶')" field="targetId">
-              <InfiniteSelect
-                v-model="basicForm.targetId"
-                dataSource="customers"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                :readonly="!canModifyTarget"
-                @change="(v) => changeTarget(v, 'customer')"
-                class="w-full"
-                :filters="{ status: 'ACTIVE' }"
-              />
+              <InfiniteSelect v-model="basicForm.targetId" dataSource="customers" :readonly="!canModifyTarget" @change="(v) => changeTarget(v, 'customer')" :filters="{ status: 'ACTIVE' }" />
             </a-form-item>
             <a-form-item v-else-if="basicForm.targetType === 'VENDOR'" :label="t('vendor', '廠商')" field="targetId">
-              <InfiniteSelect
-                v-model="basicForm.targetId"
-                dataSource="vendors"
-                :placeholder="t('pleaseSelect', '請選擇')"
-                :disabled="!canModifyTarget"
-                @change="(v) => changeTarget(v, 'vendor')"
-                :filters="{ status: 'active' }"
-                class="w-full"
-              />
+              <InfiniteSelect v-model="basicForm.targetId" dataSource="vendors" :disabled="!canModifyTarget" @change="(v) => changeTarget(v, 'vendor')" :filters="{ status: 'active' }" />
             </a-form-item>
             <a-form-item :label="t('contact', '聯絡人')" field="contact">
               <a-input v-model="basicForm.contact" :placeholder="t('pleaseEnter', '請輸入')" :readonly="isReadOnly" />
@@ -289,7 +274,8 @@
 <script setup>
 import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { OrderCreatePost, OrderDeleteById, OrderGetByID, OrderListGet, OrderStatusUpdatePatch, OrderUpdatePatch } from '@/assets/API/Order';
-import { CustomersStoredGetByID } from '@/assets/API/Customers';
+import { CustomersStoredGetByID, CustomersGetByID } from '@/assets/API/Customers';
+import { VendorGetByID } from '@/assets/API/Vendor';
 import AppPagination from '@/components/ui/AppPagination.vue';
 import CustomField from '@/components/Form/CustomField.vue';
 import CustomForm from '@/components/Form/CustomForm.vue';
@@ -408,7 +394,7 @@ const editableStatusOptions = computed(() => {
 const canModifyTarget = computed(() => {
   if (isReadOnly.value) return false;
   if (isCreate.value) return true;
-  return originalStatus.value === 'PENDING';
+  if (!originalStatus.value) return true; //新訂單尚未有狀態，允許修改對象
 });
 const canModifyItems = computed(() => {
   if (isReadOnly.value) return false;
@@ -566,7 +552,7 @@ const changeTarget = (item, type = 'customer') => {
     basicForm.value.notes = item.notes || '';
     originalQtyMap.value = {}; // 新訂單選客戶，無原始數量基準
     fetchDeposits(item?.id);
-    // 自動帶入客戶地址
+
     const addr1 = item.customFields?.companyAddress || '';
     const addr2 = item.customFields?.companyAddress2 || '';
     const street = [addr1, addr2].filter(Boolean).join(', ');
@@ -574,6 +560,48 @@ const changeTarget = (item, type = 'customer') => {
   }
   basicForm.value.phone = [item.contactInfo?.phone, item.contactInfo?.phone2].filter(Boolean).join(', ');
 }; //選擇對象變更
+
+/**
+ * 編輯「處理中」訂單時，將對象最新資料補齊進訂單欄位
+ * 規則：原本有的維持在前，對象有但訂單沒有的才往後補，不覆蓋任何既有內容
+ */
+const mergeTargetFieldsIntoForm = (target, type) => {
+  const form = basicForm.value;
+
+  // ── 電話：比對每個號碼，只補進去沒有的 ──
+  const existingPhones = form.phone
+    ? form.phone
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : [];
+  const targetPhones = [target.contactInfo?.phone, target.contactInfo?.phone2].filter(Boolean);
+  const newPhones = targetPhones.filter((p) => !existingPhones.includes(p));
+  if (newPhones.length) {
+    form.phone = [...existingPhones, ...newPhones].join(', ');
+  }
+
+  // ── 地址（僅客戶）：比對每段地址，只補進去沒有的 ──
+  if (type === 'CUSTOMER') {
+    const existingAddrs = form.shippingAddress
+      ? form.shippingAddress
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
+    const targetAddrs = [target.customFields?.companyAddress, target.customFields?.companyAddress2].filter(Boolean);
+    const newAddrs = targetAddrs.filter((a) => !existingAddrs.includes(a));
+    if (newAddrs.length) {
+      form.shippingAddress = [...existingAddrs, ...newAddrs].join(', ');
+    }
+
+    // ── 備註（僅客戶）：對象有備註且訂單備註尚未包含時，換行後附加 ──
+    const targetNotes = target.notes?.trim();
+    if (targetNotes && !form.notes?.includes(targetNotes)) {
+      form.notes = form.notes ? `${form.notes}\n${targetNotes}` : targetNotes;
+    }
+  }
+};
 
 /** 儲值狀況相關 **/
 const depositMap = ref({});
@@ -752,7 +780,7 @@ const editData = async (row) => {
       items: [], // 先設為空，等商品加載完再設置
       discountAmount: Number(orderData.discount ?? orderData.discountAmount?.amount ?? 0),
       shippingAmount: Number(orderData.shippingFee ?? orderData.shippingAmount?.amount ?? 0),
-      shippingAddress: orderData.shippingAddress || '', //配送地址
+      shippingAddress: orderData.address || orderData.shippingAddress || '', //配送地址（後端回傳欄位為 address）
       notes: orderData.note || orderData.notes || '',
       internalNotes: orderData.internalNotes || '',
       status: statusKey,
@@ -762,6 +790,24 @@ const editData = async (row) => {
     // 編輯既有訂單時，若對象是客戶，自動載入儲值狀況
     if (targetTypeValue === 'CUSTOMER' && orderData.targetId) {
       fetchDeposits(orderData.targetId);
+    }
+
+    // 狀態為「待出貨」時，重新取得對象最新資料並補齊訂單欄位（不覆蓋既有內容）
+    if (statusKey === 'PENDING' && orderData.targetId) {
+      try {
+        let targetRes;
+        if (targetTypeValue === 'CUSTOMER') {
+          targetRes = await CustomersGetByID(orderData.targetId);
+        } else if (targetTypeValue === 'VENDOR') {
+          targetRes = await VendorGetByID(orderData.targetId);
+        }
+        const target = targetRes?.data?.data || targetRes?.data;
+        if (target) {
+          mergeTargetFieldsIntoForm(target, targetTypeValue);
+        }
+      } catch {
+        // 無法取得對象資料時靜默失敗，不影響開啟訂單
+      }
     }
   } catch (error) {
     await mainStore.SWAL_Error(error);
@@ -961,7 +1007,9 @@ const printTriplicate = async (row) => {
   mainStore.setLoading(true);
   try {
     const response = await OrderGetByID(row.id);
-    triplicateOrders.value = [response.data?.data || response.data];
+    const orderData = response.data?.data || response.data;
+    await attachPreDeliveryContact([orderData]);
+    triplicateOrders.value = [orderData];
     await nextTick();
     if (props.categoryCode === 'WATER') handleWaterTriplicatePrint();
     else handleEggTriplicatePrint();
@@ -980,7 +1028,9 @@ const batchPrintTriplicate = async () => {
   mainStore.setLoading(true);
   try {
     const results = await Promise.all(selectedRows.map((row) => OrderGetByID(row.id)));
-    triplicateOrders.value = results.map((res) => res.data?.data || res.data);
+    const orders = results.map((res) => res.data?.data || res.data);
+    await attachPreDeliveryContact(orders);
+    triplicateOrders.value = orders;
     await nextTick();
     if (props.categoryCode === 'WATER') handleWaterTriplicatePrint();
     else handleEggTriplicatePrint();
@@ -990,6 +1040,23 @@ const batchPrintTriplicate = async () => {
     mainStore.setLoading(false);
   }
 }; //批次三聯單
+
+/** 列印前補上客戶的 preDeliveryContact（後端訂單API不含此欄位）**/
+const attachPreDeliveryContact = async (orders) => {
+  const customerOrders = orders.filter((o) => {
+    const typeKey = targetTypeLabelMap[o.targetType] || o.targetType;
+    return typeKey === 'CUSTOMER' && o.targetId;
+  });
+  await Promise.allSettled(
+    customerOrders.map(async (o) => {
+      try {
+        const res = await CustomersGetByID(o.targetId);
+        const customer = res?.data?.data || res?.data;
+        if (customer) o.preDeliveryContact = customer.preDeliveryContact ?? false;
+      } catch {}
+    }),
+  );
+};
 
 /** Table高度相關 **/
 import { useWindowSize } from '@vueuse/core';

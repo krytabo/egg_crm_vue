@@ -259,4 +259,226 @@
 4.  **Loading 規範**：所有 API 呼叫必須配合 `mainStore.setLoading` 進行狀態管理。
 
 ---
-*最後更新：2026-03-10*
+
+## 8. 訂單彈窗 - 選擇對象後的自動帶入邏輯
+
+### 8.1 觸發點
+
+`DataList.vue` 中使用 `InfiniteSelect` 元件讓使用者選擇客戶或廠商：
+
+```html
+<!-- 客戶 -->
+<InfiniteSelect v-model="basicForm.targetId" dataSource="customers"
+  @change="(v) => changeTarget(v, 'customer')" />
+
+<!-- 廠商 -->
+<InfiniteSelect v-model="basicForm.targetId" dataSource="vendors"
+  @change="(v) => changeTarget(v, 'vendor')" />
+```
+
+`InfiniteSelect` 會依 `dataSource` 呼叫對應 API，選定後觸發 `changeTarget(item, type)`。
+
+### 8.2 `changeTarget` 自動帶入欄位一覽
+
+#### 客戶（type = `'customer'`）
+
+| 表單欄位 | 來源欄位 | 說明 |
+|---------|---------|------|
+| `basicForm.contact` | `customFields.contacts[]` 中 `isPrimary = true` 的 `name` | 主要聯絡人姓名，找不到則為空字串 |
+| `basicForm.notes` | `item.notes` | 客戶備註 |
+| `basicForm.phone` | `contactInfo.phone` + `contactInfo.phone2` | 兩個電話以 `", "` 合併，空值略過 |
+| `basicForm.shippingAddress` | `customFields.companyAddress` + `customFields.companyAddress2` | 兩個地址以 `", "` 合併，空值略過 |
+| `originalQtyMap` | —（清空） | 儲值計算基準重置（選新客戶視同新訂單） |
+| `depositMap` | API `CustomersStoredGetByID` | 非同步呼叫，取得最新儲值狀況 |
+
+#### 廠商（type = `'vendor'`）
+
+| 表單欄位 | 來源欄位 | 說明 |
+|---------|---------|------|
+| `basicForm.contact` | `item.contactPerson` | 廠商聯絡人 |
+| `basicForm.phone` | `contactInfo.phone` + `contactInfo.phone2` | 與客戶相同邏輯（共用邏輯在 if 外） |
+
+> **注意**：廠商沒有地址帶入、沒有備註帶入、不呼叫 `fetchDeposits`。
+
+### 8.3 執行流程（客戶）
+
+```
+選擇客戶
+  ↓
+1. basicForm.contact  ← 主要聯絡人姓名（customFields.contacts 中 isPrimary = true）
+2. basicForm.notes    ← 客戶備註
+3. basicForm.phone    ← contactInfo.phone + contactInfo.phone2（以 ", " 合併）
+4. basicForm.shippingAddress ← customFields.companyAddress + companyAddress2（以 ", " 合併）
+5. originalQtyMap 清空   （儲值計算基準重置，詳見第 9 節）
+6. fetchDeposits(item.id) ← 呼叫 CustomersStoredGetByID 取得儲值狀況
+```
+
+### 8.4 編輯既有訂單時的觸發
+
+編輯訂單（`editData`）不會經過 `changeTarget`，而是在 `editData` 內直接：
+- 帶入所有表單欄位（含 `shippingAddress`、`phone` 等）
+- 若 `targetType === 'CUSTOMER'`，自動呼叫 `fetchDeposits(orderData.targetId)` 取得儲值狀況
+
+### 8.5 「待出貨」訂單自動補齊欄位（`mergeTargetFieldsIntoForm`）
+
+當訂單狀態為 `PENDING`（待出貨）時，`editData` 在帶入表單後，會呼叫 `CustomersGetByID` / `VendorGetByID` 取得**對象最新資料**，並透過 `mergeTargetFieldsIntoForm` 將新增的資料補進訂單欄位。
+
+> **為什麼只在「待出貨」？** 待出貨代表訂單尚未出貨，客戶資料仍可能更新，適合自動補齊；處理中以後視為已確認出貨資訊，不自動修改。
+
+> **注意：後端回傳 status 是中文**（如 `"待出貨"`），`editData` 會透過 `orderStatusLabelMap` 轉為英文 key（`'PENDING'`）再進行判斷。
+
+#### 補齊規則（不覆蓋既有內容）
+
+| 欄位 | 比對邏輯 | 補齊方式 |
+|------|---------|---------|
+| `phone` | 比對每個電話號碼（trim 後精確比對） | 客戶新增的號碼附加在現有電話後，以 `", "` 分隔 |
+| `shippingAddress` | 比對每段地址（trim 後精確比對） | 客戶新增的地址附加在現有地址後，以 `", "` 分隔 |
+| `notes` | 比對是否已包含客戶備註字串 | 若訂單備註尚未包含客戶備註，換行後附加 |
+
+> **注意**：
+> - 原本的訂單資料**永遠在前**，新補的在後
+> - 廠商只補 `phone`，不補地址和備註
+> - 僅在 `PROCESSING` 狀態才執行；`PENDING`、`DELIVERED`、`CANCELLED` 不補
+> - 取得對象資料失敗時靜默忽略（不影響開啟訂單）
+
+#### 範例
+
+| | 訂單現有值 | 客戶最新值 | 補齊後結果 |
+|--|-----------|----------|-----------|
+| 電話 | `0911111111` | `0922222222, 0933333333` | `0911111111, 0922222222, 0933333333` |
+| 地址 | `台中市西區台灣大道123號` | `台中市北區健行路222號, 台中市西區台灣大道123號` | `台中市西區台灣大道123號, 台中市北區健行路222號` |
+| 備註 | `早上送達` | `送達前須先電聯` | `早上送達`<br>`送達前須先電聯` |
+
+---
+
+## 9. ProductSelectionTable - 自訂價格顏色 + 儲值狀況欄位
+
+### 9.1 自訂商品價格（黃底標示）
+
+`ProductSelectionTable` 元件透過 `:row-class-name` 判斷每一列是否有自訂價格：
+
+- 資料來源：`basicForm.targetId.customFields.customPrices[]`
+- 若該商品在 `customPrices` 中找到對應紀錄 → 該列加上 `.custom-price-row`（**黃底**）
+- 使用者在輸入商品時即可一眼識別哪些商品有客戶特殊定價
+
+### 9.2 儲值狀況欄位（水桶訂單專用）
+
+#### 資料來源
+
+呼叫 `GET /customers/{id}/stored?limit=100`（`CustomersStoredGetByID`），回傳格式：
+
+```js
+// depositMap 結構（依 productId 為 key）
+{
+  [productId]: {
+    remainingQuantity: number,  // 剩餘桶數
+    remainingAmount: number,    // 剩餘金額
+  }
+}
+```
+
+#### 顯示邏輯
+
+| 狀態 | 顯示 | 顏色 |
+|------|------|------|
+| `remainingQuantity > 0` 或 `remainingAmount > 0` | `N 桶 / $M` | 🟢 綠色 |
+| `remainingQuantity < 0` | `-N 桶 / $M` | 🔴 紅色 |
+| 兩者皆為 0 | `0 桶 / $0` | 黑色（預設） |
+
+#### 即時預覽計算（Optimistic Update）
+
+前端在**使用者修改數量時**才進行假計算（以 API 最新數據為基準）：
+
+```
+delta = 目前輸入數量 - 原始數量（openCreateDialog 時為 0；editData 時為訂單原始數量）
+
+newQty = API.remainingQuantity - delta
+
+若 newQty < 0（數量不夠）：
+  overflow = -newQty
+  可補桶數 = floor(API.remainingAmount / 商品單價)
+  實際補桶數 = min(overflow, 可補桶數)
+  newAmt = API.remainingAmount - 實際補桶數 × 商品單價
+  newQty = (overflow - 實際補桶數) > 0 ? -(overflow - 實際補桶數) : 0
+```
+
+**重要規則：**
+- `remainingAmount` 永遠不會是負數
+- 只有 `remainingQuantity` 才會是負數
+- 未改過數量的商品 → 直接顯示 API 原始值（不做預覽計算）
+- 商品單價優先使用客戶自訂價（`customPrices`），否則用商品預設售價
+
+#### 關鍵 refs
+
+| 變數 | 說明 |
+|------|------|
+| `depositMap` | API 回傳的儲值原始數據（以 productId 為 key） |
+| `originalQtyMap` | 彈窗開啟時的數量快照（用於計算 delta） |
+
+---
+
+## 🤖 Agent 協作說明
+
+> 本節提供給 AI Agents（如 GitHub Copilot CLI）或協作者快速了解此模組的核心流程，避免重複踩坑。
+
+### 快速定位
+
+| 目標 | 位置 |
+|------|------|
+| 訂單列表 + 新增/編輯彈窗 | `src/pages/Orders/DataList.vue` |
+| 商品選擇表格元件 | `src/components/ProductTable/ProductSelectionTable.vue` |
+| 列印三聯單元件 | `src/components/dialogs/OrderPrintSlip.vue` |
+| 訂單 API 呼叫 | `src/assets/API/Order.js` |
+| 客戶 API 呼叫 | `src/assets/API/Customers.js` |
+| 狀態/選項對應表 | `src/composables/useSelectOptions.js` |
+| 分類 ID 常數 | `src/constants/categories.js` |
+
+### 常見任務與注意事項
+
+#### ✅ 新增表單欄位
+1. 在 `initializeForm()` 加上預設值
+2. 在 template 中加上對應的 `<a-form-item>`
+3. 在 `buildPayload()` 加入送出邏輯
+4. 在 `editData()` 加入載入既有資料的邏輯
+
+#### ✅ 修改客戶自動帶入欄位
+- 在 `changeTarget(item, 'customer')` 內修改
+- 客戶資料結構：
+  ```js
+  item.contactInfo?.phone      // 電話1
+  item.contactInfo?.phone2     // 電話2
+  item.customFields?.companyAddress   // 地址1
+  item.customFields?.companyAddress2  // 地址2
+  item.customFields?.contacts         // 聯絡人列表
+  item.customFields?.customPrices     // 自訂商品價格
+  ```
+
+#### ✅ 修改儲值計算邏輯
+- 核心函式：`getDepositDisplay(record)`（在 `DataList.vue`）
+- 計算規則詳見第 9.2 節與 `後端溝通紀錄/2026-04-10.md`
+- 後端對應函式：`deductWaterBottleDeposit`（`eggdrop-crm/apps/api/src/modules/orders/orders.service.ts`）
+
+#### ✅ 修改訂單狀態流程
+- 狀態映射：`orderStatusLabelMap` / `orderStatusDisplayMap`（`useSelectOptions.js`）
+- 自動晉升邏輯：`updateOrderStatusWithAutoPromote()`（`DataList.vue`）
+- 詳見第 3 節
+
+#### ⚠️ 容易踩到的坑
+
+| 問題 | 原因 | 解法 |
+|------|------|------|
+| 編輯訂單時儲值狀況不顯示 | `fetchDeposits` 只在 `changeTarget` 觸發 | `editData()` 裡也要呼叫 `fetchDeposits` |
+| 儲值計算一開始就跑預覽 | 沒有區分「原始數量」vs「目前數量」 | 用 `originalQtyMap` 記錄快照，delta=0 時顯示 API 原始值 |
+| payload 送出 UUID 格式錯誤 | `targetId` 是物件 `{ id, name }` | 一律透過 `extractUUID()` 取值 |
+| 狀態更新 400 錯誤 | 後端不允許跳級（如 DRAFT → PROCESSING） | 使用 `updateOrderStatusWithAutoPromote()` |
+| `shippingAddress` 送空物件報錯 | 後端改為純字串，不接受 `{}` 物件 | 用 `''` 當預設值，有值才送 |
+
+### 後端溝通紀錄索引
+
+| 日期 | 主題 |
+|------|------|
+| `後端溝通紀錄/2026-04-09.md` | `deductWaterBottleDeposit` Phase 2 Dead Code 問題 |
+| `後端溝通紀錄/2026-04-10.md` | 儲值計算邏輯說明 + Phase 2 單價來源錯誤（應用客戶自訂價） |
+
+---
+*最後更新：2026-04-17*
