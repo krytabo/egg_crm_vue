@@ -320,8 +320,8 @@
                 :readonly="isDeletedRecord"
               />
             </AFormItem>
-            <div class="col-span-3 grid grid-cols-2 gap-3">
-              <AFormItem :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')">
+            <div class="col-span-3 grid grid-cols-17 gap-3">
+              <AFormItem class="col-span-8" :label="isCompanyType ? t('companyAddress', '公司地址') : t('customerAddress', '客戶地址')">
                 <CustomField
                   v-model="basicForm.companyForm.companyAddress"
                   type="input"
@@ -330,7 +330,7 @@
                   :readonly="isDeletedRecord"
                 />
               </AFormItem>
-              <AFormItem :label="isCompanyType ? t('companyAddress2', '公司地址2') : t('customerAddress2', '客戶地址2')">
+              <AFormItem class="col-span-8" :label="isCompanyType ? t('companyAddress2', '公司地址2') : t('customerAddress2', '客戶地址2')">
                 <CustomField
                   v-model="basicForm.companyForm.companyAddress2"
                   type="input"
@@ -338,6 +338,9 @@
                   allowClear
                   :readonly="isDeletedRecord"
                 />
+              </AFormItem>
+              <AFormItem :label="t('preDeliveryContact', '送前電聯')" class="custom_switch">
+                <a-switch v-model="basicForm.otherForm.preDeliveryContact" checked-color="#165dff" :disabled="isDeletedRecord" />
               </AFormItem>
             </div>
             <AFormItem :label="t('customerType', '客戶類型')">

@@ -244,5 +244,6 @@
   "remainingQuantity": "剩餘數量",
   "remainingDepositAmount": "剩餘金額",
   "optional": "選填",
-  "orderInfo": "訂單資訊"
+  "orderInfo": "訂單資訊",
+  "preDeliveryContact": "送前電聯"
 }

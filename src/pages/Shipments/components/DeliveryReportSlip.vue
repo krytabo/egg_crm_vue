@@ -8,22 +8,19 @@
       <!-- 每張報表 → 依客戶分組 → 每組客戶一或多張單 -->
       <template v-for="report in orders" :key="report.reportNumber">
         <template v-for="customerSlip in buildCustomerSlips(report)" :key="customerSlip.customerId">
-          <div
-            v-for="(pageRows, pIdx) in chunkProducts(customerSlip.products)"
-            :key="`${customerSlip.customerId}-p${pIdx}`"
-            class="slip-page page-break"
-          >
+          <div v-for="(pageRows, pIdx) in chunkProducts(customerSlip.products)" :key="`${customerSlip.customerId}-p${pIdx}`" class="slip-page page-break">
             <div class="slip-inner">
               <!-- 頁首 -->
               <div class="grid grid-cols-3 pb-2">
                 <!-- 送貨提醒 -->
                 <div class="text-[18px] leading-tight gap-1 flex flex-col">
                   <div class="flex gap-1 items-center">
-                    <div class="border border-black px-0.5 mr-1 size-5"></div>
+                    <Square v-if="!customerSlip.preDeliveryContact" class="text-[25px] -ml-0.5" />
+                    <SquareCheckBig v-else class="text-[25px] -ml-0.5" />
                     <p>去前電聯</p>
                   </div>
                   <div class="flex gap-1 items-center">
-                    <div class="border border-black px-0.5 mr-1 size-5"></div>
+                    <Square class="text-[25px] -ml-0.5" />
                     <p>可下門口</p>
                   </div>
                 </div>
@@ -89,27 +86,27 @@
                 <tbody>
                   <template v-for="(row, i) in pageRows" :key="i">
                     <tr v-if="!row.isContinuation">
-                      <td class="border border-black h-8! w-9 overflow-hidden truncate text-center">{{ row.seq }}</td>
-                      <td class="border border-black h-8! max-w-83.5 overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
-                      <td class="border border-black h-8! w-13 overflow-hidden truncate text-center px-2!">{{ row.product.quantity }}</td>
-                      <td class="border border-black h-8! w-11 overflow-hidden truncate text-center px-2!">{{ row.product.unit }}</td>
-                      <td class="border border-black h-8! w-17.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.unitPrice) }}</td>
-                      <td class="border border-black h-8! w-22.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.amount) }}</td>
-                      <td class="border border-black h-8! w-64 max-w-64 overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
+                      <td class="h-8! w-9 overflow-hidden truncate text-center">{{ row.seq }}</td>
+                      <td class="h-8! max-w-83.5 overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
+                      <td class="h-8! w-13 overflow-hidden truncate text-center px-2!">{{ row.product.quantity }}</td>
+                      <td class="h-8! w-11 overflow-hidden truncate text-center px-2!">{{ row.product.unit }}</td>
+                      <td class="h-8! w-17.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.unitPrice) }}</td>
+                      <td class="h-8! w-22.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.amount) }}</td>
+                      <td class="h-8! w-64 max-w-64 overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
                     </tr>
                     <tr v-else>
-                      <td class="border border-black h-8!"></td>
-                      <td class="border border-black h-8! overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
-                      <td class="border border-black h-8!"></td>
-                      <td class="border border-black h-8!"></td>
-                      <td class="border border-black h-8!"></td>
-                      <td class="border border-black h-8!"></td>
-                      <td class="border border-black h-8! overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
+                      <td class="h-8!"></td>
+                      <td class="h-8! overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
+                      <td class="h-8!"></td>
+                      <td class="h-8!"></td>
+                      <td class="h-8!"></td>
+                      <td class="h-8!"></td>
+                      <td class="h-8! overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
                     </tr>
                   </template>
                   <!-- 補齊空白行至 6 行 -->
                   <tr v-for="n in Math.max(0, 6 - pageRows.length)" :key="'empty-' + n" class="h-8">
-                    <td class="border border-black" v-for="m in 7" :key="m"></td>
+                    <td v-for="m in 7" :key="m"></td>
                   </tr>
                 </tbody>
               </table>
@@ -124,7 +121,7 @@
                   </div>
                   <div class="flex">發票號碼：<span class="border-b border-black flex-1 mr-4"></span></div>
                   <div class="flex">
-                    備　　註：<span class="border-b border-black flex-1 mr-4">{{ report.note }}</span>
+                    備　　註：<span class="border-b border-black flex-1 mr-4">{{ customerSlip.notes }}</span>
                   </div>
                 </div>
 
@@ -132,12 +129,8 @@
                   <div class="flex justify-between">
                     <span>合計金額：</span><span>{{ formatNum(customerSlip.totalAmount) }}</span>
                   </div>
-                  <div class="flex justify-between">
-                    <span>稅　　額：</span><span></span>
-                  </div>
-                  <div class="flex justify-between">
-                    <span>前期未收：</span><span></span>
-                  </div>
+                  <div class="flex justify-between"><span>稅　　額：</span><span></span></div>
+                  <div class="flex justify-between"><span>前期未收：</span><span></span></div>
                   <div class="flex justify-between font-bold border-t border-black">
                     <span>總計金額：</span><span>{{ formatNum(customerSlip.totalAmount) }}</span>
                   </div>
@@ -163,6 +156,7 @@
 <script setup>
 import { ref } from 'vue';
 import QrCode from '@/assets/Line_QRCode.svg';
+import { Square, SquareCheckBig } from 'lucide-vue-next';
 
 const props = defineProps({
   orders: { type: Array, default: () => [] },
@@ -211,6 +205,8 @@ const buildCustomerSlips = (report) => {
         phone,
         address,
         taxId: c.taxId || '',
+        preDeliveryContact: c.preDeliveryContact ?? false,
+        notes: c.notes || '',
         products: [],
         totalAmount: 0,
       });
@@ -289,4 +285,3 @@ defineExpose({ printContentRef });
   }
 }
 </style>
-

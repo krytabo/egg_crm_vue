@@ -1,6 +1,6 @@
 <!-- 飲水送貨三聯單 — 紙張規格：9.5" x 5.5"（中一刀三聯單） -->
 <template>
-  <div class="" aria-hidden="true">
+  <div class="triplicate-wrapper" aria-hidden="true">
     <div ref="printContentRef">
       <template v-for="order in orders" :key="order.orderNumber">
         <div v-for="(pageRows, pIdx) in chunkProducts(order.products)" :key="pIdx" class="slip-page page-break">
@@ -9,11 +9,12 @@
               <!--送貨提醒-->
               <div class="text-[18px] leading-tight gap-1 flex flex-col">
                 <div class="flex gap-1 items-center">
-                  <div class="border border-black px-0.5 mr-1 size-5"></div>
+                  <Square v-if="!order.preDeliveryContact" class="text-[25px] -ml-0.5" />
+                  <SquareCheckBig v-else class="text-[25px] -ml-0.5" />
                   <p>去前電聯</p>
                 </div>
                 <div class="flex gap-1 items-center">
-                  <div class="border border-black px-0.5 mr-1 size-5"></div>
+                  <Square class="text-[25px] -ml-0.5" />
                   <p>可下門口</p>
                 </div>
               </div>
@@ -80,28 +81,28 @@
                 <template v-for="(row, i) in pageRows" :key="i">
                   <!-- 一般行：顯示完整商品資料 -->
                   <tr v-if="!row.isContinuation">
-                    <td class="border border-black h-8! w-9 overflow-hidden truncate text-center">{{ row.seq }}</td>
-                    <td class="border border-black h-8! max-w-83.5 overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
-                    <td class="border border-black h-8! w-13 overflow-hidden truncate text-center px-2!">{{ row.product.quantity }}</td>
-                    <td class="border border-black h-8! w-11 overflow-hidden truncate text-center px-2!">{{ row.product.unit }}</td>
-                    <td class="border border-black h-8! w-17.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.actualPrice) }}</td>
-                    <td class="border border-black h-8! w-22.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.subtotal) }}</td>
-                    <td class="border border-black h-8! w-64 max-w-64 overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
+                    <td class="h-8! w-9 overflow-hidden truncate text-center">{{ row.seq }}</td>
+                    <td class="h-8! max-w-83.5 overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
+                    <td class="h-8! w-13 overflow-hidden truncate text-center px-2!">{{ row.product.quantity }}</td>
+                    <td class="h-8! w-11 overflow-hidden truncate text-center px-2!">{{ row.product.unit }}</td>
+                    <td class="h-8! w-17.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.actualPrice) }}</td>
+                    <td class="h-8! w-22.5 overflow-hidden truncate text-right px-2!">{{ formatNum(row.product.subtotal) }}</td>
+                    <td class="h-8! w-64 max-w-64 overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
                   </tr>
                   <!-- 延續行：No./數量/單位/單價/小計 空白，只顯示名稱/備註後續段落 -->
                   <tr v-else>
-                    <td class="border border-black h-8!"></td>
-                    <td class="border border-black h-8! overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
-                    <td class="border border-black h-8!"></td>
-                    <td class="border border-black h-8!"></td>
-                    <td class="border border-black h-8!"></td>
-                    <td class="border border-black h-8!"></td>
-                    <td class="border border-black h-8! overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
+                    <td class="h-8!"></td>
+                    <td class="h-8! overflow-hidden truncate px-2!">{{ row.nameLine }}</td>
+                    <td class="h-8!"></td>
+                    <td class="h-8!"></td>
+                    <td class="h-8!"></td>
+                    <td class="h-8!"></td>
+                    <td class="h-8! overflow-hidden truncate px-2!">{{ row.noteLine }}</td>
                   </tr>
                 </template>
                 <!-- 補齊空白行至 6 行 -->
                 <tr v-for="n in Math.max(0, 6 - pageRows.length)" :key="'empty-' + n" class="h-8">
-                  <td class="border border-black" v-for="m in 7" :key="m"></td>
+                  <td class="" v-for="m in 7" :key="m"></td>
                 </tr>
               </tbody>
             </table>
@@ -153,6 +154,7 @@
 <script setup>
 import { ref } from 'vue';
 import QrCode from '@/assets/Line_QRCode.svg';
+import { Square, SquareCheckBig } from 'lucide-vue-next';
 
 const props = defineProps({
   orders: { type: Array, default: () => [] },
@@ -225,6 +227,15 @@ defineExpose({ printContentRef });
 </script>
 
 <style scoped>
+.triplicate-wrapper {
+  position: fixed;
+  left: -9999px;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* 每張三聯單：9.5" x 5.5" (含孔) */
 .slip-page {
   width: 241mm;

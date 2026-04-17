@@ -191,5 +191,6 @@
   "remainingQuantity": "Remaining Qty",
   "remainingDepositAmount": "Remaining Amount",
   "optional": "Optional",
-  "orderInfo": "Order Info"
+  "orderInfo": "Order Info",
+  "preDeliveryContact": "Call Before Delivery"
 }
